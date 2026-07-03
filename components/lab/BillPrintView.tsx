@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { BillPayload } from '@/lib/integrations/types/labBilling';
 import Image from 'next/image';
 import { LabSettingsService, LabSettings } from '@/lib/integrations/services/labSettings.service';
@@ -10,14 +10,28 @@ interface BillPrintViewProps {
     billData: BillPayload;
     invoiceId?: string; // Optional because previews might not have it yet
     date?: string;
+    patientType?: 'walkin' | 'inpatient' | 'lab';
 }
 
 // This component is designed to look like the reference image when printed
 // It should be wrapped in a container that typically handles visibility (hidden on screen, visible on print)
 // OR used in a modal that is then printed.
 
-const BillPrintView: React.FC<BillPrintViewProps> = ({ billData, invoiceId, date }) => {
+const BillPrintView: React.FC<BillPrintViewProps> = ({ billData, invoiceId, date, patientType }) => {
     const currentDate = date || new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    const effectiveType = patientType || billData.patientType || 'walkin';
+
+    const invoiceLabel = effectiveType === 'inpatient'
+        ? 'INPATIENT INVOICE'
+        : effectiveType === 'lab'
+            ? 'LAB-TO-LAB INVOICE'
+            : 'INVOICE';
+
+    const invoiceLabelColor = effectiveType === 'inpatient'
+        ? '#1e3a8a'    // blue for inpatient
+        : effectiveType === 'lab'
+            ? '#6b21a8' // purple for lab-to-lab
+            : '#000000'; // black for walk-in
     const [labSettings, setLabSettings] = React.useState<LabSettings>({
         name: 'MediLab Laboratory',
         address: 'Please set your lab address',
@@ -48,7 +62,10 @@ const BillPrintView: React.FC<BillPrintViewProps> = ({ billData, invoiceId, date
                 <HeaderPrint />
 
                 <div className="flex justify-center mb-3 relative">
-                    <h2 className="text-base font-bold border-b-2 border-black pb-1 uppercase absolute top-[-10px] bg-white px-2">INVOICE</h2>
+                    <h2 className="text-base font-bold border-b-2 pb-1 uppercase absolute top-[-10px] bg-white px-2"
+                        style={{ borderColor: invoiceLabelColor, color: invoiceLabelColor }}>
+                        {invoiceLabel}
+                    </h2>
                     <div className="w-full border-t border-black mt-3"></div>
                 </div>
 
@@ -61,25 +78,44 @@ const BillPrintView: React.FC<BillPrintViewProps> = ({ billData, invoiceId, date
                         <h3 className="font-bold text-xs uppercase mb-3 text-black">INVOICE INFORMATION</h3>
                         <div className="grid grid-cols-[100px_1fr] gap-y-1 text-xs">
                             <span className="font-semibold text-black">Invoice ID:</span>
-                            <span>{invoiceId && invoiceId.length >= 24 ? `LAB-${invoiceId.slice(-6).toUpperCase()}` : (invoiceId || 'N/A')}</span>
+                            <span>{(() => {
+                                if (!invoiceId) {
+                                    return `${effectiveType === 'lab' ? 'L2L' : effectiveType === 'inpatient' ? 'IPD' : 'WLK'}-PREVIEW`;
+                                }
+                                let cleanId = invoiceId;
+                                if (invoiceId.startsWith('REC')) cleanId = invoiceId.slice(3);
+                                if (invoiceId.startsWith('OPD-')) cleanId = invoiceId.slice(4);
+                                if (invoiceId.length >= 24) cleanId = invoiceId.slice(-6).toUpperCase();
+                                
+                                if (effectiveType === 'inpatient') return `IPD-${cleanId}`;
+                                if (effectiveType === 'lab') return `L2L-${cleanId}`;
+                                return `WLK-${cleanId}`;
+                            })()}</span>
 
                             <span className="font-semibold text-black">Date:</span>
                             <span>{currentDate}</span>
-
-                            <span className="font-semibold text-black">Payment Mode:</span>
-                            <span>{billData.paymentMode}</span>
-
-                            <span className="font-semibold text-black">Status:</span>
-                            <span>{billData.balance > 0 ? (billData.paidAmount > 0 ? "Partial" : "Due") : "Paid"}</span>
                         </div>
                     </div>
 
                     {/* Patient Info */}
                     <div className="p-3">
-                        <h3 className="font-bold text-xs uppercase mb-3 text-black">PATIENT INFORMATION</h3>
+                        <h3 className="font-bold text-xs uppercase mb-3 text-black">
+                            {effectiveType === 'lab' ? 'LAB CLIENT INFORMATION' : 'PATIENT INFORMATION'}
+                        </h3>
                         <div className="grid grid-cols-[100px_1fr] gap-y-1 text-xs">
-                            <span className="font-semibold text-black">Name:</span>
-                            <span>{billData.patientDetails.name}</span>
+                            {effectiveType === 'lab' ? (
+                                <>
+                                    <span className="font-semibold text-black">Name Lab:</span>
+                                    <span>{billData.patientDetails.refDoctor || billData.patientDetails.name}</span>
+                                    <span className="font-semibold text-black">Patient Name:</span>
+                                    <span className="font-bold text-black">{billData.patientDetails.refDoctor ? billData.patientDetails.name : (billData.patientDetails.originalPatientName || 'N/A')}</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="font-semibold text-black">Name:</span>
+                                    <span>{billData.patientDetails.name}</span>
+                                </>
+                            )}
 
                             <span className="font-semibold text-black">Age / Gender:</span>
                             <span>
@@ -142,7 +178,15 @@ const BillPrintView: React.FC<BillPrintViewProps> = ({ billData, invoiceId, date
                     <div className="border border-black text-xs">
                         <div className="flex justify-between p-2 border-b border-black">
                             <span className="font-bold text-black">Payment Mode:</span>
-                            <span>{billData.paymentMode}</span>
+                            <span>
+                                {billData.paymentMode === 'Mixed' && billData.paymentDetails ? (
+                                    <span className="font-semibold text-[10px]">
+                                        Mixed (Cash: ₹{billData.paymentDetails.cash || 0}, Card: ₹{billData.paymentDetails.card || 0}, UPI: ₹{billData.paymentDetails.upi || 0})
+                                    </span>
+                                ) : (
+                                    billData.paymentMode
+                                )}
+                            </span>
                         </div>
                         <div className="flex justify-between p-2 border-b border-black">
                             <span className="font-bold text-black">Payment Status:</span>
@@ -161,28 +205,50 @@ const BillPrintView: React.FC<BillPrintViewProps> = ({ billData, invoiceId, date
 
                     {/* Right: Totals Box */}
                     <div className="border border-black text-xs">
-                        <div className="flex justify-between p-2 border-b border-black">
-                            <span className="font-bold text-black">Total Amount:</span>
-                            <span className="font-bold">₹{billData.totalAmount.toFixed(2)}</span>
-                        </div>
-                        {billData.discount > 0 && (
-                            <div className="flex justify-between p-2 border-b border-black">
-                                <span className="font-bold text-black">Discount:</span>
-                                <span>- ₹{billData.discount.toFixed(2)}</span>
-                            </div>
-                        )}
-                        <div className="flex justify-between p-2 border-b border-black">
-                            <span className="font-bold text-black">Final Amount:</span>
-                            <span className="font-bold">₹{billData.finalAmount.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between p-2 border-b border-black">
-                            <span className="font-bold text-black">Paid Amount:</span>
-                            <span className="font-bold">₹{billData.paidAmount.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between p-2 bg-gray-200">
-                            <span className="font-bold text-black">Balance Due:</span>
-                            <span className="font-bold text-right">₹{billData.balance.toFixed(2)}</span>
-                        </div>
+                        {(() => {
+                            const isAllSame = billData.totalAmount === billData.finalAmount && billData.finalAmount === billData.paidAmount;
+                            if (isAllSame) {
+                                return (
+                                    <>
+                                        <div className="flex justify-between p-2 border-b border-black">
+                                            <span className="font-bold text-black">Total Amount:</span>
+                                            <span className="font-bold">₹{billData.totalAmount.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between p-2 bg-gray-200">
+                                            <span className="font-bold text-black">Balance Due:</span>
+                                            <span className="font-bold text-right">₹{billData.balance.toFixed(2)}</span>
+                                        </div>
+                                    </>
+                                );
+                            } else {
+                                return (
+                                    <>
+                                        <div className="flex justify-between p-2 border-b border-black">
+                                            <span className="font-bold text-black">Total Amount:</span>
+                                            <span className="font-bold">₹{billData.totalAmount.toFixed(2)}</span>
+                                        </div>
+                                        {billData.discount > 0 && (
+                                            <div className="flex justify-between p-2 border-b border-black">
+                                                <span className="font-bold text-black">Discount:</span>
+                                                <span>- ₹{billData.discount.toFixed(2)}</span>
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between p-2 border-b border-black">
+                                            <span className="font-bold text-black">Final Amount:</span>
+                                            <span className="font-bold">₹{billData.finalAmount.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between p-2 border-b border-black">
+                                            <span className="font-bold text-black">Paid Amount:</span>
+                                            <span className="font-bold">₹{billData.paidAmount.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between p-2 bg-gray-200">
+                                            <span className="font-bold text-black">Balance Due:</span>
+                                            <span className="font-bold text-right">₹{billData.balance.toFixed(2)}</span>
+                                        </div>
+                                    </>
+                                );
+                            }
+                        })()}
                     </div>
                 </div>
             </div>

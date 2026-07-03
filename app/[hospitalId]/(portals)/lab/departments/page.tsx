@@ -40,6 +40,27 @@ function DepartmentMasterPage() {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
 
+    // Draft persistence
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const draft = localStorage.getItem('curechain_lab_departments_draft');
+        if (draft) {
+            try {
+                const parsed = JSON.parse(draft);
+                if (parsed.name || parsed.description) {
+                    setFormData(parsed);
+                }
+            } catch (e) {
+                console.error("Error loading department draft:", e);
+            }
+        }
+    }, []);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        localStorage.setItem('curechain_lab_departments_draft', JSON.stringify(formData));
+    }, [formData]);
+
     // Bulk import state
     const [showBulk, setShowBulk] = useState(false);
     const [dragging, setDragging] = useState(false);
@@ -89,6 +110,9 @@ function DepartmentMasterPage() {
                 toast.success("Department created successfully!");
             }
             setFormData({ name: '', description: '' });
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem('curechain_lab_departments_draft');
+            }
             setEditingId(null);
             fetchDepartments();
         } catch (error: any) {

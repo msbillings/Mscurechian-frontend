@@ -57,9 +57,35 @@ export default function LabResultEntryPage() {
                     initial[idx]['main_result'] = test.resultValue || '';
                 }
             });
+
+            // Merge with local draft if exists
+            if (typeof window !== 'undefined' && id) {
+                const draft = localStorage.getItem(`curechain_lab_result_entry_draft_${id}`);
+                if (draft) {
+                    try {
+                        const parsed = JSON.parse(draft);
+                        Object.keys(parsed).forEach(testIdx => {
+                            const tIdx = Number(testIdx);
+                            if (initial[tIdx]) {
+                                initial[tIdx] = { ...initial[tIdx], ...parsed[testIdx] };
+                            }
+                        });
+                    } catch (e) {
+                        console.error("Error parsing results entry draft:", e);
+                    }
+                }
+            }
+
             setFormValues(initial);
         }
-    }, [sample]);
+    }, [sample, id]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined' || !id) return;
+        if (Object.keys(formValues).length > 0) {
+            localStorage.setItem(`curechain_lab_result_entry_draft_${id}`, JSON.stringify(formValues));
+        }
+    }, [formValues, id]);
 
     // Memoized print handler
     const handlePrint = useReactToPrint({
@@ -467,6 +493,10 @@ export default function LabResultEntryPage() {
             };
 
             await LabSampleService.updateResults(sample._id, payload);
+
+            if (typeof window !== 'undefined' && id) {
+                localStorage.removeItem(`curechain_lab_result_entry_draft_${id}`);
+            }
 
             invalidateCachePattern('/lab/dashboard-stats');
             window.dispatchEvent(new Event('refresh-lab-data'));

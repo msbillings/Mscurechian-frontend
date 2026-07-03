@@ -1,4 +1,4 @@
-﻿import { Department } from './department';
+import { Department } from './department';
 
 export interface NormalRange {
     min?: number | string;
@@ -36,6 +36,7 @@ export interface LabTest {
     departments?: Department[]; // Populated version
     sampleType: string;
     price: number;
+    labPrice?: number; // Optional Lab-to-Lab discounted price
     unit?: string;
     method?: string;
     methodology?: string;
@@ -58,6 +59,7 @@ export interface LabTestPayload {
     departmentIds?: string[];
     sampleType: string;
     price: number;
+    labPrice?: number; // Optional Lab-to-Lab discounted price
     unit?: string;
     method?: string;
     methodology?: string;

@@ -21,6 +21,23 @@ export default function LabResultsEntryPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 15; // Items per page for submitted results
 
+    // Billing Type Filter state
+    const [typeFilter, setTypeFilter] = useState<'all' | 'walkin' | 'inpatient' | 'lab'>('all');
+
+    // Helper to identify a sample's patient type
+    const getSamplePatientType = (sample: LabSample): 'walkin' | 'inpatient' | 'lab' => {
+        if (sample.patientDetails.patientType) return sample.patientDetails.patientType;
+        if (sample.patientDetails.bedInfo) return 'inpatient';
+        if (sample.patientDetails.originalPatientName) return 'lab';
+        if (sample.isWalkIn) return 'walkin';
+        
+        const nameLower = (sample.patientDetails.name || '').toLowerCase();
+        if (nameLower.includes('lab') || nameLower.includes('diagnostic') || nameLower.includes('center') || nameLower.includes('hospital')) {
+            return 'lab';
+        }
+        return 'walkin';
+    };
+
     // Sync tab with URL
     useEffect(() => {
         const tab = searchParams.get('tab');
@@ -84,11 +101,14 @@ export default function LabResultsEntryPage() {
 
     const displaySamples = activeTab === 'pending' ? pendingSamples : submittedSamples;
 
-    const filteredSamples = displaySamples.filter(sample =>
-        sample.patientDetails.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        sample.sampleId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (sample.patientDetails.mobile && sample.patientDetails.mobile.includes(searchQuery))
-    );
+    const filteredSamples = displaySamples
+        .filter(sample => typeFilter === 'all' || getSamplePatientType(sample) === typeFilter)
+        .filter(sample =>
+            sample.patientDetails.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (sample.patientDetails.originalPatientName && sample.patientDetails.originalPatientName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            sample.sampleId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (sample.patientDetails.mobile && sample.patientDetails.mobile.includes(searchQuery))
+        );
 
     // Calculate total pages
     const totalPages = Math.ceil(filteredSamples.length / itemsPerPage);
@@ -200,9 +220,9 @@ export default function LabResultsEntryPage() {
                 </div>
             </div>
 
-            {/* Search Bar */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-4 shadow-sm">
-                <div className="relative">
+            {/* Search Bar & Billing Type Filter */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-4 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div className="relative flex-1 w-full">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
                         type="text"
@@ -211,6 +231,30 @@ export default function LabResultsEntryPage() {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
+                </div>
+                
+                <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto no-scrollbar">
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Billing Type:</span>
+                    <div className="inline-flex bg-slate-100 dark:bg-gray-700 rounded-lg p-1">
+                        {(['all', 'walkin', 'inpatient', 'lab'] as const).map(t => (
+                            <button
+                                key={t}
+                                onClick={() => setTypeFilter(t)}
+                                className={`px-3 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wider transition-all whitespace-nowrap ${typeFilter === t
+                                    ? t === 'walkin'
+                                        ? 'bg-emerald-500 text-white shadow-sm'
+                                        : t === 'inpatient'
+                                        ? 'bg-blue-500 text-white shadow-sm'
+                                        : t === 'lab'
+                                        ? 'bg-purple-500 text-white shadow-sm'
+                                        : 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                }`}
+                            >
+                                {t === 'all' ? 'All' : t === 'walkin' ? 'Walk-in' : t === 'inpatient' ? 'Inpatient' : 'Lab-to-Lab'}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 
@@ -240,7 +284,27 @@ export default function LabResultsEntryPage() {
                                                     </div>
                                                     <div>
                                                         <div className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                                                            {sample.patientDetails.name}
+                                                            {getSamplePatientType(sample) === 'lab' ? (
+                                                                <>
+                                                                    <span className="font-bold text-gray-900 dark:text-white">
+                                                                        {sample.patientDetails.name}
+                                                                    </span>
+                                                                    <span className="px-1.5 py-0.5 text-[10px] bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border border-purple-100 rounded uppercase">
+                                                                        {sample.patientDetails.refDoctor || 'Lab'}
+                                                                    </span>
+                                                                </>
+                                                            ) : sample.patientDetails.originalPatientName ? (
+                                                                <>
+                                                                    <span className="font-bold text-gray-900 dark:text-white">
+                                                                        {sample.patientDetails.originalPatientName}
+                                                                    </span>
+                                                                    <span className="px-1.5 py-0.5 text-[10px] bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border border-purple-100 rounded uppercase">
+                                                                        {sample.patientDetails.name}
+                                                                    </span>
+                                                                </>
+                                                            ) : (
+                                                                sample.patientDetails.name
+                                                            )}
                                                             {sample.priority && sample.priority !== 'routine' && (
                                                                 <span className="bg-red-500 text-white font-black text-[9px] px-1.5 py-0.5 rounded uppercase animate-pulse">
                                                                     🚨 {sample.priority}
@@ -377,7 +441,27 @@ export default function LabResultsEntryPage() {
                                                     </div>
                                                     <div>
                                                         <div className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                                                            {sample.patientDetails.name}
+                                                            {getSamplePatientType(sample) === 'lab' ? (
+                                                                <>
+                                                                    <span className="font-bold text-gray-900 dark:text-white">
+                                                                        {sample.patientDetails.name}
+                                                                    </span>
+                                                                    <span className="px-1.5 py-0.5 text-[10px] bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border border-purple-100 rounded uppercase">
+                                                                        {sample.patientDetails.refDoctor || 'Lab'}
+                                                                    </span>
+                                                                </>
+                                                            ) : sample.patientDetails.originalPatientName ? (
+                                                                <>
+                                                                    <span className="font-bold text-gray-900 dark:text-white">
+                                                                        {sample.patientDetails.originalPatientName}
+                                                                    </span>
+                                                                    <span className="px-1.5 py-0.5 text-[10px] bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border border-purple-100 rounded uppercase">
+                                                                        {sample.patientDetails.name}
+                                                                    </span>
+                                                                </>
+                                                            ) : (
+                                                                sample.patientDetails.name
+                                                            )}
                                                             {sample.priority && sample.priority !== 'routine' && (
                                                                 <span className="bg-red-500 text-white font-black text-[9px] px-1.5 py-0.5 rounded uppercase animate-pulse">
                                                                     🚨 {sample.priority}

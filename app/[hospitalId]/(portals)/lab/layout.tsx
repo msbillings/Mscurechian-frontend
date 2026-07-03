@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useTransition } from "react";
 import { useRouter, usePathname, useParams } from "next/navigation";
 import { useAuthStore } from '@/stores/authStore';
-import { Menu, LogOut, LayoutDashboard, Activity, ClipboardList, FlaskConical, Settings, ShieldCheck, Edit3 } from "lucide-react";
+import { Menu, LogOut, LayoutDashboard, Receipt, ClipboardList, FlaskConical, Settings, ShieldCheck, Edit3, Wrench, Package } from "lucide-react";
 import LicenseLock from "@/components/License/LicenseLock";
 import LogoutModal from "@/components/auth/LogoutModal";
 import LabQuickActions from "@/components/lab/LabQuickActions";
@@ -207,10 +207,12 @@ const LabLayout = ({ children }: { children: React.ReactNode }) => {
 
     const currentMenuLinks = [
         { icon: LayoutDashboard, label: "Dashboard", path: "/lab/dashboard" },
-        { icon: Activity, label: "Transactions", path: "/lab/billing/transactions" },
+        { icon: Receipt, label: "Transactions", path: "/lab/billing/transactions" },
         { icon: ClipboardList, label: "Departments", path: "/lab/departments" },
         { icon: FlaskConical, label: "Test Master", path: "/lab/tests" },
         { icon: Edit3, label: "Edited Results", path: "/lab/edited-results" },
+        { icon: Wrench, label: "Equipment", path: "/lab/equipment" },
+        { icon: Package, label: "Inventory", path: "/lab/inventory" },
         { icon: Settings, label: "Settings", path: "/lab/settings" },
     ];
 

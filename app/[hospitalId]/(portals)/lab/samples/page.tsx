@@ -39,6 +39,23 @@ export default function SampleCollectionPage() {
     const [isNavigating, startNavigation] = useTransition();
     const itemsPerPage = 15;
 
+    // Billing Type Filter state
+    const [typeFilter, setTypeFilter] = useState<'all' | 'walkin' | 'inpatient' | 'lab'>('all');
+
+    // Helper to identify a sample's patient type
+    const getSamplePatientType = (sample: LabSample): 'walkin' | 'inpatient' | 'lab' => {
+        if (sample.patientDetails.patientType) return sample.patientDetails.patientType;
+        if (sample.patientDetails.bedInfo) return 'inpatient';
+        if (sample.patientDetails.originalPatientName) return 'lab';
+        if (sample.isWalkIn) return 'walkin';
+        
+        const nameLower = (sample.patientDetails.name || '').toLowerCase();
+        if (nameLower.includes('lab') || nameLower.includes('diagnostic') || nameLower.includes('center') || nameLower.includes('hospital')) {
+            return 'lab';
+        }
+        return 'walkin';
+    };
+
 
     const fetchSamples = useCallback(async (silent = false, skipCache = false) => {
         if (!silent) setLoading(true);
@@ -166,12 +183,16 @@ export default function SampleCollectionPage() {
     };
 
     const getDisplaySamples = () => {
+        let baseList: LabSample[] = [];
         switch (activeTab) {
-            case 'pending': return pendingSamples;
-            case 'collected': return collectedSamples;
-            case 'ready': return readySamples;
-            default: return [];
+            case 'pending': baseList = pendingSamples; break;
+            case 'collected': baseList = collectedSamples; break;
+            case 'ready': baseList = readySamples; break;
         }
+        if (typeFilter !== 'all') {
+            return baseList.filter(s => getSamplePatientType(s) === typeFilter);
+        }
+        return baseList;
     };
 
     const displaySamples = getDisplaySamples();
@@ -263,37 +284,63 @@ export default function SampleCollectionPage() {
                 </div>
             </div>
 
-            {/* Tabs */}
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-center">
-                <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">View:</span>
-                <div className="inline-flex bg-slate-100 dark:bg-gray-700 rounded-lg p-1 overflow-x-auto no-scrollbar max-w-full">
-                    <button
-                        onClick={() => setActiveTab('pending')}
-                        className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${activeTab === 'pending'
-                            ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                            }`}
-                    >
-                        Pending ({pendingSamples.length})
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('ready')}
-                        className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${activeTab === 'ready'
-                            ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                            }`}
-                    >
-                        Processing ({readySamples.length})
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('collected')}
-                        className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${activeTab === 'collected'
-                            ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                            }`}
-                    >
-                        Completed ({collectedSamples.length})
-                    </button>
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between bg-white dark:bg-gray-800 p-4 rounded-xl border border-slate-200 dark:border-gray-700 shadow-sm">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-center">
+                    <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">View Tab:</span>
+                    <div className="inline-flex bg-slate-100 dark:bg-gray-700 rounded-lg p-1 overflow-x-auto no-scrollbar max-w-full">
+                        <button
+                            onClick={() => setActiveTab('pending')}
+                            className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${activeTab === 'pending'
+                                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                }`}
+                        >
+                            Pending ({pendingSamples.length})
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('ready')}
+                            className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${activeTab === 'ready'
+                                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                }`}
+                        >
+                            Processing ({readySamples.length})
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('collected')}
+                            className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${activeTab === 'collected'
+                                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                }`}
+                        >
+                            Completed ({collectedSamples.length})
+                        </button>
+                    </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-center w-full sm:w-auto">
+                    <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Billing Type:</span>
+                    <div className="inline-flex bg-slate-100 dark:bg-gray-700 rounded-lg p-1 overflow-x-auto no-scrollbar max-w-full">
+                        {(['all', 'walkin', 'inpatient', 'lab'] as const).map(t => (
+                            <button
+                                key={t}
+                                onClick={() => setTypeFilter(t)}
+                                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${typeFilter === t
+                                    ? t === 'walkin'
+                                        ? 'bg-emerald-500 text-white shadow-sm font-bold'
+                                        : t === 'inpatient'
+                                        ? 'bg-blue-500 text-white shadow-sm font-bold'
+                                        : t === 'lab'
+                                        ? 'bg-purple-500 text-white shadow-sm font-bold'
+                                        : 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm font-bold'
+                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                }`}
+                            >
+                                {t === 'all' ? 'All' : t === 'walkin' ? 'Walk-in' : t === 'inpatient' ? 'Inpatient' : 'Lab-to-Lab'}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 
@@ -334,7 +381,18 @@ export default function SampleCollectionPage() {
                                                 </div>
                                                 <div>
                                                     <div className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                                                        {sample.patientDetails.name}
+                                                        {sample.patientDetails.originalPatientName ? (
+                                                            <>
+                                                                <span className="font-bold text-gray-900 dark:text-white">
+                                                                    {sample.patientDetails.originalPatientName}
+                                                                </span>
+                                                                <span className="px-1.5 py-0.5 text-[10px] bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border border-purple-100 rounded uppercase">
+                                                                    {sample.patientDetails.name}
+                                                                </span>
+                                                            </>
+                                                        ) : (
+                                                            sample.patientDetails.name
+                                                        )}
                                                         {sample.priority && sample.priority !== 'routine' && (
                                                             <span className="bg-red-500 text-white font-black text-[9px] px-1.5 py-0.5 rounded uppercase animate-pulse">
                                                                 🚨 {sample.priority}
@@ -467,7 +525,27 @@ export default function SampleCollectionPage() {
                                                 </div>
                                                 <div>
                                                     <div className="font-medium text-gray-900 dark:text-white flex items-center gap-2 flex-wrap">
-                                                        {sample.patientDetails.name}
+                                                        {getSamplePatientType(sample) === 'lab' ? (
+                                                            <>
+                                                                <span className="font-bold text-gray-900 dark:text-white">
+                                                                    {sample.patientDetails.name}
+                                                                </span>
+                                                                <span className="px-1.5 py-0.5 text-[10px] bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border border-purple-100 rounded uppercase">
+                                                                    {sample.patientDetails.refDoctor || 'Lab'}
+                                                                </span>
+                                                            </>
+                                                        ) : sample.patientDetails.originalPatientName ? (
+                                                            <>
+                                                                <span className="font-bold text-gray-900 dark:text-white">
+                                                                    {sample.patientDetails.originalPatientName}
+                                                                </span>
+                                                                <span className="px-1.5 py-0.5 text-[10px] bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border border-purple-100 rounded uppercase">
+                                                                    {sample.patientDetails.name}
+                                                                </span>
+                                                            </>
+                                                        ) : (
+                                                            sample.patientDetails.name
+                                                        )}
                                                         {sample.isWalkIn && (
                                                             <span className="px-1 py-0.5 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 text-[8px] font-bold rounded uppercase tracking-wider">
                                                                 Walk-In

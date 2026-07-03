@@ -14,6 +14,7 @@ function TransactionsPage() {
     const [bills, setBills] = useState<BillResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [exporting, setExporting] = useState(false);
+    const [exportingL2L, setExportingL2L] = useState(false);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [startDate, setStartDate] = useState('');
@@ -24,6 +25,36 @@ function TransactionsPage() {
 
     // Auto-refresh state
     const [isAutoRefreshed, setIsAutoRefreshed] = useState(false);
+    
+    // Billing Type filter state
+    const [typeFilter, setTypeFilter] = useState<'all' | 'walkin' | 'inpatient' | 'lab'>('all');
+
+    // Helper to identify a bill's patient type
+    const getBillPatientType = (bill: BillResponse): 'walkin' | 'inpatient' | 'lab' => {
+        if (bill.patientType) return bill.patientType;
+        if ((bill.patientDetails as any).patientType) return (bill.patientDetails as any).patientType;
+        if ((bill.patientDetails as any).bedInfo) return 'inpatient';
+        if ((bill.patientDetails as any).originalPatientName) return 'lab';
+        
+        const nameLower = (bill.patientDetails.name || '').toLowerCase();
+        if (nameLower.includes('lab') || nameLower.includes('diagnostic') || nameLower.includes('center') || nameLower.includes('hospital')) {
+            return 'lab';
+        }
+        return 'walkin';
+    };
+
+    // Helper to format invoice ID
+    const formatInvoiceId = (invoiceId: string | undefined, patientType: 'walkin' | 'inpatient' | 'lab') => {
+        if (!invoiceId) return 'N/A';
+        let cleanId = invoiceId;
+        if (invoiceId.startsWith('REC')) cleanId = invoiceId.slice(3);
+        if (invoiceId.startsWith('OPD-')) cleanId = invoiceId.slice(4);
+        if (invoiceId.length >= 24) cleanId = invoiceId.slice(-6).toUpperCase();
+
+        if (patientType === 'inpatient') return `IPD-${cleanId}`;
+        if (patientType === 'lab') return `L2L-${cleanId}`;
+        return `WLK-${cleanId}`;
+    };
 
 
     const printRef = useRef<HTMLDivElement>(null);
@@ -186,10 +217,13 @@ function TransactionsPage() {
                 const formattedDate = new Date(bill.createdAt).toLocaleDateString();
                 const formattedTime = new Date(bill.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+                const bType = getBillPatientType(bill);
+                const formattedInvoiceId = formatInvoiceId(bill.invoiceId, bType);
+
                 const row = worksheet.addRow([
                     index + 1,
                     `${formattedDate} ${formattedTime}`,
-                    bill.invoiceId,
+                    formattedInvoiceId,
                     bill.patientDetails.name,
                     bill.patientDetails.mobile,
                     bill.paymentMode?.toUpperCase() || 'CASH',
@@ -230,6 +264,7 @@ function TransactionsPage() {
                     }
                 });
             });
+
 
             // Summary Totals Row
             worksheet.addRow([]); // Blank row
@@ -312,6 +347,149 @@ function TransactionsPage() {
         }
     };
 
+    // ── LAB-TO-LAB ONLY EXPORT ──────────────────────────────────────
+    const handleExportL2L = async () => {
+        setExportingL2L(true);
+        try {
+            const res = await LabBillingService.getBills(1, 2000, true, startDate, endDate);
+            const l2lBills = res.bills.filter(b => getBillPatientType(b) === 'lab');
+
+            if (l2lBills.length === 0) {
+                toast.error('No Lab-to-Lab transactions found for the selected period');
+                return;
+            }
+
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Lab-to-Lab Transactions');
+
+            // Title
+            worksheet.mergeCells('A1:K1');
+            const titleRow = worksheet.getRow(1);
+            titleRow.getCell(1).value = 'LAB-TO-LAB TRANSACTION REPORT';
+            titleRow.getCell(1).font = { size: 16, bold: true, name: 'Arial', color: { argb: '5B21B6' } };
+            titleRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+            titleRow.height = 35;
+
+            worksheet.mergeCells('A2:K2');
+            const dateRangeRow = worksheet.getRow(2);
+            const dateText = (startDate && endDate)
+                ? `Period: ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()}`
+                : `Report Date: ${new Date().toLocaleDateString()}`;
+            dateRangeRow.getCell(1).value = dateText;
+            dateRangeRow.getCell(1).font = { size: 10, italic: true, color: { argb: '6D28D9' } };
+            dateRangeRow.getCell(1).alignment = { horizontal: 'center' };
+
+            worksheet.addRow([]);
+
+            const columns = [
+                { header: 'S.No', width: 8 },
+                { header: 'Date & Time', width: 20 },
+                { header: 'Invoice ID', width: 18 },
+                { header: 'Lab Name', width: 28 },
+                { header: 'Referred Patient', width: 25 },
+                { header: 'Mobile', width: 15 },
+                { header: 'Payment Mode', width: 15 },
+                { header: 'Total Amount', width: 15 },
+                { header: 'Paid Amount', width: 15 },
+                { header: 'Balance', width: 12 },
+                { header: 'Status', width: 12 },
+            ];
+
+            const headerRow = worksheet.addRow(columns.map(c => c.header));
+            headerRow.height = 25;
+            headerRow.eachCell((cell) => {
+                cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '5B21B6' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = {
+                    top: { style: 'medium' }, left: { style: 'thin' },
+                    bottom: { style: 'medium' }, right: { style: 'thin' }
+                };
+            });
+
+            let totalAmount = 0;
+            let totalPaid = 0;
+            let totalBalance = 0;
+
+            l2lBills.forEach((bill, index) => {
+                const formattedDate = new Date(bill.createdAt).toLocaleDateString();
+                const formattedTime = new Date(bill.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const invoiceId = formatInvoiceId(bill.invoiceId, 'lab');
+
+                // Lab name is stored as patientDetails.name for L2L bills
+                // Original patient name may be in originalPatientName or refDoctor
+                const labName = bill.patientDetails.name || '—';
+                const originalPatient = (bill.patientDetails as any).originalPatientName
+                    || bill.patientDetails.refDoctor
+                    || '—';
+
+                const row = worksheet.addRow([
+                    index + 1,
+                    `${formattedDate} ${formattedTime}`,
+                    invoiceId,
+                    labName,
+                    originalPatient,
+                    bill.patientDetails.mobile || '—',
+                    bill.paymentMode?.toUpperCase() || 'CASH',
+                    bill.finalAmount || 0,
+                    bill.paidAmount || 0,
+                    bill.balance || 0,
+                    bill.status,
+                ]);
+
+                totalAmount += (bill.finalAmount || 0);
+                totalPaid += (bill.paidAmount || 0);
+                totalBalance += (bill.balance || 0);
+
+                row.eachCell((cell, colNumber) => {
+                    if ([8, 9, 10].includes(colNumber)) {
+                        cell.numFmt = '₹#,##0.00';
+                        cell.alignment = { horizontal: 'right' };
+                    } else {
+                        cell.alignment = { horizontal: colNumber === 4 || colNumber === 5 ? 'left' : 'center' };
+                    }
+                    if (index % 2 === 0) {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F5F3FF' } };
+                    }
+                    cell.border = {
+                        top: { style: 'thin' }, left: { style: 'thin' },
+                        bottom: { style: 'thin' }, right: { style: 'thin' }
+                    };
+                });
+            });
+
+            // Totals row
+            worksheet.addRow([]);
+            const summaryRow = worksheet.addRow([
+                '', '', '', '', '', '', 'TOTALS:', totalAmount, totalPaid, totalBalance, ''
+            ]);
+            summaryRow.height = 22;
+            [7, 8, 9, 10].forEach(col => {
+                const cell = summaryRow.getCell(col);
+                cell.font = { bold: true, color: { argb: '5B21B6' } };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'EDE9FE' } };
+                if (col > 7) cell.numFmt = '₹#,##0.00';
+                cell.border = { top: { style: 'medium' }, bottom: { style: 'medium' } };
+            });
+
+            // Auto widths
+            if (worksheet.columns) {
+                columns.forEach((col, i) => {
+                    worksheet.getColumn(i + 1).width = col.width;
+                });
+            }
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            saveAs(new Blob([buffer]), `Lab_to_Lab_Transactions_${new Date().toISOString().split('T')[0]}.xlsx`);
+            toast.success(`Exported ${l2lBills.length} L2L transactions`);
+        } catch (error) {
+            console.error('L2L export failed', error);
+            toast.error('Failed to export Lab-to-Lab transactions');
+        } finally {
+            setExportingL2L(false);
+        }
+    };
+
     return (
         <div className="max-w-full mx-auto pb-12 bg-slate-50/50 dark:bg-gray-900 min-h-screen">
             {/* Professional Header */}
@@ -327,15 +505,33 @@ function TransactionsPage() {
                         <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                             Manage invoices and track payments
                         </p>
-                        {isAutoRefreshed && (
-                            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full animate-pulse">
-                                <RefreshCw className="w-3 h-3" /> Live
-                            </span>
-                        )}
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-center gap-1">
+                    {/* Billing Type Tabs */}
+                    <div className="flex bg-white dark:bg-gray-800 p-1 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm gap-1">
+                        {(['all', 'walkin', 'inpatient', 'lab'] as const).map((t) => (
+                            <button
+                                key={t}
+                                onClick={() => setTypeFilter(t)}
+                                className={`px-3 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wider transition-all ${
+                                    typeFilter === t
+                                        ? t === 'walkin'
+                                            ? 'bg-emerald-500 text-white shadow-sm'
+                                            : t === 'inpatient'
+                                            ? 'bg-blue-500 text-white shadow-sm'
+                                            : t === 'lab'
+                                            ? 'bg-purple-500 text-white shadow-sm'
+                                            : 'bg-gray-800 dark:bg-gray-600 text-white shadow-sm'
+                                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                }`}
+                            >
+                                {t === 'all' ? 'All' : t === 'walkin' ? 'Walk-in' : t === 'inpatient' ? 'Inpatient' : 'Lab-to-Lab'}
+                            </button>
+                        ))}
+                    </div>
+
                     <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-1 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
                         <div className="px-3 py-2 border-r border-gray-100 dark:border-gray-700">
                             <Filter className="w-4 h-4 text-gray-400" />
@@ -359,6 +555,16 @@ function TransactionsPage() {
                             </button>
                         )}
                     </div>
+
+                    <button
+                        onClick={handleExportL2L}
+                        disabled={exportingL2L || loading}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 hover:bg-purple-50 text-purple-700 dark:text-purple-300 rounded-lg border border-purple-200 dark:border-purple-700 text-sm font-semibold shadow-sm transition-colors"
+                        title="Export Lab-to-Lab transactions only"
+                    >
+                        <Download className="w-4 h-4 text-purple-500" />
+                        {exportingL2L ? 'Exporting...' : 'Export L2L'}
+                    </button>
 
                     <button
                         onClick={handleExport}
@@ -406,68 +612,108 @@ function TransactionsPage() {
                                     </td>
                                 </tr>
                             ) : (
-                                bills.map((bill) => (
-                                    <tr key={bill._id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group">
-                                        <td className="px-6 py-4">
-                                            <span className="font-semibold text-sm text-indigo-600 dark:text-indigo-400">
-                                                {bill.invoiceId}
-                                            </span>
-                                            <div className="text-xs text-gray-400 mt-0.5">{bill.paymentMode}</div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                                {new Date(bill.createdAt).toLocaleDateString()}
-                                            </div>
-                                            <div className="text-xs text-gray-400 mt-0.5">
-                                                {new Date(bill.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                                {bill.patientDetails.name}
-                                            </div>
-                                            <div className="text-xs text-gray-500 mt-0.5">
-                                                {bill.patientDetails.mobile}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="font-bold text-gray-900 dark:text-white">
-                                                ₹{bill.finalAmount.toLocaleString()}
-                                            </div>
-                                            {bill.balance > 0 && (
-                                                <div className="text-xs font-bold text-rose-500 mt-0.5">
-                                                    Due: ₹{bill.balance.toLocaleString()}
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bill.status === 'Paid'
-                                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                                : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
-                                                }`}>
-                                                {bill.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <button
-                                                    onClick={() => openPreview(bill)}
-                                                    className="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 rounded-lg transition-colors"
-                                                    title="View Invoice"
-                                                >
-                                                    <Eye className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => triggerPrint(bill)}
-                                                    className="p-2 text-gray-600 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg transition-colors shadow-sm"
-                                                    title="Print"
-                                                >
-                                                    <Printer className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
+                                bills
+                                    .filter(bill => typeFilter === 'all' || getBillPatientType(bill) === typeFilter)
+                                    .map((bill) => {
+                                        const bType = getBillPatientType(bill);
+                                        const formattedId = formatInvoiceId(bill.invoiceId, bType);
+                                        return (
+                                            <tr key={bill._id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group">
+                                                <td className="px-6 py-4">
+                                                    <span className={`font-semibold text-sm ${
+                                                        bType === 'inpatient'
+                                                            ? 'text-blue-600 dark:text-blue-400'
+                                                            : bType === 'lab'
+                                                            ? 'text-purple-600 dark:text-purple-400'
+                                                            : 'text-emerald-600 dark:text-emerald-400'
+                                                    }`}>
+                                                        {formattedId}
+                                                    </span>
+                                                     <div className="text-xs text-gray-400 mt-0.5">
+                                                         {bill.paymentMode === 'Mixed' && bill.paymentDetails ? (
+                                                             <span className="text-[10px] text-gray-500 font-medium bg-slate-50 dark:bg-gray-800 px-1 py-0.5 rounded border border-gray-100 dark:border-gray-700">
+                                                                 Mixed (Cash: ₹{bill.paymentDetails.cash || 0}, Card: ₹{bill.paymentDetails.card || 0}, UPI: ₹{bill.paymentDetails.upi || 0})
+                                                             </span>
+                                                         ) : (
+                                                             bill.paymentMode
+                                                         )}
+                                                     </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                                        {new Date(bill.createdAt).toLocaleDateString()}
+                                                    </div>
+                                                    <div className="text-xs text-gray-400 mt-0.5">
+                                                        {new Date(bill.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                                                        {bType === 'lab' ? (
+                                                            <>
+                                                                <span className="font-bold text-gray-900 dark:text-white">
+                                                                    {bill.patientDetails.name}
+                                                                </span>
+                                                                <span className="px-1.5 py-0.5 text-[10px] bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border border-purple-100 rounded">
+                                                                    {bill.patientDetails.refDoctor || 'Lab'}
+                                                                </span>
+                                                            </>
+                                                        ) : (bill.patientDetails as any).originalPatientName ? (
+                                                            <>
+                                                                <span className="font-bold text-gray-900 dark:text-white">
+                                                                    {(bill.patientDetails as any).originalPatientName}
+                                                                </span>
+                                                                <span className="px-1.5 py-0.5 text-[10px] bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border border-purple-100 rounded">
+                                                                    {bill.patientDetails.name}
+                                                                </span>
+                                                            </>
+                                                        ) : (
+                                                            bill.patientDetails.name
+                                                        )}
+                                                    </div>
+                                                    <div className="text-xs text-gray-505 mt-0.5">
+                                                        {bill.patientDetails.mobile}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="font-bold text-gray-900 dark:text-white">
+                                                        ₹{bill.finalAmount.toLocaleString()}
+                                                    </div>
+                                                    {bill.balance > 0 && (
+                                                        <div className="text-xs font-bold text-rose-500 mt-0.5">
+                                                            Due: ₹{bill.balance.toLocaleString()}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bill.status === 'Paid'
+                                                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                        : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+                                                        }`}>
+                                                        {bill.status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <button
+                                                            onClick={() => openPreview(bill)}
+                                                            className="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 rounded-lg transition-colors"
+                                                            title="View Invoice"
+                                                        >
+                                                            <Eye className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => triggerPrint(bill)}
+                                                            className="p-2 text-gray-600 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg transition-colors shadow-sm"
+                                                            title="Print"
+                                                        >
+                                                            <Printer className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
                             )}
                         </tbody>
                     </table>

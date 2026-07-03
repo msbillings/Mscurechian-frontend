@@ -382,7 +382,7 @@ function CreateLabTokenPage({ params }: { params: Promise<{ hospitalId: string }
                 @page { size: A4; margin: 0; }
                 body { margin: 0; padding: 0; }
               }
-              body { 
+              body {
                 font-family: 'Inter', Arial, sans-serif; 
                 background: white; 
                 margin: 0;

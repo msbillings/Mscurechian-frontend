@@ -41,6 +41,7 @@ function ManageTestPage() {
         departmentIds: [] as string[],
         sampleType: '',
         price: '',
+        labPrice: '', // Optional Lab-to-Lab discounted price,
         unit: '',
         method: '',
         turnaroundTime: '',
@@ -143,6 +144,7 @@ function ManageTestPage() {
                             (test.departmentId ? [typeof test.departmentId === 'object' ? (test.departmentId as any)._id : test.departmentId] : []),
                         sampleType: sampleTypeVal,
                         price: test.price?.toString() || '0',
+                        labPrice: (test as any).labPrice !== undefined ? (test as any).labPrice.toString() : '',
                         unit: unitVal,
                         method: methodVal,
                         turnaroundTime: tatVal,
@@ -180,16 +182,23 @@ function ManageTestPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setLoading(true);
         const priceVal = parseFloat(formData.price);
         if (isNaN(priceVal) || priceVal < 0) {
             toast.error("Price must be a valid positive number");
+            setLoading(false);
             return;
         }
-
-        setLoading(true);
+        const labPriceVal = formData.labPrice !== '' ? parseFloat(formData.labPrice) : undefined;
+        if (labPriceVal !== undefined && (isNaN(labPriceVal) || labPriceVal < 0)) {
+            toast.error("Lab-to-Lab price must be a valid positive number");
+            setLoading(false);
+            return;
+        }
         const payload: any = {
             ...formData,
             price: priceVal,
+            labPrice: labPriceVal,
             methodology: formData.method,
             temporalTATCycle: formData.turnaroundTime,
             normalRanges: {
@@ -501,21 +510,43 @@ function ManageTestPage() {
                     </div>
                 {/* Price */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                        Price (₹) <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-gray-400">₹</span>
-                        <input
-                            type="number"
-                            required
-                            className="w-full pl-10 pr-4 py-4 bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-2xl font-bold text-gray-900 dark:text-white"
-                            placeholder="0"
-                            value={formData.price}
-                            onChange={e => setFormData({ ...formData, price: e.target.value })}
-                        />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                                Standard Price (₹) <span className="text-rose-500">*</span>
+                            </label>
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-gray-400">₹</span>
+                                <input
+                                    type="number"
+                                    required
+                                    className="w-full pl-10 pr-4 py-4 bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-2xl font-bold text-gray-900 dark:text-white"
+                                    placeholder="0"
+                                    value={formData.price}
+                                    onChange={e => setFormData({ ...formData, price: e.target.value })}
+                                />
+                            </div>
+                            <p className="text-xs text-gray-500 mt-2">Charged to walk-in and inpatient billing</p>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-purple-700 dark:text-purple-300 mb-3 flex items-center gap-1.5">
+                                <span className="inline-block w-2 h-2 rounded-full bg-purple-500"></span>
+                                Lab-to-Lab Price (₹)
+                                <span className="text-xs font-normal text-gray-400 ml-1">(optional)</span>
+                            </label>
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-purple-300">₹</span>
+                                <input
+                                    type="number"
+                                    className="w-full pl-10 pr-4 py-4 bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-xl outline-none focus:ring-2 focus:ring-purple-500/20 text-2xl font-bold text-purple-900 dark:text-purple-100"
+                                    placeholder="—"
+                                    value={formData.labPrice}
+                                    onChange={e => setFormData({ ...formData, labPrice: e.target.value })}
+                                />
+                            </div>
+                            <p className="text-xs text-purple-500 mt-2">Discounted rate for referring labs. If empty, standard price applies.</p>
+                        </div>
                     </div>
-                    <p className="text-xs text-gray-500 mt-2">Base price for this test</p>
                 </div>
 
                 {/* Subtests */}

@@ -166,6 +166,21 @@ export const LAB_ENDPOINTS = {
     BY_ID: (id: string) => `/lab/departments/${id}`,
   },
   META: "/lab/meta",
+  EQUIPMENT: {
+    BASE: "/lab/equipment",
+    BY_ID: (id: string) => `/lab/equipment/${id}`,
+    RESTORE: (id: string) => `/lab/equipment/${id}/restore`,
+    BULK_DELETE: "/lab/equipment/bulk-delete",
+    BULK_RESTORE: "/lab/equipment/bulk-restore",
+    BULK_STATUS: "/lab/equipment/bulk-status",
+    BULK_IMPORT: "/lab/equipment/bulk-import",
+  },
+  INVENTORY: {
+    BASE: "/lab/inventory",
+    BY_ID: (id: string) => `/lab/inventory/${id}`,
+    BULK_DELETE: "/lab/inventory/bulk-delete",
+    BULK_IMPORT: "/lab/inventory/bulk-import",
+  },
 };
 
 export const HOSPITAL_ADMIN_ENDPOINTS = {
