@@ -22,6 +22,43 @@ import { LabEquipmentService } from '@/lib/integrations/services/labEquipment.se
 import { LabEquipment } from '@/lib/integrations/types/labEquipment';
 import { toast } from 'react-hot-toast';
 
+function getAlerts(equipment: LabEquipment) {
+    const alerts: { message: string }[] = [];
+    console.log(Object.keys(equipment));
+
+    // Warranty expiry check
+    
+    if (equipment.warrantyExpiry) {
+        const warrantyDate = new Date(equipment.warrantyExpiry);
+        const today = new Date();
+        const daysLeft = Math.ceil(
+            (warrantyDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+        );
+
+        if (daysLeft < 0) {
+            alerts.push({ message: `Warranty expired on ${warrantyDate.toLocaleDateString()}` });
+        } else if (daysLeft <= 30) {
+            alerts.push({ message: `Warranty expiring soon (${daysLeft} day${daysLeft === 1 ? '' : 's'} left)` });
+        }
+    }
+
+    // Equipment status check
+    if (equipment.status === 'Under Maintenance' || equipment.status === 'Repairing') {
+        alerts.push({ message: `Equipment is currently marked as "${equipment.status}"` });
+    }
+
+    if (equipment.status === 'Out of Service' || equipment.status === 'Disposed') {
+        alerts.push({ message: `Equipment is unavailable (status: "${equipment.status}")` });
+    }
+
+    // Low quantity check
+    if (typeof equipment.quantity === 'number' && equipment.quantity <= 0) {
+        alerts.push({ message: 'No units currently available in stock' });
+    }
+
+    return alerts;
+}
+
 function EquipmentDetailsPage() {
     const router = useRouter();
     const params = useParams();

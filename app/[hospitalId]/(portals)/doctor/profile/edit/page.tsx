@@ -548,9 +548,6 @@ export default function EditDoctorProfilePage() {
                         </select>
                         <ChevronDown size={18} className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
                     </div>
-                    <div className="mt-4">
-                        <SupportBadgeToggle />
-                    </div>
                 </div>
 
                 {/* Desktop Tab List */}
