@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from 'react';
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, usePathname } from 'next/navigation';
 import { useQueryClient } from "@tanstack/react-query";
 import { hospitalAdminService } from "@/lib/integrations";
 import { User, Briefcase, FileText, Clock, Globe, Eye, EyeOff, ArrowLeft, Activity, Plus, CreditCard, AlertCircle, CheckCircle2 } from "lucide-react";
@@ -63,7 +63,12 @@ function Field({label,name,value,onChange,onBlur,error,touched,type="text",place
 }
 
 const CreateStaff = () => {
-  const router=useRouter(), { hospitalId } = useParams(), queryClient=useQueryClient();
+  const router = useRouter();
+  const params = useParams();
+  const pathname = usePathname();
+  const basePath = pathname.includes('/hr') ? '/hr' : '/hospital-admin';
+  const hospitalId = params.hospitalId as string;
+  const queryClient=useQueryClient();
   const [shifts,setShifts]=useState<any[]>([]);
   const [availableDepts,setAvailableDepts]=useState<string[]>([]);
   const [formData,setFormData]=useState<FormData>({
@@ -179,7 +184,7 @@ const CreateStaff = () => {
       toast.success(`Staff "${formData.name}" created successfully!`,{duration:4000});
       queryClient.invalidateQueries({queryKey:['hospital-admin-staff']});
       queryClient.invalidateQueries({queryKey:['hospital-admin','dashboard']});
-      router.push(`/${hospitalId}/hospital-admin/staff`);
+      router.push(`/${hospitalId}${basePath}/staff`);
     }catch(err:any){toast.error(err.message||"Failed to create staff",{duration:5000});}
     finally{setLoading(false);}
   };
@@ -192,7 +197,7 @@ const CreateStaff = () => {
       <div className="max-w-7xl mx-auto pb-12 space-y-6">
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-3 md:p-6 border border-gray-100 dark:border-white/5 shadow-sm">
           <div className="flex items-center gap-4">
-            <button onClick={()=>router.push(`/${hospitalId}/hospital-admin/staff`)} className="p-2 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl transition-all"><ArrowLeft size={16}/></button>
+            <button onClick={()=>router.push(`/${hospitalId}${basePath}/staff`)} className="p-2 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl transition-all"><ArrowLeft size={16}/></button>
             <div>
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">Add New Staff Member</h1>
               <p className="text-gray-500 text-xs mt-0.5">Fields marked <span className="text-rose-500">*</span> are required.</p>
@@ -366,7 +371,7 @@ const CreateStaff = () => {
               <button type="submit" disabled={loading} className="w-full flex items-center justify-center gap-2 py-2 md:py-3.5 bg-blue-600 text-white rounded-xl text-xs md:text-sm font-bold hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-blue-500/20">
                 {loading?<div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>:<><Plus size={18}/>Create Staff Record</>}
               </button>
-              <button type="button" onClick={()=>router.push(`/${hospitalId}/hospital-admin/staff`)} disabled={loading} className="w-full mt-3 py-2 md:py-3 text-[10px] md:text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors">Cancel Registration</button>
+              <button type="button" onClick={()=>router.push(`/${hospitalId}${basePath}/staff`)} disabled={loading} className="w-full mt-3 py-2 md:py-3 text-[10px] md:text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors">Cancel Registration</button>
             </div>
           </div>
         </form>

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, usePathname } from "next/navigation";
 import toast from "react-hot-toast";
 import { useQuery } from '@tanstack/react-query';
 import { hospitalAdminService } from "@/lib/integrations";
@@ -159,7 +159,10 @@ StaffCard.displayName = 'StaffCard';
 
 function HospitalAdminStaff() {
   const router = useRouter();
-  const { hospitalId } = useParams();
+  const params = useParams();
+  const pathname = usePathname();
+  const basePath = pathname.includes('/hr') ? '/hr' : '/hospital-admin';
+  const hospitalId = params.hospitalId as string;
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearch = useDebounce(searchTerm, 300);
   const [filterDepartment, setFilterDepartment] = useState("");
@@ -246,7 +249,12 @@ function HospitalAdminStaff() {
   const departments = useMemo(() => {
     const depts = new Set<string>();
     staff.forEach((member: any) => {
-      if (member.department) depts.add(member.department);
+      if (member.department) {
+        const dArray = Array.isArray(member.department) 
+            ? member.department 
+            : String(member.department).split(',').map(d => d.trim()).filter(Boolean);
+        dArray.forEach((d: string) => depts.add(d));
+      }
     });
     return Array.from(depts);
   }, [staff]);
@@ -263,49 +271,69 @@ function HospitalAdminStaff() {
   }, [debouncedSearch, filterDepartment]);
 
   return (
-    <div className="space-y-8 bg-slate-50/50 min-h-screen">
-      {/* Simple Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 tracking-tight">Staff Management</h1>
-          <p className="text-sm text-slate-500 font-medium flex items-center gap-2 mt-1">
-            <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse" />
-            {filteredStaff.length} active institutional nodes
-          </p>
-        </div>
-        <button
-          onClick={() => router.push(`/${hospitalId}/hospital-admin/staff/create`)}
-          className="flex items-center gap-2 px-3 md:px-6 py-2.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all"
-        >
-          <UserPlus className="w-4 h-4" strokeWidth={3} /> Add Staff
-        </button>
-      </div>
+    <div className="max-w-7xl mx-auto min-h-screen bg-slate-50/50">
+      {/* Dynamic Header */}
+      <div className="flex flex-col gap-4 bg-white py-3 px-4 md:py-4 md:px-5 rounded-2xl border border-gray-100 shadow-sm shrink-0 mb-6">
+        
+        {/* Top Row: Title, Action Button */}
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-2 xl:gap-4 shrink-0">
+            <div className="shrink-0 flex items-center gap-2 px-1">
+              <div className="p-1.5 md:p-2 bg-blue-50 rounded-lg text-blue-600">
+                <Users className="w-5 h-5 md:w-6 md:h-6" />
+              </div>
+              <div className="flex flex-col justify-center">
+                <h1 className="text-sm md:text-base font-bold text-gray-900 tracking-tight leading-none uppercase">
+                  Staff Management
+                </h1>
+                <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 line-clamp-1 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse" />
+                  {filteredStaff.length} active institutional nodes
+                </p>
+              </div>
+            </div>
+          </div>
 
-      {/* Simple Controller */}
-      <div className="bg-white p-2 md:p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-4">
-        <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search name, employee ID, or secure email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-          />
-        </div>
-        <div className="flex items-center gap-3 w-full lg:w-auto">
-          <div className="relative flex-1 lg:w-64">
-            <Filter className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-            <select
-              value={filterDepartment}
-              onChange={(e) => setFilterDepartment(e.target.value)}
-              className="w-full pl-11 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-blue-500/20 outline-none appearance-none cursor-pointer transition-all"
+          <div className="flex items-center justify-end w-full xl:w-auto shrink-0 relative">
+            <button
+              onClick={() => router.push(`/${hospitalId}${basePath}/staff/create`)}
+              className="flex-1 xl:flex-none flex items-center justify-center gap-2 px-3 md:px-6 py-2 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all h-[34px] shadow-sm whitespace-nowrap"
             >
-              <option value="">Global Filter</option>
-              {departments.map((dept) => (
-                <option key={dept} value={dept}>{dept}</option>
-              ))}
-            </select>
+              <UserPlus size={14} strokeWidth={3} className="shrink-0" /> Add Staff
+            </button>
+          </div>
+        </div>
+
+        {/* Bottom Row: Control Center (Search, Filters) */}
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 border-t border-gray-50 pt-4">
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 w-full">
+            
+            {/* Search Bar */}
+            <div className="relative flex-1 w-full lg:w-auto">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search name, employee ID, or secure email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              />
+            </div>
+
+            {/* Filter */}
+            <div className="relative w-full lg:w-48 shrink-0">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+              <select
+                value={filterDepartment}
+                onChange={(e) => setFilterDepartment(e.target.value)}
+                className="w-full pl-9 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-bold text-gray-700 uppercase tracking-widest outline-none h-[34px] cursor-pointer appearance-none transition-all focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Global Filter</option>
+                {departments.map((dept) => (
+                  <option key={dept} value={dept}>{dept}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -330,8 +358,8 @@ function HospitalAdminStaff() {
               <StaffCard
                 key={member._id || member.staffProfileId}
                 member={member}
-                onView={() => router.push(`/${hospitalId}/hospital-admin/staff/${member._id || member.staffProfileId}`)}
-                onEdit={() => router.push(`/${hospitalId}/hospital-admin/staff/edit/${member._id || member.staffProfileId}`)}
+                onView={() => router.push(`/${hospitalId}${basePath}/staff/${member._id || member.staffProfileId}`)}
+                onEdit={() => router.push(`/${hospitalId}${basePath}/staff/edit/${member._id || member.staffProfileId}`)}
                 onDelete={() => handleDelete(member._id || member.staffProfileId, member.name)}
                 onToggleStatus={(status) => handleToggleStatus(member._id || member.staffProfileId, status)}
                 deleteLoading={deleteLoading === (member._id || member.staffProfileId)}

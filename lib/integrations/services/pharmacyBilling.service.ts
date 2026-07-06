@@ -126,6 +126,7 @@ export const PharmacyBillingService = {
     status?: string,
     page: number = 1,
     limit: number = 20,
+    skipCache: boolean = false
   ): Promise<any> => { // ✅ PERFORMANCE FIX: Reduced from limit=1000 to limit=100
     let url = `${PHARMACY_ENDPOINTS.ORDERS(hospitalId)}?page=${page}&limit=${limit}`;
     if (status) {
@@ -133,6 +134,7 @@ export const PharmacyBillingService = {
     }
     return apiClient<any>(url, {
       method: "GET",
+      skipCache,
     });
   },
 

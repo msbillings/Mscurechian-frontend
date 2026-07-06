@@ -1,7 +1,7 @@
- "use client";
+"use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, usePathname } from "next/navigation";
 import { hospitalAdminService } from "@/lib/integrations";
 import {
   User,
@@ -66,6 +66,9 @@ interface FormData {
 export default function EditStaffPage() {
   const router = useRouter();
   const params = useParams();
+  const pathname = usePathname();
+  const basePath = pathname.includes('/hr') ? '/hr' : '/hospital-admin';
+  const hospitalId = params.hospitalId as string;
   const id = params.id as string;
   const [availableDepartments, setAvailableDepartments] = useState<string[]>([]);
   const [allRooms, setAllRooms] = useState<any[]>([]);
@@ -175,7 +178,7 @@ export default function EditStaffPage() {
     } catch (error: any) {
       console.error(error);
       toast.error("Failed to load staff records");
-      router.push('/hospital-admin/staff');
+      router.push(`/${hospitalId}${basePath}/staff`);
     } finally {
       setFetching(false);
     }
@@ -310,7 +313,7 @@ export default function EditStaffPage() {
 
       await hospitalAdminService.updateStaff(id, payload);
       toast.success("Personnel registry updated successfully");
-      const redirectPath = formData.role === 'nurse' ? '/hospital-admin/nurses' : '/hospital-admin/staff';
+      const redirectPath = formData.role === 'nurse' ? `/${hospitalId}${pathname.includes('/hr') ? '/hr' : '/hospital-admin'}/nurses` : `/${hospitalId}${basePath}/staff`;
       router.refresh();
       router.push(redirectPath);
     } catch (err: any) {
@@ -342,7 +345,7 @@ export default function EditStaffPage() {
         <div className="flex gap-3">
           <button
             type="button"
-            onClick={() => router.push(`/hospital-admin/staff/${id}`)}
+            onClick={() => router.push(`/${hospitalId}${basePath}/staff/${id}`)}
             className="px-5 py-2.5 text-xs font-bold text-gray-600 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all flex items-center gap-2"
           >
             <User size={14} /> View Profile

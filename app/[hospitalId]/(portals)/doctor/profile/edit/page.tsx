@@ -20,6 +20,7 @@ import { clearApiCache } from '@/lib/integrations/api';
 import { useTenantLink } from '@/hooks/useTenantLink';
 import { TagInput } from '@/components/common/TagInput';
 import { COMMON_SPECIALTIES, COMMON_QUALIFICATIONS, COMMON_LANGUAGES } from '@/lib/constants/medicalData';
+import { formatDoctorName } from '@/lib/utils/name-utils';
 
 export default function EditDoctorProfilePage() {
     const router = useRouter();
@@ -402,6 +403,7 @@ export default function EditDoctorProfilePage() {
 
         setIsSaving(true);
         try {
+            const sanitizedName = formatDoctorName(formData.name);
             const formDataToSubmit = new FormData();
             formDataToSubmit.append('hospital', hospitalId || '');
 
@@ -410,7 +412,7 @@ export default function EditDoctorProfilePage() {
 
             // Add all simple scalar fields (skip objects, arrays, and URL/cert fields)
             Object.keys(formData).forEach(key => {
-                const val = formData[key];
+                const val = key === 'name' ? sanitizedName : formData[key];
                 if (!urlFields.has(key) && typeof val !== 'object' && !Array.isArray(val)) {
                     formDataToSubmit.append(key, val ?? '');
                 }
@@ -534,7 +536,7 @@ export default function EditDoctorProfilePage() {
 
             <div className="flex flex-col lg:flex-row gap-6 sm:gap-8">
                 {/* Sidebar Navigation - Dropdown on Mobile, Sidebar on LG */}
-                <div className="lg:w-64 space-y-2">
+                <div className="lg:w-64 space-y-2 shrink-0">
                     {/* Mobile Tab Select */}
                     <div className="lg:hidden relative">
                         <select
@@ -548,31 +550,30 @@ export default function EditDoctorProfilePage() {
                         </select>
                         <ChevronDown size={18} className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
                     </div>
-                </div>
 
-                {/* Desktop Tab List */}
-                <div className="hidden lg:block space-y-2">
-                    {tabs.map(tab => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === tab.id
-                                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
-                                : 'bg-white dark:bg-[#111] text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900'
-                                }`}
-                        >
-                            {tab.icon}
-                            {tab.label}
-                        </button>
-                    ))}
-                    <div className="pt-4">
-                        <SupportBadgeToggle />
+                    {/* Desktop Tab List */}
+                    <div className="hidden lg:block space-y-2">
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl text-sm font-bold transition-all ${activeTab === tab.id
+                                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
+                                    : 'bg-white dark:bg-[#111] text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900 border border-gray-100 dark:border-gray-800'
+                                    }`}
+                            >
+                                {tab.icon}
+                                {tab.label}
+                            </button>
+                        ))}
+                        <div className="pt-4">
+                            <SupportBadgeToggle />
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Main Form Content */}
-            <div className="flex-1 bg-white dark:bg-[#111] rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-gray-800 p-4 sm:p-8 shadow-sm">
+                {/* Main Form Content */}
+                <div className="flex-1 bg-white dark:bg-[#111] rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-gray-800 p-4 sm:p-8 shadow-sm">
                 {activeTab === 'personal' && (
                     <div className="space-y-8 animate-in fade-in duration-300">
                         <div>
@@ -1122,6 +1123,7 @@ export default function EditDoctorProfilePage() {
                         </div>
                     </div>
                 )}
+            </div>
             </div>
 
             {/* DOCUMENT VIEWER MODAL */}

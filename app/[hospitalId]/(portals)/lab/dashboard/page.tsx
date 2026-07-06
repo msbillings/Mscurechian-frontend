@@ -9,6 +9,8 @@ import {
   Wallet,
   Activity,
   RefreshCw,
+  ArrowRight,
+  ArrowRightCircle,
 } from "lucide-react";
 import {
   LabDashboardService,
@@ -18,6 +20,7 @@ import { LabSampleService } from "@/lib/integrations/services/labSample.service"
 import { LabSample } from "@/lib/integrations/types/labSample";
 import { useAuthStore } from "@/stores/authStore";
 import Link from "next/link";
+import { clearApiCache } from "@/lib/integrations/api/apiClient";
 
 // Clean Skeleton
 const StatCardSkeleton = () => (
@@ -48,20 +51,21 @@ function LabDashboard() {
   const { user } = useAuthStore();
 
   // Billing Type Filter state
-  const [typeFilter, setTypeFilter] = useState<'all' | 'walkin' | 'inpatient' | 'lab'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'opd' | 'ipd' | 'lab'>('all');
 
   // Helper to identify a sample's patient type
-  const getSamplePatientType = (sample: LabSample): 'walkin' | 'inpatient' | 'lab' => {
-      if (sample.patientDetails.patientType) return sample.patientDetails.patientType;
-      if (sample.patientDetails.bedInfo) return 'inpatient';
-      if (sample.patientDetails.originalPatientName) return 'lab';
-      if (sample.isWalkIn) return 'walkin';
+  const getSamplePatientType = (sample: LabSample): 'opd' | 'ipd' | 'lab' => {
+      if (sample.patientDetails?.patientType) return sample.patientDetails.patientType.toLowerCase() as 'opd' | 'ipd' | 'lab';
+      if (sample.patientDetails?.bedInfo) return 'ipd';
+      if (sample.patientDetails?.originalPatientName) return 'lab';
       
-      const nameLower = (sample.patientDetails.name || '').toLowerCase();
+      const nameLower = (sample.patientDetails?.name || '').toLowerCase();
       if (nameLower.includes('lab') || nameLower.includes('diagnostic') || nameLower.includes('center') || nameLower.includes('hospital')) {
           return 'lab';
       }
-      return 'walkin';
+
+      if (sample.isWalkIn) return 'opd';
+      return 'opd';
   };
 
   useEffect(() => {
@@ -162,25 +166,31 @@ function LabDashboard() {
   return (
     <div className="max-w-full mx-auto space-y-4 lg:space-y-4 pb-8 bg-slate-50/50 dark:bg-gray-900 min-h-screen">
       {/* Header Section */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 py-4 lg:py-2">
-        <div>
-          <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 tracking-tight">
-            Dashboard Overview
-          </h1>
-          <p className="text-[7px] sm:text-[10px] font-medium text-slate-500 uppercase tracking-widest mt-1">
-            Hello {user?.name || "User"}, here's what's happening today.
-          </p>
+      <div className="bg-white dark:bg-gray-800 p-3 md:p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 md:gap-4 mb-2">
+        {/* Heading */}
+        <div className="shrink-0 flex items-center gap-2 px-1">
+          <div className="p-1.5 md:p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-indigo-600">
+             <Activity className="w-5 h-5 md:w-6 md:h-6" />
+          </div>
+          <div>
+            <h1 className="text-sm md:text-base font-bold text-gray-900 dark:text-white leading-tight uppercase tracking-wide">
+              Dashboard Overview
+            </h1>
+            <p className="text-[10px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mt-0.5">
+              Hello {user?.name || "User"}, here's what's happening today.
+            </p>
+          </div>
         </div>
 
-        <div className="flex flex-row md:items-center justify-between gap-3 bg-white/50 dark:bg-gray-800/50 p-1.5 md:p-1 rounded-2xl border border-gray-100/50 dark:border-gray-700/50 backdrop-blur-sm lg:shrink-0">
-          <div className="flex items-center gap-3 md:gap-1.5 bg-white dark:bg-gray-800 p-1 md:p-0.5 lg:p-1 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+        <div className="flex flex-wrap md:flex-nowrap items-center justify-between xl:justify-end gap-2 w-full xl:w-auto">
+          <div className="flex bg-slate-50 dark:bg-gray-900 p-1 rounded-lg border border-gray-100 dark:border-gray-800">
             {Object.keys(rangeLabels).map((r) => (
               <button
                 key={r}
                 onClick={() => setRange(r)}
-                className={`px-3 md:px-4 lg:px-5 py-1.5 md:py-1 lg:py-2 text-[9px] md:text-[8px] lg:text-xs font-bold uppercase tracking-wide rounded-lg transition-all ${range === r
-                  ? "bg-primary-theme text-white shadow-md scale-105"
-                  : "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700"
+                className={`px-2.5 md:px-4 py-1.5 md:py-2 text-[10px] md:text-xs font-bold uppercase tracking-wider transition-all rounded-md flex items-center gap-1 ${range === r
+                  ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-200 dark:ring-gray-600"
+                  : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-gray-800"
                   }`}
               >
                 {rangeLabels[r]}
@@ -188,14 +198,18 @@ function LabDashboard() {
             ))}
           </div>
           <div className="flex items-center">
-            <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1 md:mx-0.5" />
             <button
-              onClick={() => fetchStats(false, true)}
+              onClick={() => {
+                clearApiCache();
+                fetchStats(false, true);
+              }}
               disabled={loading}
-              className="p-2 md:p-1 text-gray-400 hover:text-indigo-600 transition-colors"
-              title="Refresh"
+              className="p-1.5 md:py-2 md:px-2.5 bg-gray-50 dark:bg-gray-800/50 text-gray-500 hover:text-blue-600 rounded-lg border border-gray-200 dark:border-gray-700 transition-all shadow-sm shrink-0"
+              title="Refresh Stats"
             >
-              <RefreshCw className={`w-5 h-5 md:w-4 md:h-4 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`w-3.5 h-3.5 md:w-4 md:h-4 ${loading ? "animate-spin" : ""}`}
+              />
             </button>
           </div>
         </div>
@@ -237,26 +251,26 @@ function LabDashboard() {
         {/* Pending Lab Orders Table - Maximized Height */}
         <div className="xl:col-span-2 flex flex-col h-full">
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex-1 flex flex-col">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 md:p-6 border-b border-gray-100 dark:border-gray-700 gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 md:p-4 border-b border-gray-100 dark:border-gray-700 gap-2">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-6 bg-indigo-500 rounded-full" />
-                <h2 className="text-base md:text-lg font-bold text-gray-800 dark:text-white">
+                <span className="w-1.5 h-5 bg-indigo-500 rounded-full" />
+                <h2 className="text-sm md:text-base font-bold text-gray-800 dark:text-white">
                   Recent Lab Orders
                 </h2>
               </div>
               
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2">
                 {/* Billing Type Tabs */}
-                <div className="flex bg-slate-50 dark:bg-gray-900 p-1 rounded-lg border border-gray-100 dark:border-gray-800 gap-1">
-                    {(['all', 'walkin', 'inpatient', 'lab'] as const).map((t) => (
+                <div className="flex bg-slate-50 dark:bg-gray-900 p-0.5 rounded-lg border border-gray-100 dark:border-gray-800 gap-0.5">
+                    {(['all', 'opd', 'ipd', 'lab'] as const).map((t) => (
                         <button
                             key={t}
                             onClick={() => setTypeFilter(t)}
-                            className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${
+                            className={`px-2 py-1 rounded-md text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-all ${
                                 typeFilter === t
-                                    ? t === 'walkin'
+                                    ? t === 'opd'
                                         ? 'bg-emerald-500 text-white shadow-sm'
-                                        : t === 'inpatient'
+                                        : t === 'ipd'
                                         ? 'bg-blue-500 text-white shadow-sm'
                                         : t === 'lab'
                                         ? 'bg-purple-500 text-white shadow-sm'
@@ -264,7 +278,7 @@ function LabDashboard() {
                                     : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                             }`}
                         >
-                            {t === 'all' ? 'All' : t === 'walkin' ? 'Walk-in' : t === 'inpatient' ? 'Inpatient' : 'Lab-to-Lab'}
+                            {t === 'all' ? 'All' : t === 'opd' ? 'OPD' : t === 'ipd' ? 'IPD' : 'Lab-to-Lab'}
                         </button>
                     ))}
                 </div>
@@ -272,10 +286,12 @@ function LabDashboard() {
                 <button
                   onClick={() => startNavigation(() => router.push("/lab/samples"))}
                   disabled={isNavigating}
-                  className="text-xs font-bold uppercase tracking-wider text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2"
+                  className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded-lg transition-colors flex items-center gap-1"
                 >
                   {isNavigating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
                   View Full List
+                  <ArrowRightCircle
+                   size={12} />
                 </button>
               </div>
             </div>

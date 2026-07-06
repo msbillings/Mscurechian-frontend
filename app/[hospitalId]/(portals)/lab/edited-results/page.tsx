@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { LabSampleService } from '@/lib/integrations/services/labSample.service';
 import { LabSample } from '@/lib/integrations/types/labSample';
 import { toast } from 'react-hot-toast';
@@ -9,6 +9,8 @@ import { Search, FileText, Download, CheckCircle2, ChevronLeft, ChevronRight, Ed
 
 export default function LabEditedResultsPage() {
     const router = useRouter();
+    const pathname = usePathname();
+    const basePath = pathname.includes('/hospital-admin') ? '/hospital-admin/labs' : '/lab';
     const [editedSamples, setEditedSamples] = useState<LabSample[]>([]);
     const [isNavigating, startNavigation] = useTransition();
     const [loading, setLoading] = useState(true);
@@ -81,55 +83,65 @@ export default function LabEditedResultsPage() {
 
     return (
         <div className="space-y-4 lg:space-y-6">
-            {/* Page Header */}
-            <div className="bg-gradient-to-br from-slate-50 to-indigo-50/30 dark:from-gray-900 dark:to-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 p-4 sm:p-6 lg:p-8">
-                <div className="flex items-start sm:items-center justify-between mb-4 lg:mb-6">
+            {/* Unified Top Action Bar */}
+            <div className="bg-white dark:bg-gray-800 p-3 md:p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 md:gap-4 mb-4">
+                {/* Heading & Subtext */}
+                <div className="shrink-0 flex items-center gap-2 px-1">
+                    <div className="p-1.5 md:p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-indigo-600">
+                        <Edit3 className="w-5 h-5 md:w-6 md:h-6" />
+                    </div>
                     <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2.5 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
-                                <Edit3 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                            </div>
-                            <h1 className="text-lg md:text-xl lg:text-xl font-semibold text-gray-900 dark:text-white">Edited Results History</h1>
-                        </div>
-                        <p className="text-xs md:text-sm lg:text-base text-gray-600 dark:text-gray-400">
-                            View lab test results that have been modified after submission
+                        <h1 className="text-sm md:text-base font-bold text-gray-900 dark:text-white leading-tight uppercase tracking-wide">
+                            Edited Results History
+                        </h1>
+                        <p className="text-[10px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mt-0.5">
+                            Modified results with edit timestamps
                         </p>
-                        <div className="flex items-center gap-2 mt-3">
-                            <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
-                            <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
-                                Showing only modified results with exact edit timestamps
+                    </div>
+                </div>
+
+                {/* Right Side Controls */}
+                <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-2 w-full flex-1">
+                    {/* Tiny Pagination at Top */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center gap-1 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-0.5 shadow-sm">
+                            <span className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2">
+                                Pg {currentPage} of {totalPages}
                             </span>
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="p-1 bg-white dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded text-gray-500 hover:text-gray-700 disabled:opacity-50 transition-colors shadow-sm"
+                            >
+                                <ChevronLeft className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                            </button>
+                            <button
+                                disabled={currentPage >= totalPages}
+                                onClick={() => setCurrentPage(p => p + 1)}
+                                className="p-1 bg-white dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded text-gray-500 hover:text-gray-700 disabled:opacity-50 transition-colors shadow-sm"
+                            >
+                                <ChevronRight className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                            </button>
                         </div>
-                    </div>
-                </div>
+                    )}
 
-                {/* Stats */}
-                <div className="grid grid-cols-1 gap-3 md:gap-4 max-w-md">
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-slate-200 dark:border-gray-700 shadow-sm">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
-                                <Clock className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Total Edited Test Reports</p>
-                                <p className="text-2xl font-semibold text-gray-900 dark:text-white">{editedSamples.length}</p>
-                            </div>
-                        </div>
+                    {/* Stats Card (Compact) */}
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800/30 shadow-sm shrink-0">
+                        <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">Total Edited:</p>
+                        <p className="text-sm font-bold text-indigo-700 dark:text-indigo-300">{editedSamples.length}</p>
                     </div>
-                </div>
-            </div>
 
-            {/* Search Bar */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-4 shadow-sm">
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                        type="text"
-                        placeholder="Search by patient name, sample ID, or mobile..."
-                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                    />
+                    {/* Search Bar (Compact) */}
+                    <div className="relative w-full flex-1 shadow-sm">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Search patients or samples..."
+                            className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white placeholder:text-gray-400 uppercase tracking-widest"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
                 </div>
             </div>
 
@@ -206,21 +218,13 @@ export default function LabEditedResultsPage() {
                                             <td className="px-4 md:px-6 py-3 md:py-4 text-right">
                                                 <div className="flex items-center justify-end gap-2">
                                                     <button
-                                                        onClick={() => startNavigation(() => router.push(`/lab/samples/${sample._id}`))}
+                                                        onClick={() => startNavigation(() => router.push(`${basePath}/samples/${sample._id}`))}
                                                         disabled={isNavigating}
                                                         className={`px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-bold transition-all border border-indigo-100 dark:border-indigo-800 flex items-center gap-1.5 ${isNavigating ? 'opacity-70' : ''}`}
                                                         title="Edit Results"
                                                     >
                                                         <Edit3 size={14} />
                                                         Edit
-                                                    </button>
-                                                    <button
-                                                        onClick={() => startNavigation(() => router.push(`/lab/samples/${sample._id}`))}
-                                                        disabled={isNavigating}
-                                                        className={`p-2 hover:bg-slate-100 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400 rounded-lg transition-colors border border-transparent hover:border-slate-200 dark:hover:border-gray-600 ${isNavigating ? 'opacity-70' : ''}`}
-                                                        title="View Report"
-                                                    >
-                                                        <FileText size={18} />
                                                     </button>
                                                 </div>
                                             </td>
@@ -230,35 +234,7 @@ export default function LabEditedResultsPage() {
                             </tbody>
                         </table>
                     </div>
-                    {/* Pagination Controls */}
-                    {totalPages > 1 && (
-                        <div className="px-4 md:px-6 py-3 md:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 border-t border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-900/30">
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredSamples.length)}</span> of <span className="font-medium">{filteredSamples.length}</span> edited results
-                            </p>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                    disabled={currentPage === 1}
-                                    className="p-2 border border-slate-200 dark:border-gray-700 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
-                                    title="Previous page"
-                                >
-                                    <ChevronLeft className="w-4 h-4" />
-                                </button>
-                                <span className="text-sm text-gray-600 dark:text-gray-400">
-                                    Page {currentPage} of {totalPages}
-                                </span>
-                                <button
-                                    onClick={() => setCurrentPage(p => (p < totalPages ? p + 1 : p))}
-                                    disabled={currentPage === totalPages}
-                                    className="p-2 border border-slate-200 dark:border-gray-700 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
-                                    title="Next page"
-                                >
-                                    <ChevronRight className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-                    )}
+
                 </div>
             ) : (
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 p-16 text-center shadow-sm">

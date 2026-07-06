@@ -316,33 +316,67 @@ export default function IPDIssuancePage() {
 
     return (
         <div className="space-y-4 md:space-y-6 pb-10">
-            {/* Header */}
-            <div className="pt-2 px-1">
-                <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 dark:text-white uppercase tracking-tight">IPD Medicine Issuance</h1>
-                <p className="text-[10px] md:text-xs font-bold text-gray-400 dark:text-gray-500 mt-1 uppercase tracking-widest">
-                    Select an admitted patient to issue medicines and track pharmacy clearance.
-                </p>
+            {/* Unified Top Action Bar */}
+            <div className="flex flex-col gap-2 mx-1">
+                <div className="bg-white dark:bg-gray-800 p-2 md:p-3 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-2 md:gap-3">
+                    
+                    {/* Heading */}
+                    <div className="shrink-0 flex flex-col justify-center px-1">
+                        <h1 className="text-xs md:text-sm font-bold text-gray-900 dark:text-white tracking-tight leading-none uppercase">IPD Medicine Issuance</h1>
+                        <p className="text-[8px] font-semibold text-gray-500 uppercase tracking-wider mt-1 md:mt-0.5">
+                            Select an admitted patient to issue medicines.
+                        </p>
+                    </div>
+
+                    {/* Actions Row */}
+                    <div className="w-full md:w-auto flex flex-1 items-center gap-2 md:gap-3 justify-between md:justify-end">
+                        
+                        <div className="hidden md:block h-6 w-px bg-gray-200 dark:bg-gray-700 shrink-0" />
+
+                        {/* Clear Button */}
+                        <button 
+                            onClick={() => {
+                                setPatientSearch('');
+                                setManualSelectionId(null);
+                                setShowIssueForm(false);
+                                resetForm();
+                            }}
+                            className="px-2 py-1 md:py-1.5 bg-rose-50 rounded-lg border border-rose-100 flex items-center gap-1 md:gap-1.5 text-[8px] md:text-[9px] font-bold text-rose-600 hover:bg-rose-100 uppercase tracking-wider transition-colors shrink-0 whitespace-nowrap"
+                        >
+                            <RotateCcw className="w-2.5 h-2.5 md:w-3 md:h-3" />
+                            Clear Form
+                        </button>
+
+                        <div className="hidden md:block h-6 w-px bg-gray-200 dark:bg-gray-700 shrink-0" />
+
+                        {/* Search Bar - Flex 1 */}
+                        {!selectedAdmission && (
+                            <div className="relative flex-1 min-w-[120px] md:min-w-[200px] max-w-md">
+                                <Search className="w-3 h-3 md:w-3.5 md:h-3.5 text-gray-400 absolute left-2 top-1/2 -translate-y-1/2" />
+                                <input
+                                    type="text"
+                                    placeholder="Find records..."
+                                    value={patientSearch}
+                                    onChange={(e) => setPatientSearch(e.target.value)}
+                                    className="w-full pl-6 pr-6 py-1 md:py-1.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg text-[9px] md:text-[10px] font-bold focus:ring-2 focus:ring-blue-500 outline-none dark:text-white transition-all shadow-sm"
+                                />
+                                {patientSearch && (
+                                    <button
+                                        onClick={() => setPatientSearch("")}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
 
             {/* ══ PATIENT LIST VIEW (no patient selected) ══════════════════════════════ */}
             {!selectedAdmission && (
                 <div className="space-y-4">
-                    {/* Search - Reduced Width */}
-                    <div className="relative w-full md:max-w-md group px-1">
-                        <Search size={15} className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-                        <input
-                            className="w-full pl-11 pr-10 py-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl text-[11px] md:text-[12px] font-black uppercase outline-none focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-gray-400 shadow-sm"
-                            placeholder="Find records..."
-                            value={patientSearch}
-                            onChange={(e) => setPatientSearch(e.target.value)}
-                        />
-                        {patientSearch && (
-                            <button
-                                onClick={() => setPatientSearch("")}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 text-lg"
-                            >×</button>
-                        )}
-                    </div>
 
                     {/* Table View */}
                     <div className="bg-white dark:bg-[#111] rounded-2xl md:rounded-4xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">

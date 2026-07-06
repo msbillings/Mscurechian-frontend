@@ -101,7 +101,7 @@ const LabLayout = ({ children }: { children: React.ReactNode }) => {
     const isLoginPage = pathname.includes('/lab/login');
 
     useEffect(() => {
-        if (isAuthenticated && user?.role === 'lab' && isMounted && !isLoginPage) {
+        if (isAuthenticated && (user?.role === 'lab' || user?.role === 'hospital-admin') && isMounted && !isLoginPage) {
             fetchPendingCount();
         }
     }, [isAuthenticated, user, isMounted, isLoginPage]);
@@ -110,7 +110,7 @@ const LabLayout = ({ children }: { children: React.ReactNode }) => {
         if (!isLoginPage && isInitialized) {
             if (!isAuthenticated) {
                 router.push(getPath('/auth/login'));
-            } else if (user?.role !== 'lab') {
+            } else if (user?.role !== 'lab' && user?.role !== 'hospital-admin') {
                 const routeMap: Record<string, string> = {
                     'staff': getPath('/staff'),
                     'doctor': getPath('/doctor'),
@@ -203,7 +203,7 @@ const LabLayout = ({ children }: { children: React.ReactNode }) => {
     }
 
     if (isLoginPage) return <>{children}</>;
-    if (!isAuthenticated || user?.role !== 'lab') return null;
+    if (!isAuthenticated || (user?.role !== 'lab' && user?.role !== 'hospital-admin')) return null;
 
     const currentMenuLinks = [
         { icon: LayoutDashboard, label: "Dashboard", path: "/lab/dashboard" },
@@ -258,8 +258,8 @@ const LabLayout = ({ children }: { children: React.ReactNode }) => {
                         
                         <div className="hidden sm:flex items-center gap-3">
                             <div className="w-9 h-9 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-sm shadow-md overflow-hidden">
-                                {(labLogo || (user as any)?.image) ? (
-                                    <img src={labLogo || (user as any)?.image} alt={user?.name} className="w-full h-full object-cover" />
+                                {((user as any)?.profilePic || (user as any)?.avatar || (user as any)?.image || (user as any)?.logo) ? (
+                                    <img src={(user as any)?.profilePic || (user as any)?.avatar || (user as any)?.image || (user as any)?.logo} alt={user?.name || "Lab User"} className="w-full h-full object-cover" />
                                 ) : (
                                     user?.name?.charAt(0).toUpperCase() || 'L'
                                 )}

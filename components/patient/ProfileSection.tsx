@@ -2,6 +2,8 @@ import React from 'react';
 import { User, Phone, Activity, FileText, Droplets, Thermometer, Heart, Wind } from 'lucide-react';
 import { Card } from '@/components/admin';
 import { format } from 'date-fns';
+import ProfileHeroCard from '@/components/shared/ProfileHeroCard';
+import toast from 'react-hot-toast';
 
 interface ProfileSectionProps {
     profile: any;
@@ -56,6 +58,27 @@ function ProfileSection({ profile, appointments }: ProfileSectionProps) {
             </div>
 
             <div id="profile-content" className="space-y-3 sm:space-y-4">
+                <ProfileHeroCard
+                    name={profile.user?.name || profile.name}
+                    role="Patient Account"
+                    roleBadge={`MRN: ${profile.mrn}`}
+                    roleColor="bg-blue-100 text-blue-700"
+                    imageUrl={profile.user?.image || profile.user?.avatar}
+                    bio={profile.bio || profile.user?.bio}
+                    onBioSave={async (newBio: string) => {
+                        try {
+                            const { patientService } = await import('@/lib/integrations/services/patient.service');
+                            await patientService.updateProfile({ bio: newBio });
+                            // Force update local UI state if necessary
+                            profile.bio = newBio;
+                            toast.success("Bio updated successfully");
+                        } catch (error: any) {
+                            toast.error(error.message || "Failed to update bio");
+                            throw error;
+                        }
+                    }}
+                />
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
                     {/* Identity Card */}
                     <div className="bg-white dark:bg-gray-900 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm space-y-2 sm:space-y-3">

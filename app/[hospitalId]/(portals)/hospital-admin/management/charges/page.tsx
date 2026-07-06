@@ -186,27 +186,36 @@ export default function ChargesManagement() {
   );
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">IPD Charges Master</h1>
-          <p className="text-sm text-slate-500">Configure customizable inpatient standard prices and subcategories</p>
+    <div className="max-w-7xl mx-auto min-h-screen bg-slate-50/50">
+      {/* Dynamic Header */}
+      <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 bg-white py-3 px-4 md:py-4 md:px-5 rounded-2xl border border-gray-100 shadow-sm shrink-0 mb-6">
+        
+        <div className="shrink-0 flex items-center gap-2 px-1">
+          <div className="p-1.5 md:p-2 bg-emerald-50 rounded-lg text-emerald-600">
+            <DollarSign className="w-5 h-5 md:w-6 md:h-6" />
+          </div>
+          <div className="flex flex-col justify-center">
+            <h1 className="text-sm md:text-base font-bold text-gray-900 tracking-tight leading-none uppercase">
+              IPD Charges Master
+            </h1>
+            <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 line-clamp-1">
+              Configure inpatient standard prices
+            </p>
+          </div>
         </div>
-        <div className="flex gap-3">
+
+        <div className="flex flex-row items-center justify-start xl:justify-end gap-2 w-full xl:w-auto shrink-0">
           <button
             onClick={handleResetToPresets}
-            className="flex items-center gap-2 px-4 py-2 border border-rose-200 text-rose-600 rounded-xl hover:bg-rose-50 transition-colors text-sm font-semibold"
+            className="flex-1 xl:flex-none flex items-center justify-center gap-2 px-2 md:px-6 py-2 border border-rose-200 text-rose-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 transition-all h-[34px] shadow-sm whitespace-nowrap"
           >
-            <RotateCcw className="w-4 h-4" />
-            Reset to Default
+            <RotateCcw size={14} className="shrink-0" /> Reset Default
           </button>
           <button
             onClick={handleOpenAddModal}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors text-sm font-semibold"
+            className="flex-1 xl:flex-none flex items-center justify-center gap-2 px-2 md:px-6 py-2 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all h-[34px] shadow-sm whitespace-nowrap"
           >
-            <Plus className="w-4 h-4" />
-            Add Charge Item
+            <Plus size={14} className="shrink-0" /> Add Charge Item
           </button>
         </div>
       </div>

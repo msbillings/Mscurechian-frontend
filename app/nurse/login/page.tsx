@@ -98,23 +98,54 @@ const NurseLoginPage = () => {
                 password: form.password,
             });
 
-            const { accessToken, user, sessionId } = response as any;
+            const { accessToken, user, sessionId, csrfToken } = response as any;
+
 
             if (accessToken) {
                 const { setAccessToken } = await import('@/lib/integrations');
                 setAccessToken(accessToken);
+
+                // ✅ FIX: Schedule proactive refresh so nurse token never expires mid-session
+                // (mirrors authStore.login() behavior — without this, every refresh fails due to
+                // missing CSRF cookie, triggering auth-logout event → automatic logout)
+                try {
+                    const { scheduleProactiveRefresh } = await import('@/stores/authStore') as any;
+                    if (typeof scheduleProactiveRefresh === 'function') {
+                        scheduleProactiveRefresh(accessToken);
+                    }
+                } catch { /* non-critical */ }
             }
 
-            // Normalize _id â†’ id
+            // Normalize _id → id
             if ((user as any)._id && !(user as any).id) {
                 (user as any).id = (user as any)._id;
+            }
+
+            const rawIdVal = (user as any).hospital || (user as any).hospitalId;
+            const userHospitalId = (rawIdVal && typeof rawIdVal === 'object') ? (rawIdVal._id || rawIdVal.id) : rawIdVal;
+
+            // ✅ FIX BUG 1: Store userRole — proactive refresh & CSRF cookie lookup depend on this
+            if (user.role) {
+                localStorage.setItem("userRole", user.role.toLowerCase());
+            }
+
+            // ✅ FIX BUG 2: Store activeHospitalId — middleware token resolution depends on this
+            if (userHospitalId) {
+                localStorage.setItem("activeHospitalId", userHospitalId);
+                // Set hospitalId cookie for middleware tenant context
+                document.cookie = `hospitalId=${userHospitalId}; path=/; max-age=604800; SameSite=Lax`;
             }
 
             // Store user session (mirrors authStore.login pattern)
             localStorage.setItem("user", JSON.stringify(user));
             localStorage.setItem("lastAuthCheck", Date.now().toString());
-            if (sessionId) localStorage.setItem("sessionId", sessionId);
             localStorage.setItem("tabAuthorized", "true");
+
+            // ✅ FIX BUG 3: sessionId must go in sessionStorage (not localStorage)
+            // authStore.initializeAuth() reads sessionId from sessionStorage for X-Session-Id header
+            if (sessionId) {
+                sessionStorage.setItem("sessionId", sessionId);
+            }
 
             // Update store
             setUser(user as any);
@@ -130,8 +161,6 @@ const NurseLoginPage = () => {
             });
 
             setIsNavigating(true);
-            const rawIdVal = (user as any).hospital || (user as any).hospitalId;
-            const userHospitalId = (rawIdVal && typeof rawIdVal === 'object') ? (rawIdVal._id || rawIdVal.id) : rawIdVal;
             startTransition(() => {
                 router.replace(`/${userHospitalId}/nurse`);
             });

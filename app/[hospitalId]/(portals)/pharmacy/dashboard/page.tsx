@@ -15,6 +15,7 @@ import {
     Clock,
     RefreshCcw
 } from 'lucide-react';
+import { clearApiCache } from '@/lib/integrations/api/apiClient';
 import { PharmacyDashboardService, PharmacyDashboardStats } from '@/lib/integrations/services/pharmacyDashboard.service';
 import { useAuthStore } from '@/stores/authStore';
 import Link from 'next/link';
@@ -138,85 +139,94 @@ const PharmacyDashboard = () => {
 
     return (
         <div className="space-y-4 md:space-y-6 pb-20 max-w-7xl mx-auto">
-            {/* Header Section */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 px-1 md:px-2 mt-4 md:mt-2">
-                <div>
-                    <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 uppercase tracking-tight">Pharmacy Dashboard</h1>
-                    <p className="text-[7px] sm:text-[10px] font-medium text-slate-500 uppercase tracking-widest mt-1">Overview of pharmacy sales and stock</p>
+            {/* Ultra-Compact Dynamic Header */}
+            <div className="flex flex-wrap items-center gap-2 md:gap-4 bg-white p-2 md:p-3 rounded-2xl border border-gray-100 shadow-sm shrink-0 mt-4 md:mt-6">
+                
+                {/* 1. Icon + Title */}
+                <div className="flex items-center gap-2 pr-2 md:pr-4 border-r border-slate-100 shrink-0">
+                    <div className="p-1 md:p-1.5 bg-blue-50 rounded-lg text-blue-600">
+                        <Activity className="w-4 h-4 md:w-5 md:h-5" />
+                    </div>
+                    <div className="flex flex-col">
+                        <h1 className="text-[11px] md:text-sm font-bold text-gray-900 leading-none uppercase">
+                            Pharmacy
+                        </h1>
+                    </div>
                 </div>
 
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-1.5 bg-white/50 dark:bg-gray-800/50 p-2 md:p-1 rounded-2xl border border-gray-100/50 dark:border-gray-700/50 backdrop-blur-sm lg:shrink-0">
-                    <div className="flex flex-col sm:flex-row md:items-center gap-2 md:gap-1.5">
-                        {/* Range Selector - Premium Style */}
-                        <div className="flex items-center gap-1 bg-white dark:bg-gray-800 p-1 md:p-0.5 lg:p-1 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-x-auto no-scrollbar">
-                            {[
-                                { key: 'today', label: 'Today' },
-                                { key: '7days', label: '7D' },
-                                { key: '1month', label: '30D' },
-                                { key: 'custom', label: 'Custom' },
-                            ].map((r) => (
-                                <button
-                                    key={`range-${r.key}`}
-                                    onClick={() => {
-                                        setRange(r.key);
-                                        if (r.key !== 'custom') {
-                                            setStartDate('');
-                                            setEndDate('');
-                                        }
-                                        fetchStats(r.key);
-                                    }}
-                                    className={`px-3 md:px-2 lg:px-4 py-1.5 md:py-0.5 lg:py-2 rounded-lg text-[10px] md:text-[9px] lg:text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap ${range === r.key
-                                        ? 'bg-teal-600 text-white shadow-sm scale-105'
-                                        : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
-                                        }`}
-                                >
-                                    {r.label}
-                                </button>
-                            ))}
-                        </div>
+                {/* 2. Range Selector */}
+                <div className="flex items-center gap-1 bg-gray-50 p-0.5 rounded-lg border border-gray-200 overflow-x-auto no-scrollbar shrink-0">
+                    {[
+                        { key: 'today', label: 'Today' },
+                        { key: '7days', label: '7D' },
+                        { key: '1month', label: '30D' },
+                        { key: 'custom', label: 'Custom' },
+                    ].map((r) => (
+                        <button
+                            key={`range-${r.key}`}
+                            onClick={() => {
+                                setRange(r.key);
+                                if (r.key !== 'custom') {
+                                    setStartDate('');
+                                    setEndDate('');
+                                }
+                                fetchStats(r.key);
+                            }}
+                            className={`px-2 py-1 rounded text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${range === r.key
+                                ? 'bg-white text-teal-600 shadow-sm'
+                                : 'text-slate-400 hover:text-slate-600'
+                                }`}
+                        >
+                            {r.label}
+                        </button>
+                    ))}
+                </div>
 
-                        {range === 'custom' && (
-                            <div className="flex items-center gap-1 animate-in fade-in slide-in-from-right-2">
-                                <input
-                                    type="date"
-                                    title="Start Date"
-                                    value={startDate}
-                                    onChange={e => setStartDate(e.target.value)}
-                                    className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-1.5 md:px-1 lg:px-3 text-[10px] md:text-[8px] lg:text-xs font-black uppercase text-gray-600 dark:text-gray-300 focus:ring-2 focus:ring-teal-500 outline-none shadow-sm w-[110px] md:w-[90px] sm:w-auto compact-input"
-                                />
-                                <div className="w-1.5 h-px bg-gray-300 dark:bg-gray-700 shrink-0" />
-                                <input
-                                    type="date"
-                                    title="End Date"
-                                    value={endDate}
-                                    onChange={e => setEndDate(e.target.value)}
-                                    className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-1.5 md:px-1 lg:px-3 text-[10px] md:text-[8px] lg:text-xs font-black uppercase text-gray-600 dark:text-gray-300 focus:ring-2 focus:ring-teal-500 outline-none shadow-sm w-[110px] md:w-[90px] sm:w-auto compact-input"
-                                />
-                            </div>
-                        )}
+                {/* 3. Date Picker (if custom) */}
+                {range === 'custom' && (
+                    <div className="flex items-center gap-1 bg-gray-50 p-0.5 rounded-lg border border-gray-200 shrink-0 animate-in fade-in slide-in-from-right-2">
+                        <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            className="px-1.5 py-1 bg-transparent text-[9px] font-bold uppercase tracking-widest outline-none focus:ring-1 focus:ring-teal-500 rounded"
+                        />
+                        <span className="text-gray-300 font-bold">-</span>
+                        <input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            className="px-1.5 py-1 bg-transparent text-[9px] font-bold uppercase tracking-widest outline-none focus:ring-1 focus:ring-teal-500 rounded"
+                        />
                     </div>
+                )}
 
-                    <div className="flex items-center gap-2 ml-auto sm:ml-0">
-                        <button
-                            onClick={() => setIsExpiryModalOpen(true)}
-                            className="flex items-center gap-1.5 md:gap-1 px-3 md:px-2 lg:px-4 py-2.5 md:py-1 lg:py-2.5 bg-red-50 text-red-600 border border-red-100 rounded-xl text-[10px] md:text-[8px] lg:text-xs font-black uppercase hover:bg-red-100 dark:bg-red-950/20 dark:border-red-900/30 transition-all relative shadow-sm"
-                        >
-                            <AlertTriangle size={14} />
-                            Alerts
-                            {stats && stats.inventoryStats.expiringSoonCount ? (
-                                <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-black text-white border-2 border-white dark:border-gray-900">
-                                    {stats.inventoryStats.expiringSoonCount}
-                                </span>
-                            ) : null}
-                        </button>
+                {/* 4. Actions (Refresh, Alerts, Verified) */}
+                <div className="flex flex-wrap items-center gap-2 ml-auto shrink-0">
+                    <button
+                        onClick={() => { clearApiCache(); fetchStats(); }}
+                        className="p-1.5 bg-gray-50 text-slate-400 border border-gray-200 rounded-lg hover:text-slate-900 hover:bg-white transition-all font-black shadow-sm"
+                        title="Refresh"
+                    >
+                        <RefreshCcw size={14} strokeWidth={3} className={isLoading ? 'animate-spin' : ''} />
+                    </button>
 
-                        <button
-                            onClick={() => fetchStats()}
-                            title="Refresh Dashboard"
-                            className="p-2.5 md:p-1 lg:p-2.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-teal-600 hover:bg-gray-50 transition-colors shadow-sm"
-                        >
-                            <RefreshCcw size={16} className={isLoading ? 'animate-spin' : ''} />
-                        </button>
+                    <button
+                        onClick={() => setIsExpiryModalOpen(true)}
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 bg-red-50 text-red-600 border border-red-100 rounded-lg text-[9px] font-black uppercase hover:bg-red-100 transition-all relative shadow-sm"
+                    >
+                        <AlertTriangle size={12} strokeWidth={3} />
+                        <span className="hidden sm:inline">Alerts</span>
+                        {stats && stats.inventoryStats.expiringSoonCount ? (
+                            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[8px] font-black text-white shadow-sm">
+                                {stats.inventoryStats.expiringSoonCount}
+                            </span>
+                        ) : null}
+                    </button>
+
+                    <div className="hidden lg:flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-full">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"/>
+                        <span className="text-[8px] font-bold text-emerald-600 uppercase tracking-widest">Verified</span>
                     </div>
                 </div>
             </div>

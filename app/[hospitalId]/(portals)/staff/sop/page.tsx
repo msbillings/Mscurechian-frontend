@@ -18,6 +18,8 @@ export default function GeneralStaffSOPPage() {
     // Filter State
     const [searchTerm, setSearchTerm] = useState("");
     const [activeCategory, setActiveCategory] = useState("all");
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
     const [showFilters, setShowFilters] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
 
@@ -113,7 +115,23 @@ export default function GeneralStaffSOPPage() {
     const filteredSops = sops.filter((sop: SOP) => {
         const matchesSearch = sop.name.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesCategory = activeCategory === 'all' || sop.category === activeCategory;
-        return matchesSearch && matchesCategory;
+        
+        let matchesDate = true;
+        if (startDate) {
+            const sopDate = new Date(sop.lastUpdated);
+            sopDate.setHours(0, 0, 0, 0);
+            const filterStart = new Date(startDate);
+            filterStart.setHours(0, 0, 0, 0);
+            if (sopDate < filterStart) matchesDate = false;
+        }
+        if (endDate) {
+            const sopDate = new Date(sop.lastUpdated);
+            sopDate.setHours(23, 59, 59, 999);
+            const filterEnd = new Date(endDate);
+            filterEnd.setHours(23, 59, 59, 999);
+            if (sopDate > filterEnd) matchesDate = false;
+        }
+        return matchesSearch && matchesCategory && matchesDate;
     });
 
     // Reset pagination on filter change
@@ -143,7 +161,33 @@ export default function GeneralStaffSOPPage() {
                     </div>
                 </div>
 
-                <div className="flex gap-2 w-full md:w-auto">
+                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                    {/* Date range picker */}
+                    <div className="flex items-center gap-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded px-2 py-1.5 shadow-sm text-[8px] sm:text-xs">
+                        <span className="text-gray-400 font-bold uppercase tracking-wider text-[8px]">Date:</span>
+                        <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }}
+                            className="bg-transparent border-none text-[8px] sm:text-[10px] font-bold outline-none text-gray-700 dark:text-gray-300 py-0"
+                        />
+                        <span className="text-gray-400 font-bold">-</span>
+                        <input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }}
+                            className="bg-transparent border-none text-[8px] sm:text-[10px] font-bold outline-none text-gray-700 dark:text-gray-300 py-0"
+                        />
+                        {(startDate || endDate) && (
+                            <button
+                                onClick={() => { setStartDate(""); setEndDate(""); setCurrentPage(1); }}
+                                className="text-[10px] font-black text-rose-500 hover:text-rose-700 ml-1"
+                            >
+                                ✕
+                            </button>
+                        )}
+                    </div>
+
                     <div className="relative w-full md:w-auto">
                         <button
                             onClick={() => setShowFilters(!showFilters)}

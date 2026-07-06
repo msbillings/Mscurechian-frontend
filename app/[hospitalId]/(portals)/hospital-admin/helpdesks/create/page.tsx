@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, usePathname } from 'next/navigation';
 import toast from "react-hot-toast";
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
@@ -107,6 +107,8 @@ const EMPTY_FORM = () => ({
 
 export default function CreateHelpdesk() {
   const router = useRouter();
+  const pathname = usePathname();
+  const basePath = pathname.includes("/hr") ? "/hr" : "/hospital-admin";
   const params = useParams();
   const hospitalId = params.hospitalId as string;
   const queryClient = useQueryClient();
@@ -282,40 +284,49 @@ export default function CreateHelpdesk() {
 
   return (
     <InfrastructureCheck>
-      <div className="min-h-screen bg-slate-50/50">
-        <div className="max-w-7xl mx-auto space-y-6">
-          
-          {/* Header Navigation */}
-          <div className="flex items-center justify-between">
-            <button 
-              onClick={() => router.back()}
-              className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors group"
-            >
-              <div className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center group-hover:bg-slate-50 transition-all">
-                <ArrowLeft size={16}/>
+      <div className="max-w-7xl mx-auto min-h-screen bg-slate-50/50 space-y-6">
+        {/* Dynamic Header */}
+        <div className="flex flex-col gap-4 bg-white py-3 px-4 md:py-4 md:px-5 rounded-2xl border border-gray-100 shadow-sm shrink-0 mb-6 mt-4 md:mt-6">
+          <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
+            
+            {/* Left side: Back button and Title */}
+            <div className="flex flex-wrap items-center gap-2 xl:gap-4 shrink-0">
+              <button 
+                onClick={() => router.back()}
+                className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors group px-2"
+                title="Back to Staff List"
+              >
+                <div className="w-7 h-7 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center group-hover:bg-slate-100 transition-all">
+                  <ArrowLeft size={14}/>
+                </div>
+              </button>
+
+              <div className="shrink-0 flex items-center gap-2 px-1">
+                <div className="p-1.5 md:p-2 bg-blue-50 rounded-lg text-blue-600">
+                  <Headphones className="w-5 h-5 md:w-6 md:h-6" />
+                </div>
+                <div className="flex flex-col justify-center">
+                  <h1 className="text-sm md:text-base font-bold text-gray-900 tracking-tight leading-none uppercase">
+                    Create Front Desk
+                  </h1>
+                  <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 line-clamp-1">
+                    Configure a new front-desk operative with credentials and duty schedules
+                  </p>
+                </div>
               </div>
-              <span className="text-sm font-semibold tracking-wide">Back to Staff List</span>
-            </button>
-            <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-full">
-              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"/>
-              <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">New Registration</span>
+            </div>
+
+            {/* Right side: Badge */}
+            <div className="flex items-center justify-end w-full xl:w-auto shrink-0 relative">
+              <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-full">
+                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"/>
+                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">New Registration</span>
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Page Title */}
-          <div className="space-y-1">
-            <h1 className="text-lg  md:text-xl lg:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-                <Headphones size={22}/>
-              </div>
-             Create Front Desk
-            </h1>
-            <p className="text-slate-500 text-sm max-w-xl">
-              Configure a new front-desk operative with credentials, duty schedules, and financial profiles for seamless hospital operations.
-            </p>
-          </div>
-
-          {/* Multi-step Container */}
+        {/* Multi-step Container */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             
             {/* Sidebar Navigation */}
@@ -624,7 +635,7 @@ export default function CreateHelpdesk() {
           isOpen={isCredModalOpen} 
           onClose={() => {
             setIsCredModalOpen(false);
-            router.push(`/${hospitalId}/hospital-admin/helpdesks`);
+            router.push(`/${hospitalId}${basePath}/helpdesks`);
           }} 
           title="Account Initialized" 
           maxWidth="max-w-md"
@@ -682,7 +693,7 @@ export default function CreateHelpdesk() {
             <button 
               onClick={() => {
                 setIsCredModalOpen(false);
-                router.push(`/${hospitalId}/hospital-admin/helpdesks`);
+                router.push(`/${hospitalId}${basePath}/helpdesks`);
               }}
               className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-sm hover:bg-slate-800 shadow-xl shadow-slate-900/10 transition-all"
             >
@@ -691,7 +702,6 @@ export default function CreateHelpdesk() {
           </div>
         </Modal>
 
-      </div>
     </InfrastructureCheck>
   );
 }

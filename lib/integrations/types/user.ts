@@ -1,4 +1,4 @@
-﻿export interface User {
+export interface User {
   id: string;
   _id: string;
   name: string;
@@ -7,6 +7,7 @@
   mobile?: string;
   gender?: string;
   status?: string;
+  bio?: string;
   // Profile fields
   employeeId?: string;
   department?: string;

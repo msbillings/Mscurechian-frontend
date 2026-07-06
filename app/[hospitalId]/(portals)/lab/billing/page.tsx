@@ -26,8 +26,8 @@ function LabBillingPage() {
     const [availableTests, setAvailableTests] = useState<LabTest[]>([]);
     const [generatedBill, setGeneratedBill] = useState<(BillPayload & { invoiceId: string; createdAt: string }) | null>(null);
 
-    // Billing mode: 'walkin' | 'inpatient' | 'lab'
-    const [billingMode, setBillingMode] = useState<'walkin' | 'inpatient' | 'lab'>('walkin');
+    // Billing mode: 'opd' | 'ipd' | 'lab'
+    const [billingMode, setBillingMode] = useState<'opd' | 'ipd' | 'lab'>('opd');
 
     // Preview modal state
     const [showPreview, setShowPreview] = useState(false);
@@ -62,7 +62,7 @@ function LabBillingPage() {
     const handlePatientNameChange = useCallback((value: string) => {
         setPatient(prev => ({ ...prev, name: value }));
         if (patientSearchDebounce.current) clearTimeout(patientSearchDebounce.current);
-        if (value.trim().length < 2 || billingMode === 'walkin') {
+        if (value.trim().length < 2 || billingMode === 'opd') {
             setPatientSuggestions([]);
             setShowSuggestions(false);
             return;
@@ -384,7 +384,7 @@ function LabBillingPage() {
     // ── Build preview bill object (no API call) ───────────────────────────────
     const buildPreviewBill = () => ({
         patientDetails: getEffectivePatient(),
-        patientType: billingMode as 'walkin' | 'inpatient' | 'lab',
+        patientType: billingMode as 'opd' | 'ipd' | 'lab',
         items: selectedTests,
         totalAmount,
         discount,
@@ -475,7 +475,7 @@ function LabBillingPage() {
                 };
                 const res = await LabBillingService.createBill(payload);
                 setGeneratedBill({ ...payload, invoiceId: res.bill.invoiceId || res.bill._id, createdAt: res.bill.createdAt });
-                const modeLabel = billingMode === 'inpatient' ? 'Inpatient' : billingMode === 'lab' ? 'Lab-to-Lab' : 'Walk-in';
+                const modeLabel = billingMode === 'ipd' ? 'IPD' : billingMode === 'lab' ? 'Lab-to-Lab' : 'OPD';
                 toast.success(`${modeLabel} bill generated!`);
             }
 
@@ -553,27 +553,27 @@ function LabBillingPage() {
                     <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1 gap-1">
                         <button
                             type="button"
-                            onClick={() => setBillingMode('walkin')}
+                            onClick={() => setBillingMode('opd')}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                                billingMode === 'walkin'
+                                billingMode === 'opd'
                                     ? 'bg-white dark:bg-gray-700 text-emerald-700 dark:text-emerald-300 shadow-sm'
                                     : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                             }`}
                         >
                             <User size={13} />
-                            Walk-in
+                            OPD
                         </button>
                         <button
                             type="button"
-                            onClick={() => setBillingMode('inpatient')}
+                            onClick={() => setBillingMode('ipd')}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                                billingMode === 'inpatient'
+                                billingMode === 'ipd'
                                     ? 'bg-white dark:bg-gray-700 text-blue-700 dark:text-blue-300 shadow-sm'
                                     : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                             }`}
                         >
                             <Stethoscope size={13} />
-                            Inpatient
+                            IPD
                         </button>
                         <button
                             type="button"
@@ -612,7 +612,7 @@ function LabBillingPage() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
                 <div className="lg:col-span-8 space-y-4 lg:space-y-6">
                     {/* Patient / Inpatient Details Card — shown for walkin and inpatient modes */}
-                    {(billingMode === 'walkin' || billingMode === 'inpatient') ? (
+                    {(billingMode === 'opd' || billingMode === 'ipd') ? (
                     <div className={`bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-2xl border shadow-sm ${
                         billingMode === 'inpatient'
                             ? 'border-blue-200 dark:border-blue-800/40'
@@ -638,11 +638,11 @@ function LabBillingPage() {
                                 <label className="text-xs font-medium text-gray-500">Patient Name</label>
                                 <div className="relative">
                                     <input
-                                        placeholder={billingMode === 'walkin' ? "Enter patient name..." : "Search registered patient..."}
+                                        placeholder={billingMode === 'opd' ? "Enter patient name..." : "Search registered patient..."}
                                         className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg pl-9 pr-4 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm font-medium"
                                         value={patient.name}
                                         onChange={e => handlePatientNameChange(e.target.value)}
-                                        onFocus={() => billingMode !== 'walkin' && patient.name.length >= 2 && patientSuggestions.length > 0 && setShowSuggestions(true)}
+                                        onFocus={() => billingMode !== 'opd' && patient.name.length >= 2 && patientSuggestions.length > 0 && setShowSuggestions(true)}
                                         autoComplete="off"
                                     />
                                     <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">

@@ -1,7 +1,9 @@
 import { format } from 'date-fns';
 
-export const generatePatientHourlyRecordHtml = (data: any) => {
+export const generatePatientHourlyRecordHtml = (data: any, options?: { printWithHeader?: boolean; printWithFooter?: boolean }) => {
     const { admission, vitals, meds, diet, labOrders, hospital } = data;
+    const printWithHeader = options?.printWithHeader ?? true;
+    const printWithFooter = options?.printWithFooter ?? true;
 
     // Sort logs by timestamp ascending for chronological report
     const sortedVitals = [...vitals].sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
@@ -51,6 +53,9 @@ export const generatePatientHourlyRecordHtml = (data: any) => {
                     size: A4;
                     margin: 0;
                 }
+
+                ${!printWithHeader ? '.standard-header { display: none !important; }' : ''}
+                ${!printWithFooter ? '.standard-footer { display: none !important; }' : ''}
 
                 /* --- Standardized Header Styles --- */
                 .standard-header {

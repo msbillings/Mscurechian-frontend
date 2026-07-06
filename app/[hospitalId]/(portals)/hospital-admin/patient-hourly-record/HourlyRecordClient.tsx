@@ -39,6 +39,8 @@ export default function HourlyRecordClient() {
     const [isSelectOpen, setIsSelectOpen] = useState(false);
     const [showPrintModal, setShowPrintModal] = useState(false);
     const [printHtml, setPrintHtml] = useState('');
+    const [printWithHeader, setPrintWithHeader] = useState(true);
+    const [printWithFooter, setPrintWithFooter] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -82,14 +84,18 @@ export default function HourlyRecordClient() {
         );
     }, [admissions, searchTerm]);
 
-    const handlePrint = () => {
+    React.useEffect(() => {
         if (!hourlyData?.data) return;
         const html = generatePatientHourlyRecordHtml({
             ...hourlyData.data,
             hospital: hospitalData?.hospital,
             returnUrl: window.location.pathname + (selectedAdmissionId ? `?admissionId=${selectedAdmissionId}` : '')
-        });
+        }, { printWithHeader, printWithFooter });
         setPrintHtml(html);
+    }, [hourlyData, hospitalData, selectedAdmissionId, printWithHeader, printWithFooter]);
+
+    const handlePrint = () => {
+        if (!hourlyData?.data) return;
         setShowPrintModal(true);
     };
 
@@ -457,42 +463,61 @@ export default function HourlyRecordClient() {
 
     return (
         <div className="space-y-4 md:space-y-6">
-            {/* Top Toolbar */}
-            <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center bg-white p-2 md:p-4 rounded-2xl sm:rounded-[2rem] border border-slate-200 shadow-sm transition-all duration-300">
-                <div className="w-full md:w-96 space-y-2" ref={dropdownRef}>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Select Patient / Admission</label>
-                    <div className="relative">
+            {/* Unified Top Action Bar */}
+            <div className="bg-white p-3 md:p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 md:gap-4 shrink-0 transition-all duration-300">
+                
+                {/* Heading */}
+                <div className="shrink-0 flex items-center gap-2 px-1">
+                    <div className="p-1.5 md:p-2 bg-blue-50 rounded-lg text-blue-600">
+                        <Activity className="w-5 h-5 md:w-6 md:h-6" />
+                    </div>
+                    <div className="flex flex-col justify-center">
+                        <h1 className="text-sm md:text-base font-bold text-gray-900 tracking-tight leading-none uppercase">
+                            Patient Hourly Monitoring
+                        </h1>
+                        <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 flex items-center gap-1.5">
+                            <ClipboardList className="w-3 h-3 text-blue-500" />
+                            Consolidated record of vitals, meds, diet & labs
+                        </p>
+                    </div>
+                </div>
+
+                {/* Actions Row */}
+                <div className="w-full flex flex-1 flex-col sm:flex-row items-stretch sm:items-center gap-3 justify-between xl:justify-end">
+                    
+                    {/* Select Patient Dropdown */}
+                    <div className="w-full sm:w-80 relative shrink-0" ref={dropdownRef}>
                         <div
                             onClick={() => setIsSelectOpen(!isSelectOpen)}
-                            className="flex items-center justify-between w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl text-[13px] font-bold text-slate-700 cursor-pointer hover:border-blue-500 transition-all focus:ring-2 focus:ring-blue-500/20"
+                            className="flex items-center justify-between w-full px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-700 cursor-pointer hover:border-blue-500 transition-all focus:ring-2 focus:ring-blue-500/20"
                         >
-                            <div className="flex items-center gap-3">
-                                <Search size={16} className="text-slate-400" />
-                                <span>
+                            <div className="flex items-center gap-2 truncate">
+                                <Search size={14} className="text-gray-400 shrink-0" />
+                                <span className="truncate">
                                     {selectedAdmissionId ?
                                         admissions?.find((a: any) => a.admissionId === selectedAdmissionId)?.patient?.name || 'Selected'
-                                        : 'Search & Choose Patient...'}
+                                        : 'Search Patient...'}
                                 </span>
                             </div>
-                            <ChevronDown size={16} className={`text-slate-400 transition-transform ${isSelectOpen ? 'rotate-180' : ''}`} />
+                            <ChevronDown size={14} className={`text-gray-400 transition-transform shrink-0 ${isSelectOpen ? 'rotate-180' : ''}`} />
                         </div>
 
                         {isSelectOpen && (
-                            <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                                <div className="p-3 border-b border-slate-100 bg-slate-50">
+                            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                <div className="p-2 border-b border-gray-100 bg-gray-50">
                                     <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={12} />
                                         <input
                                             type="text"
-                                            className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-blue-500 transition-all"
-                                            placeholder="Type name, MRN or ADM number..."
+                                            className="w-full pl-7 pr-3 py-1.5 bg-white border border-gray-200 rounded-md text-[10px] font-bold outline-none focus:border-blue-500 transition-all uppercase tracking-widest"
+                                            placeholder="MRN, ADM, NAME..."
                                             value={searchTerm}
                                             onChange={(e) => setSearchTerm(e.target.value)}
                                             autoFocus
                                         />
                                     </div>
                                 </div>
-                                <div className="max-h-64 overflow-y-auto custom-scrollbar">
+                                <div className="max-h-60 overflow-y-auto custom-scrollbar">
                                     {filteredAdmissions.length > 0 ? (
                                         filteredAdmissions.map((adm: any) => (
                                             <div
@@ -501,52 +526,53 @@ export default function HourlyRecordClient() {
                                                     setSelectedAdmissionId(adm.admissionId);
                                                     setIsSelectOpen(false);
                                                 }}
-                                                className={`px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors border-l-4 ${selectedAdmissionId === adm.admissionId ? 'bg-blue-50 border-blue-500' : 'border-transparent'}`}
+                                                className={`px-3 py-2 hover:bg-blue-50 cursor-pointer transition-colors border-l-2 ${selectedAdmissionId === adm.admissionId ? 'bg-blue-50 border-blue-500' : 'border-transparent'}`}
                                             >
-                                                <div className="flex justify-between items-start">
-                                                    <div>
-                                                        <p className="text-xs font-black text-slate-900 uppercase tracking-tight">{adm.patient?.name}</p>
-                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{adm.patient?.mrn}</p>
+                                                <div className="flex justify-between items-start gap-2">
+                                                    <div className="truncate">
+                                                        <p className="text-[11px] font-black text-gray-900 uppercase tracking-tight truncate">{adm.patient?.name}</p>
+                                                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest truncate">{adm.patient?.mrn}</p>
                                                     </div>
-                                                    <span className="text-[9px] font-black text-blue-600 bg-blue-100/50 px-2 py-0.5 rounded uppercase">{adm.admissionId}</span>
+                                                    <span className="text-[8px] font-black text-blue-600 bg-blue-100/50 px-1.5 py-0.5 rounded uppercase shrink-0">{adm.admissionId}</span>
                                                 </div>
                                             </div>
                                         ))
                                     ) : (
-                                        <div className="px-4 py-8 text-center text-xs font-bold text-slate-400 uppercase">No matching patients found</div>
+                                        <div className="px-4 py-6 text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">No matching patients</div>
                                     )}
                                 </div>
                             </div>
                         )}
                     </div>
-                </div>
 
-                <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto justify-start xl:justify-end">
-                    <div className="flex items-center bg-slate-100/80 p-1 rounded-2xl border border-slate-200">
+                    {/* Format Toggle & Export Button */}
+                    <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center bg-gray-50 p-0.5 rounded-lg border border-gray-100 shrink-0">
+                            <button
+                                onClick={() => setExportFormat('pdf')}
+                                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[9px] font-bold uppercase tracking-wider transition-all ${exportFormat === 'pdf' ? 'bg-white text-blue-600 shadow-sm ring-1 ring-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                <FileText size={12} />
+                                PDF
+                            </button>
+                            <button
+                                onClick={() => setExportFormat('excel')}
+                                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[9px] font-bold uppercase tracking-wider transition-all ${exportFormat === 'excel' ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                <FileSpreadsheet size={12} />
+                                Excel
+                            </button>
+                        </div>
+
                         <button
-                            onClick={() => setExportFormat('pdf')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${exportFormat === 'pdf' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                            onClick={handleDownload}
+                            disabled={!selectedAdmissionId}
+                            className="flex items-center justify-center gap-2 px-4 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 disabled:opacity-50 disabled:shadow-none shrink-0 group"
                         >
-                            <FileText size={14} />
-                            PDF
-                        </button>
-                        <button
-                            onClick={() => setExportFormat('excel')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${exportFormat === 'excel' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                        >
-                            <FileSpreadsheet size={14} />
-                            Excel
+                            <Download size={14} className="group-hover:translate-y-0.5 transition-transform" />
+                            Download
                         </button>
                     </div>
-
-                    <button
-                        onClick={handleDownload}
-                        disabled={!selectedAdmissionId}
-                        className="w-full md:w-auto flex items-center justify-center gap-3 px-4 md:px-8 py-3 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 disabled:opacity-50 disabled:shadow-none group"
-                    >
-                        <Download size={16} className="group-hover:translate-y-0.5 transition-transform" />
-                        Download Report
-                    </button>
                 </div>
             </div>
 
@@ -1202,6 +1228,27 @@ export default function HourlyRecordClient() {
                                     <p className="text-[8px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest">Patient Hourly Monitoring Record</p>
                                 </div>
                             </div>
+                            <div className="hidden md:flex items-center gap-4 bg-slate-100 dark:bg-gray-800 px-4 py-2 rounded-2xl border border-slate-200/50">
+                                <label className="flex items-center gap-2 cursor-pointer text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-gray-300 hover:text-slate-900 select-none">
+                                    <input
+                                        type="checkbox"
+                                        checked={printWithHeader}
+                                        onChange={(e) => setPrintWithHeader(e.target.checked)}
+                                        className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                    />
+                                    <span>Show Header</span>
+                                </label>
+                                <div className="w-px h-4 bg-slate-300"></div>
+                                <label className="flex items-center gap-2 cursor-pointer text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-gray-300 hover:text-slate-900 select-none">
+                                    <input
+                                        type="checkbox"
+                                        checked={printWithFooter}
+                                        onChange={(e) => setPrintWithFooter(e.target.checked)}
+                                        className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                    />
+                                    <span>Show Footer</span>
+                                </label>
+                            </div>
                             <div className="flex items-center gap-2 sm:gap-3">
                                 <button
                                     onClick={() => {
@@ -1210,10 +1257,22 @@ export default function HourlyRecordClient() {
                                             iframe.contentWindow.print();
                                         }
                                     }}
-                                    className="flex items-center gap-2 px-3 py-2 sm:px-6 sm:py-3 bg-blue-600 text-white rounded-lg sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all group"
+                                    className="flex items-center gap-2 px-3 py-2 sm:px-5 sm:py-3 bg-blue-600 text-white rounded-lg sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all group"
                                 >
                                     <Printer size={14} className="sm:w-4 sm:h-4 group-hover:rotate-12 transition-transform" />
                                     <span className="hidden xs:inline">Print Document</span>
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        const iframe = document.getElementById('print-iframe') as HTMLIFrameElement;
+                                        if (iframe?.contentWindow) {
+                                            iframe.contentWindow.print();
+                                        }
+                                    }}
+                                    className="flex items-center gap-2 px-3 py-2 sm:px-5 sm:py-3 bg-emerald-600 text-white rounded-lg sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all group"
+                                >
+                                    <Download size={14} className="sm:w-4 sm:h-4 group-hover:translate-y-0.5 transition-transform" />
+                                    <span className="hidden xs:inline">Download PDF</span>
                                 </button>
                                 <button
                                     onClick={() => setShowPrintModal(false)}

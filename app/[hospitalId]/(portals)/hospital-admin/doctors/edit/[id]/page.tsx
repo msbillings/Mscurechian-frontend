@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, usePathname } from "next/navigation";
 import { hospitalAdminService } from "@/lib/integrations";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -27,6 +27,7 @@ import { PageHeader, Card, FormInput, Button } from "@/components/admin";
 import type { CreateDoctorRequest } from "@/lib/integrations/types";
 import { TagInput } from "@/components/common/TagInput";
 import { COMMON_SPECIALTIES, COMMON_QUALIFICATIONS, COMMON_LANGUAGES } from "@/lib/constants/medicalData";
+import { formatDoctorName } from "@/lib/utils/name-utils";
 
 // Constants
 const GENDER_OPTIONS = [
@@ -112,6 +113,8 @@ const formatAMPM = (time: string) => {
 function EditDoctor() {
   const router = useRouter();
   const params = useParams();
+  const pathname = usePathname();
+  const basePath = pathname.includes('/hr') ? '/hr' : '/hospital-admin';
   const id = params.id as string;
   const hospitalId = params.hospitalId as string;
   const profilePicInputRef = useRef<HTMLInputElement>(null);
@@ -219,7 +222,7 @@ function EditDoctor() {
       }
     } catch (error: any) {
       toast.error("Failed to fetch doctor details");
-      router.push(`/${hospitalId}/hospital-admin/doctors`);
+      router.push(`/${hospitalId}${basePath}/doctors`);
     } finally {
       setFetching(false);
     }
@@ -347,9 +350,10 @@ function EditDoctor() {
     setLoading(true);
 
     try {
+      const sanitizedName = formatDoctorName(formData.name);
       const doctorData: any = {
         honorific: formData.honorific,
-        name: formData.name.trim(),
+        name: sanitizedName,
         email: formData.email.trim(),
         mobile: formData.mobile,
         gender: formData.gender,
@@ -394,7 +398,7 @@ function EditDoctor() {
       toast.success(`Doctor "${formData.name}" updated successfully!`, { duration: 4000 });
 
       setTimeout(() => {
-        router.push(`/${hospitalId}/hospital-admin/doctors`);
+        router.push(`/${hospitalId}${basePath}/doctors`);
       }, 1000);
     } catch (err: any) {
       toast.error(err.message || "Failed to update doctor", { duration: 5000 });
@@ -412,12 +416,12 @@ function EditDoctor() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto pb-12">
+    <div className="max-w-7xl mx-auto min-h-screen bg-slate-50/50 space-y-6">
       {/* Back Button */}
       <div className="mb-4">
         <button
           type="button"
-          onClick={() => router.push(`/${hospitalId}/hospital-admin/doctors`)}
+          onClick={() => router.push(`/${hospitalId}${basePath}/doctors`)}
           className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 transition-colors"
         >
           <ArrowLeft size={18} />
@@ -425,11 +429,26 @@ function EditDoctor() {
         </button>
       </div>
 
-      <PageHeader
-        icon={<Edit className="text-blue-500" />}
-        title="Edit Doctor Profile"
-        subtitle={`Update details for Dr. ${formData.name}`}
-      />
+      {/* Dynamic Header */}
+      <div className="flex flex-col gap-4 bg-white py-3 px-4 md:py-4 md:px-5 rounded-2xl border border-gray-100 shadow-sm shrink-0 mb-6">
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-2 xl:gap-4 shrink-0">
+            <div className="shrink-0 flex items-center gap-2 px-1">
+              <div className="p-1.5 md:p-2 bg-blue-50 rounded-lg text-blue-600">
+                <Edit className="w-5 h-5 md:w-6 md:h-6" />
+              </div>
+              <div className="flex flex-col justify-center">
+                <h1 className="text-sm md:text-base font-bold text-gray-900 tracking-tight leading-none uppercase">
+                  Edit Doctor Profile
+                </h1>
+                <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 line-clamp-1">
+                  Update details for Dr. {formData.name}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* 1. Personal Information */}
@@ -729,7 +748,7 @@ function EditDoctor() {
 
         {/* Action Buttons */}
         <div className="flex justify-end gap-4 pt-4">
-          <Button type="button" variant="secondary" onClick={() => router.push(`/${hospitalId}/hospital-admin/doctors`)}
+          <Button type="button" variant="secondary" onClick={() => router.push(`/${hospitalId}${basePath}/doctors`)}
             disabled={loading} className="px-2 md:px-8"
           >
             <ArrowLeft size={16} className="mr-1" /> Back to Doctors List

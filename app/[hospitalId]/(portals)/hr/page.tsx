@@ -66,34 +66,37 @@ export default function HRDashboard() {
 
     return (
         <div className="space-y-6 sm:space-y-8 bg-gray-50 min-h-screen">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
+            <div className="flex items-center justify-between gap-3 bg-white p-3 md:p-4 rounded-xl border border-gray-100 shadow-sm">
                 <div>
-                    <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 tracking-tight uppercase leading-none">HR Dashboard</h1>
-                    <p className="text-[7px] sm:text-[10px] font-medium text-slate-500 uppercase tracking-widest mt-1">Manage hospital personnel, attendance, and leaves.</p>
+                    <h1 className="text-base md:text-lg font-bold text-slate-900 tracking-tight uppercase leading-none">HR Dashboard</h1>
+                    <p className="text-[8px] sm:text-[9px] font-medium text-slate-500 uppercase tracking-widest mt-1 hidden sm:block">Manage hospital personnel, attendance, and leaves.</p>
                 </div>
                 <Link
                     href={`/${hospitalId}/hr/staff/create`}
-                    className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-4 sm:py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all shadow-lg shadow-indigo-100 w-full md:w-auto"
+                    className="flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 md:py-2.5 rounded-lg font-black uppercase tracking-widest text-[9px] md:text-[10px] transition-all shadow-sm shrink-0"
                 >
-                    <Plus className="w-5 h-5 font-black" />
-                    Add Staff
+                    <Plus className="w-3.5 h-3.5 md:w-4 md:h-4 font-black" />
+                    <span className="hidden sm:inline">Add Staff</span>
+                    <span className="sm:hidden">Add</span>
                 </Link>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                 {dashboardCards.map((card, idx) => (
                     <Link
                         key={idx}
                         href={card.link}
-                        className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow group relative overflow-hidden"
+                        className="bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow group relative overflow-hidden flex flex-col justify-between h-[90px] sm:h-[110px]"
                     >
-                        <div className={`p-2 sm:p-3 rounded-xl ${card.color} text-white w-fit mb-3 sm:mb-4 group-hover:scale-110 transition-transform`}>
-                            <card.icon className="w-5 h-5 sm:w-6 sm:h-6" />
+                        <div className="flex items-center justify-between z-10">
+                            <div className={`p-1.5 sm:p-2 rounded-lg ${card.color} text-white w-fit group-hover:scale-110 transition-transform`}>
+                                <card.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            </div>
+                            <h3 className="text-gray-500 font-bold uppercase text-[7px] sm:text-[9px] tracking-widest text-right">{card.title}</h3>
                         </div>
-                        <h3 className="text-gray-500 font-bold uppercase text-[8px] sm:text-[10px] tracking-widest">{card.title}</h3>
-                        <p className="text-xl sm:text-3xl font-black text-gray-900 mt-0.5 sm:mt-1">{card.value}</p>
-                        <div className="absolute top-0 right-0 p-2 sm:p-4 text-gray-50 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <card.icon className="w-16 h-16 sm:w-24 sm:h-24 -mr-4 -mt-4 sm:-mr-8 sm:-mt-8" />
+                        <p className="text-lg sm:text-2xl font-black text-gray-900 z-10">{card.value}</p>
+                        <div className="absolute -bottom-2 -right-2 p-2 text-gray-50 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <card.icon className="w-12 h-12 sm:w-16 sm:h-16" />
                         </div>
                     </Link>
                 ))}

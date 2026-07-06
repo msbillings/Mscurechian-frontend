@@ -26,7 +26,9 @@ import {
     CloudUpload,
     Eye,
     ShieldCheck,
-    ScrollText
+    ScrollText,
+    Printer,
+    ChevronUp
 } from 'lucide-react';
 import { PharmacyProfileSkeleton } from '@/components/ui/skeletons';
 import { DocumentViewerModal } from '@/components/common/DocumentViewerModal';
@@ -47,6 +49,7 @@ const PharmacyProfile = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [showPreview, setShowPreview] = useState(false);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -64,7 +67,8 @@ const PharmacyProfile = () => {
             degreeCertificate: { url: '', publicId: '' },
             registrationCertificate: { url: '', publicId: '' }
         },
-        pharmacyTerms: [] as string[]
+        pharmacyTerms: [] as string[],
+        bio: ''
     });
 
     // File Name State for UI Feedback
@@ -123,7 +127,8 @@ const PharmacyProfile = () => {
                         publicId: user.documents?.registrationCertificate?.publicId || ''
                     }
                 },
-                pharmacyTerms: user.pharmacyTerms || []
+                pharmacyTerms: user.pharmacyTerms || [],
+                bio: user.bio || ''
             });
             setLogo(user.image || null);
             setIsLoading(false);
@@ -348,6 +353,162 @@ const PharmacyProfile = () => {
         }
     };
 
+    // ─── Live Receipt Preview Component ────────────────────────────────────────
+    const PharmacyReceiptPreview = () => (
+        <div className="bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden text-[9px] sm:text-[10px] font-sans w-full flex flex-col">
+            {/* ── HEADER ── */}
+            <div className="px-5 py-4 pb-2">
+                <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 shrink-0">
+                        {logo ? (
+                            <img src={logo} alt="Logo" className="w-full h-full object-contain" />
+                        ) : (
+                            <div className="w-full h-full border border-teal-900 rounded-md flex items-center justify-center text-teal-900 text-[8px] font-bold">LOGO</div>
+                        )}
+                    </div>
+                    <div className="w-[1.5px] h-10 bg-teal-900 opacity-20 hidden sm:block"></div>
+                    <div className="flex-1 min-w-0">
+                        <h2 className="text-sm sm:text-base font-black text-teal-900 uppercase tracking-tight leading-tight mb-1 truncate">
+                            {formData.shopName || 'Your Pharmacy Name'}
+                        </h2>
+                        {formData.email && (
+                            <div className="text-teal-800 font-bold flex items-center gap-1.5 mb-1 text-[9px] sm:text-[10px]">
+                                <div className="w-3 h-3 bg-teal-900 rounded-sm flex items-center justify-center shrink-0"><Mail size={7} color="white" /></div>
+                                <span className="truncate">{formData.email}</span>
+                            </div>
+                        )}
+                        <div className="flex flex-wrap items-center gap-x-2 text-gray-600 font-bold text-[8px] sm:text-[9px]">
+                            {formData.address && (
+                                <span>{formData.address}</span>
+                            )}
+                            {formData.mobile && (
+                                <div className="flex items-center gap-1 text-green-600">
+                                    <div className="w-3 h-3 bg-green-500 rounded-sm flex items-center justify-center shrink-0"><Phone size={7} fill="white" color="white" /></div>
+                                    <span>{formData.mobile}</span>
+                                </div>
+                            )}
+                            {formData.gstin && (
+                                <span className="text-teal-900">GST No: {formData.gstin}</span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+                <div className="w-full h-1 bg-green-500 mt-3 rounded-full"></div>
+            </div>
+
+            {/* ── INVOICE BODY ── */}
+            <div className="px-5 py-2 flex-1">
+                <div className="text-center font-bold text-[10px] sm:text-xs mb-3 border-b-2 border-t-2 border-gray-800 py-1 uppercase tracking-widest">Tax Invoice</div>
+                
+                <div className="grid grid-cols-2 gap-0 border border-gray-800 mb-3">
+                    <div className="border-r border-gray-800 p-2">
+                        <p className="font-black text-gray-900 uppercase mb-2 text-[9px] sm:text-[10px]">Invoice Information</p>
+                        <div className="grid grid-cols-3 gap-1">
+                            <span className="font-bold text-gray-700">Invoice ID:</span>
+                            <span className="col-span-2">PHM-INV-00123</span>
+                            <span className="font-bold text-gray-700">Date:</span>
+                            <span className="col-span-2">4 July 2026</span>
+                            <span className="font-bold text-gray-700">Time:</span>
+                            <span className="col-span-2">10:45 AM</span>
+                        </div>
+                    </div>
+                    <div className="p-2">
+                        <p className="font-black text-gray-900 uppercase mb-2 text-[9px] sm:text-[10px]">Patient Information</p>
+                        <div className="grid grid-cols-3 gap-1">
+                            <span className="font-bold text-gray-700">Name:</span>
+                            <span className="col-span-2">John Doe</span>
+                            <span className="font-bold text-gray-700">Mobile:</span>
+                            <span className="col-span-2">9898980000</span>
+                            <span className="font-bold text-gray-700">Ref. Doctor:</span>
+                            <span className="col-span-2">Dr. Ramesh</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Item table */}
+                <table className="w-full mb-3 border-collapse border border-gray-800 text-[9px] sm:text-[10px]">
+                    <thead>
+                        <tr className="bg-gray-100 border-b border-gray-800">
+                            <th className="border-r border-gray-800 px-2 py-1 text-center font-black w-8">S.No</th>
+                            <th className="border-r border-gray-800 px-2 py-1 text-left font-black">Item Name</th>
+                            <th className="border-r border-gray-800 px-2 py-1 text-center font-black w-10">Qty</th>
+                            <th className="border-r border-gray-800 px-2 py-1 text-right font-black w-16">MRP</th>
+                            <th className="px-2 py-1 text-right font-black w-20">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {[
+                            ['1', 'Paracetamol 500mg', '2', '₹15.00', '₹30.00'],
+                            ['2', 'Amoxicillin 250mg', '10', '₹8.00', '₹80.00'],
+                            ['3', 'Cough Syrup 100ml', '1', '₹120.00', '₹120.00'],
+                            ['4', 'Vitamin C Tablets', '30', '₹2.00', '₹60.00'],
+                        ].map((row, i) => (
+                            <tr key={i} className="border-b border-gray-800">
+                                <td className="border-r border-gray-800 px-2 py-1 text-center">{row[0]}</td>
+                                <td className="border-r border-gray-800 px-2 py-1 font-medium">{row[1]}</td>
+                                <td className="border-r border-gray-800 px-2 py-1 text-center">{row[2]}</td>
+                                <td className="border-r border-gray-800 px-2 py-1 text-right">{row[3]}</td>
+                                <td className="px-2 py-1 text-right font-bold">{row[4]}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+
+                {/* Payment & Totals */}
+                <div className="grid grid-cols-2 gap-3 mb-2">
+                    <div className="border border-gray-800">
+                        <div className="flex justify-between border-b border-gray-800 p-1.5"><span className="font-bold">Payment Mode:</span><span>Cash</span></div>
+                        <div className="flex justify-between border-b border-gray-800 p-1.5"><span className="font-bold">Payment Status:</span><span className="font-bold">Fully Paid</span></div>
+                        <div className="p-1.5 h-6 text-[8px] text-gray-500 italic">No return policies applicable on syrups.</div>
+                    </div>
+                    <div className="border border-gray-800">
+                        <div className="flex justify-between border-b border-gray-800 p-1.5"><span className="font-bold">Total Amount:</span><span className="font-bold">₹290.00</span></div>
+                        <div className="flex justify-between border-b border-gray-800 p-1.5"><span className="font-bold">Discount:</span><span className="font-bold text-red-600">-₹10.00</span></div>
+                        <div className="flex justify-between p-1.5 bg-gray-100"><span className="font-bold text-[11px]">Net Payable:</span><span className="font-black text-[11px]">₹280.00</span></div>
+                    </div>
+                </div>
+            </div>
+
+            {/* ── FOOTER ── */}
+            <div className="px-5 pb-5 mt-auto">
+                {/* Phone & Email CTA bars (Slanted design) */}
+                {(formData.mobile || formData.email) && (
+                    <div className="flex mb-3 rounded-lg overflow-hidden text-white font-black text-[10px] sm:text-[11px] h-8 sm:h-9">
+                        {formData.mobile && (
+                            <div className="flex-1 bg-green-500 flex items-center px-4 relative" style={{ clipPath: 'polygon(0 0, 95% 0, 100% 100%, 0 100%)' }}>
+                                <Phone size={10} fill="white" className="mr-2" />
+                                {formData.mobile}
+                            </div>
+                        )}
+                        {formData.email && (
+                            <div className="flex-1 bg-teal-600 flex items-center px-4 justify-end relative" style={{ clipPath: 'polygon(5% 0, 100% 0, 100% 100%, 0 100%)', marginLeft: formData.mobile ? '-5%' : '0' }}>
+                                <Mail size={10} className="mr-2" />
+                                <span className="truncate">{formData.email}</span>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                <div className="flex justify-between items-start gap-4">
+                    <ul className="list-none p-0 m-0 text-teal-900 font-bold leading-tight flex-1 text-[8px] sm:text-[9px]">
+                        {((formData.pharmacyTerms && formData.pharmacyTerms.filter(t => t.trim()).length > 0) ? formData.pharmacyTerms : ['Refunds or exchanges subject to management approval.', 'Expired, opened, or damaged medicines are not eligible for return.', 'Medicines can be returned only within 4 days of purchase.']).map((term: string, i: number) => (
+                            <li key={i} className="mb-0.5">• {term}</li>
+                        ))}
+                    </ul>
+                    {formData.address && (
+                        <div className="text-gray-900 font-black uppercase text-right w-40 text-[8px] sm:text-[9px]">
+                            {formData.address}
+                        </div>
+                    )}
+                </div>
+
+                <div className="text-center text-gray-500 mt-4 pt-2 border-t border-gray-100 text-[8px] font-medium">
+                    This is a computer generated document and does not require a physical signature.
+                </div>
+            </div>
+        </div>
+    );
+
     if (isLoading) {
         return <PharmacyProfileSkeleton />;
     }
@@ -366,6 +527,19 @@ const PharmacyProfile = () => {
                             Unsaved Edits
                         </span>
                     )}
+                    {/* Preview Toggle Button */}
+                    <button
+                        onClick={() => setShowPreview(prev => !prev)}
+                        className={`px-4 py-2 md:py-3 md:px-5 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-2 transition-all active:scale-95 border ${
+                            showPreview
+                                ? 'bg-teal-600 text-white border-teal-600 shadow-xl shadow-teal-200 dark:shadow-none'
+                                : 'bg-teal-50 text-teal-700 border-teal-100 hover:bg-teal-100 dark:bg-teal-900/20 dark:text-teal-400 dark:border-teal-800'
+                        }`}
+                    >
+                        <Printer size={14} />
+                        {showPreview ? 'Hide Preview' : 'Preview Receipt'}
+                        {showPreview ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    </button>
                     {!isEditing ? (
                         <button
                             onClick={() => setIsEditing(true)}
@@ -401,7 +575,7 @@ const PharmacyProfile = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className={`grid grid-cols-1 ${showPreview ? 'xl:grid-cols-5' : 'md:grid-cols-3'} gap-8 transition-all duration-300`}>
                 {/* Branding Sidebar */}
                 <div className="md:col-span-1 space-y-6">
                     <div className="bg-white dark:bg-gray-800 rounded-4xl p-8 border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col items-center text-center">
@@ -496,6 +670,41 @@ const PharmacyProfile = () => {
                         </div>
                         <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight truncate w-full">{formData.shopName || 'Node Identifier'}</h3>
                         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Branding Visual</p>
+                        
+                        {/* Bio Field inline edit */}
+                        <div className="w-full mt-6 pt-6 border-t border-gray-100 dark:border-gray-700/50 text-left">
+                            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-2xl p-4 border border-gray-100 dark:border-gray-800">
+                                {!(isEditing) ? (
+                                    <div className="space-y-1">
+                                        <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Bio</p>
+                                        {user?.bio ? (
+                                            <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed line-clamp-3">{user.bio}</p>
+                                        ) : (
+                                            <p className="text-xs text-gray-400 dark:text-gray-500 italic">No bio added yet. Enable edit mode above to modify your bio.</p>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Bio (Max 150 Chars)</label>
+                                            <span className={`text-[9px] font-bold ${(formData as any).bio?.length >= 150 ? 'text-rose-500' : 'text-gray-400'}`}>
+                                                {(formData as any).bio?.length || 0}/150
+                                            </span>
+                                        </div>
+                                        <textarea
+                                            value={(formData as any).bio || ''}
+                                            onChange={(e) => {
+                                                setFormData(prev => ({ ...prev, bio: e.target.value.slice(0, 150) }));
+                                                setHasChanges(true);
+                                            }}
+                                            rows={3}
+                                            placeholder="Write a short professional or personal bio..."
+                                            className="w-full px-3 py-2 text-xs text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 resize-none leading-relaxed"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
 
                     <div className="p-6 bg-blue-50 dark:bg-blue-900/20 rounded-4xl border border-blue-100 dark:border-blue-800/30">
@@ -820,6 +1029,15 @@ const PharmacyProfile = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* ── LIVE RECEIPT PREVIEW (Desktop side-by-side, Mobile stacked) ── */}
+                {showPreview && (
+                    <div className="md:col-span-3 xl:col-span-2 animate-in fade-in slide-in-from-right-8 duration-500">
+                        <div className="sticky top-6">
+                            <PharmacyReceiptPreview />
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* DOCUMENT VIEWER MODAL */}

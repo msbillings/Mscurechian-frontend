@@ -130,9 +130,9 @@ export const printIPDLedger = (summary: any, hospitalDetails?: any) => {
     const cinNo = hospitalDetails?.cinNo || "";
     const gstNo = hospitalDetails?.gstNumber || "";
     const ipNo = admissionId;
-    const ageSex = (summary?.patientAge || summary?.age) && (summary?.patientGender || summary?.gender)
-        ? `${summary.patientAge || summary.age} / ${summary.patientGender || summary.gender}`
-        : "";
+    const rawAge = summary?.patientAge || summary?.age || "";
+    const rawGender = summary?.patientGender || summary?.gender || "";
+    const ageSex = [rawAge ? `${rawAge}Y` : '', rawGender].filter(Boolean).join(" / ") || "N/A";
     const umrNo = summary?.mrn || "";
     const billNo = summary?.billNumber || "";
     const billDt = format(new Date(), 'dd-MMM-yyyy');

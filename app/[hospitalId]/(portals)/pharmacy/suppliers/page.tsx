@@ -422,44 +422,51 @@ const SuppliersPage = () => {
 
     return (
         <div className="space-y-6 md:space-y-8 pb-20 w-full max-w-7xl mx-auto overflow-x-hidden">
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2">
-                <div className="flex-1">
-                    <h1 className="text-xl md:text-xl lg: font-bold text-gray-900 dark:text-white uppercase tracking-tight">Suppliers</h1>
-                    <p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Vendor Management & Network</p>
+            {/* Unified Top Action Bar */}
+            <div className="bg-white dark:bg-gray-800 p-3 md:p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 md:gap-4">
+                
+                {/* Heading */}
+                <div className="shrink-0 flex flex-col justify-center px-1">
+                    <h1 className="text-sm md:text-base font-bold text-gray-900 dark:text-white uppercase tracking-tight leading-none">Suppliers</h1>
+                    <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1.5 md:mt-1">
+                        Vendor Management & Network
+                    </p>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
+                {/* Actions Row */}
+                <div className="w-full lg:w-auto flex flex-1 flex-col sm:flex-row items-stretch sm:items-center gap-3 md:gap-4 justify-between lg:justify-end">
                     {activeTab === 'suppliers' && (
                         <>
                             {/* Search Bar */}
-                            <div className="relative w-full sm:min-w-[250px] xl:min-w-[400px]">
-                                <Search className="w-4 h-4 text-gray-400 absolute left-3 md:left-4 top-1/2 -translate-y-1/2" />
+                            <div className="relative flex-1 w-full min-w-[180px] md:min-w-[250px] max-w-lg group">
+                                <Search className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 group-focus-within:text-teal-500 transition-colors" />
                                 <input
                                     type="text"
                                     placeholder="Search suppliers..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-10 md:pl-11 pr-4 py-2.5 md:py-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-[11px] md:text-xs font-bold uppercase tracking-widest focus:ring-2 focus:ring-teal-500 outline-none dark:text-white shadow-sm placeholder:text-gray-400"
+                                    className="w-full pl-8 pr-4 py-1.5 md:py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg text-[10px] md:text-xs font-bold uppercase tracking-widest focus:ring-2 focus:ring-teal-500 outline-none dark:text-white shadow-sm placeholder:text-gray-400 transition-all"
                                 />
                             </div>
 
                             <button
                                 onClick={() => setIsAddModalOpen(true)}
-                                className="flex items-center justify-center gap-2 px-4 py-2.5 md:py-3 bg-teal-600 text-white rounded-xl text-[11px] md:text-xs font-black uppercase tracking-widest hover:bg-teal-700 transition-colors shadow-sm w-full sm:w-auto"
+                                className="flex items-center justify-center gap-1.5 px-4 py-1.5 md:py-2 bg-teal-600 text-white rounded-lg text-[10px] md:text-xs font-bold uppercase tracking-widest hover:bg-teal-700 transition-colors shadow-sm shrink-0 w-full sm:w-auto"
                             >
-                                <Plus size={16} />
+                                <Plus className="w-3.5 h-3.5" />
                                 Add Vendor
                             </button>
                         </>
                     )}
 
+                    <div className="hidden sm:block h-7 w-px bg-gray-200 dark:bg-gray-700 shrink-0" />
+
                     <button
                         onClick={() => fetchSuppliers()}
-                        className="p-2.5 md:py-3 md:px-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-gray-500 hover:text-teal-600 transition-all shadow-sm flex items-center justify-center w-full sm:w-auto"
+                        className="px-3 py-1.5 md:py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-500 hover:text-teal-600 transition-all shadow-sm flex items-center justify-center shrink-0 w-full sm:w-auto"
                         title="Refresh List"
                     >
-                        <RefreshCw className={`w-4 h-4 md:w-5 md:h-5 ${loading ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`w-3.5 h-3.5 md:w-4 md:h-4 ${loading ? 'animate-spin' : ''}`} />
                     </button>
                 </div>
             </div>

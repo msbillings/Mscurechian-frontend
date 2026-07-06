@@ -122,8 +122,18 @@ const SharedNavbar: React.FC<SharedNavbarProps> = ({
                         onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
                         className="flex items-center gap-2 hover:bg-slate-50 py-1.5 px-2 rounded-lg transition-colors group"
                     >
-                        <div className="w-8 h-8 rounded-lg bg-primary-theme flex items-center justify-center text-white font-bold text-sm shadow-sm transition-transform group-hover:scale-105">
-                            {user?.name?.charAt(0).toUpperCase() || "U"}
+                        <div className="w-8 h-8 rounded-lg bg-primary-theme overflow-hidden flex items-center justify-center text-white font-bold text-sm shadow-sm transition-transform group-hover:scale-105">
+                            {(user as any)?.image || (user as any)?.avatar || (user as any)?.profilePic ? (
+                                <img 
+                                    src={((user as any)?.image || (user as any)?.avatar || (user as any)?.profilePic).includes('?') 
+                                        ? `${(user as any)?.image || (user as any)?.avatar || (user as any)?.profilePic}&t=${Date.now()}` 
+                                        : `${(user as any)?.image || (user as any)?.avatar || (user as any)?.profilePic}?t=${Date.now()}`} 
+                                    alt="Profile" 
+                                    className="w-full h-full object-cover" 
+                                />
+                            ) : (
+                                user?.name?.charAt(0).toUpperCase() || "U"
+                            )}
                         </div>
                         <div className="hidden lg:block text-left">
                             <p className="text-xs font-bold text-slate-900 leading-tight">

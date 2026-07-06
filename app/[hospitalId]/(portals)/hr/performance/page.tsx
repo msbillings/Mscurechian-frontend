@@ -424,9 +424,12 @@ export default function PerformanceAnalyticsPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedEmpId, setSelectedEmpId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Debounce search: immediate clear when empty, 300ms delay when typing
   useEffect(() => {
+    setCurrentPage(1);
     if (!search.trim()) {
       setDebouncedSearch("");
       return;
@@ -477,6 +480,16 @@ export default function PerformanceAnalyticsPage() {
     () => activeEmployees.find((e) => e._id === selectedEmpId) ?? null,
     [activeEmployees, selectedEmpId],
   );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, selectedMonth, selectedYear]);
+
+  const totalPages = Math.ceil(activeEmployees.length / itemsPerPage);
+  const paginatedEmployees = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return activeEmployees.slice(startIndex, startIndex + itemsPerPage);
+  }, [activeEmployees, currentPage]);
 
   const isLoading = dashLoading || (activeTab === "doctors" && doctorLoading) ||
     (activeTab === "nurses" && nurseLoading) || (activeTab === "staff" && staffLoading);
@@ -530,23 +543,24 @@ export default function PerformanceAnalyticsPage() {
         .perf-stats-grid { 
           display: grid; 
           grid-template-columns: repeat(2, 1fr); 
-          gap: 10px; 
-          margin-bottom: 24px; 
+          gap: 8px; 
+          margin-bottom: 20px; 
         }
         @media (min-width: 640px) { .perf-stats-grid { grid-template-columns: repeat(3, 1fr); } }
-        @media (min-width: 768px) { .perf-stats-grid { grid-template-columns: repeat(4, 1fr); } }
+        @media (min-width: 768px) { .perf-stats-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; } }
         @media (min-width: 1280px) { .perf-stats-grid { grid-template-columns: repeat(8, 1fr); } }
 
         .perf-stat-card {
-          background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-          padding: 12px; display: flex; flex-direction: column; gap: 8px;
-          transition: all 0.2s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+          background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+          padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;
+          transition: all 0.2s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+          min-height: 75px; justify-content: space-between;
         }
         .perf-stat-card:hover { border-color: var(--primary); transform: translateY(-1px); }
-        .perf-stat-icon { width: 28px; height: 28px; border-radius: 8px; background: #eff6ff; color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 12px; }
-        .perf-stat-value { font-size: 16px; font-weight: 700; color: #0f172a; line-height: 1.2; }
-        .perf-stat-label { font-size: 9px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
-        .perf-stat-sub { font-size: 9px; color: #94a3b8; margin-top: -2px; }
+        .perf-stat-icon { width: 22px; height: 22px; border-radius: 6px; background: #eff6ff; color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 10px; }
+        .perf-stat-value { font-size: 14px; font-weight: 800; color: #0f172a; line-height: 1.1; }
+        .perf-stat-label { font-size: 8px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; margin-top: 2px;}
+        .perf-stat-sub { font-size: 8px; color: #94a3b8; margin-top: -2px; }
 
         /* ─── Department Overview ─────────────────────────────────── */
         .perf-dept-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 24px; }
@@ -670,11 +684,11 @@ export default function PerformanceAnalyticsPage() {
         {/* ── Main Column ── */}
         <div className={`perf-main ${!selectedEmp ? "full-width" : ""}`}>
           {/* Header */}
-          <div className="perf-header">
-            <div className="perf-header-top flex flex-col md:flex-row md:items-center justify-between w-full gap-4">
+          <div className="perf-header bg-white p-3 md:p-4 rounded-xl border border-gray-100 shadow-sm mb-4">
+            <div className="perf-header-top flex flex-col sm:flex-row sm:items-center justify-between w-full gap-3">
               <div>
-                <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 tracking-tight">Performance Analytics</h1>
-                <div className="perf-subtitle">
+                <h1 className="text-base md:text-lg font-bold text-slate-900 tracking-tight uppercase leading-none">Performance Analytics</h1>
+                <div className="text-[8px] sm:text-[9px] font-medium text-slate-500 uppercase tracking-widest mt-1 hidden sm:block">
                   Enterprise-grade HR performance reporting · all data from live records
                 </div>
               </div>
@@ -800,14 +814,36 @@ export default function PerformanceAnalyticsPage() {
             <div className="perf-section-header">
               <span className="perf-section-title"><Activity size={15} style={{ color: PRIMARY_BLUE }} /> Employee Performance</span>
             </div>
-            <div className="perf-controls">
-              <input
-                className="perf-search"
-                placeholder="Search by name, ID or specialization…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              <span className="perf-count">{activeEmployees.length} employee{activeEmployees.length !== 1 ? "s" : ""}</span>
+            <div className="perf-controls flex justify-between items-center bg-white p-2 md:p-3 rounded-lg border border-gray-100 shadow-sm mb-4">
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <input
+                  className="perf-search w-full md:w-64"
+                  placeholder="Search name or ID..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                <span className="perf-count hidden md:inline-block text-[11px] font-bold text-gray-500">{activeEmployees.length} employee{activeEmployees.length !== 1 ? "s" : ""}</span>
+              </div>
+              
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-[10px] font-medium text-gray-500 hidden sm:inline-block">Page {currentPage} of {totalPages || 1}</span>
+                <div className="flex items-center gap-1">
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    className="p-1.5 rounded-md bg-gray-50 text-gray-600 hover:bg-gray-100 disabled:opacity-30 transition-colors border border-gray-200"
+                  >
+                    <ChevronRight size={14} className="rotate-180" />
+                  </button>
+                  <button
+                    disabled={currentPage >= totalPages || totalPages === 0}
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    className="p-1.5 rounded-md bg-gray-50 text-gray-600 hover:bg-gray-100 disabled:opacity-30 transition-colors border border-gray-200"
+                  >
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
             </div>
 
             {isLoading ? (
@@ -824,7 +860,7 @@ export default function PerformanceAnalyticsPage() {
               </div>
             ) : (
               <div className="perf-emp-list">
-                {activeEmployees.map((emp) => (
+                {paginatedEmployees.map((emp) => (
                   <EmployeeRow
                     key={emp._id}
                     emp={emp}

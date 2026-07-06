@@ -141,6 +141,9 @@ const BillingPage = () => {
                         setPatientName(order.patient?.name || '');
                         setMobileNumber(order.patient?.mobile || '');
                         setDoctorName(order.doctor?.user?.name || '');
+                        setPatientMrn(order.patient?.mrn || order.mrn || '');
+                        setPatientAddress(order.patient?.address || '');
+                        setPatientType(order.patient?.patientType || order.patientType || '');
 
                         const meds = (order.medicines || []).map((m: any) => ({ ...m, processed: false }));
                         setPrescribedMedicines(meds);
@@ -183,6 +186,9 @@ const BillingPage = () => {
                         setPatientName(draft.patientName || '');
                         setMobileNumber(draft.mobileNumber || '');
                         setDoctorName(draft.doctorName || '');
+                        setPatientMrn(draft.patientMrn || '');
+                        setPatientAddress(draft.patientAddress || '');
+                        if (draft.patientType) setPatientType(draft.patientType);
                         setCart(draft.cart || []);
                         setPaymentMode(draft.paymentMode || 'Cash');
                         setMixedPayments(draft.mixedPayments || { cash: 0, card: 0, upi: 0 });
@@ -213,6 +219,9 @@ const BillingPage = () => {
             patientName,
             mobileNumber,
             doctorName,
+            patientMrn,
+            patientAddress,
+            patientType,
             cart,
             paymentMode,
             mixedPayments,
@@ -223,13 +232,37 @@ const BillingPage = () => {
             orderId: orderId || undefined
         };
         localStorage.setItem('pharmacy_billing_draft', JSON.stringify(draft));
-    }, [isInitialized, patientName, mobileNumber, doctorName, cart, paymentMode, mixedPayments, status, discount, discountType, prescribedMedicines, orderId]);
+    }, [isInitialized, patientName, mobileNumber, doctorName, patientMrn, patientAddress, patientType, cart, paymentMode, mixedPayments, status, discount, discountType, prescribedMedicines, orderId]);
 
     const clearDraft = () => {
         setIsInitialized(false);
         localStorage.removeItem('pharmacy_billing_draft');
     };
     // --- END PERSISTENCE ---
+
+    const handleClear = () => {
+        setPatientName('');
+        setMobileNumber('');
+        setDoctorName('');
+        setPatientType('');
+        setPatientMrn('');
+        setPatientAddress('');
+        setSearchTerm('');
+        setSearchResults([]);
+        setSelectedProduct(null);
+        setQuantity(1);
+        setPrice(0);
+        setCart([]);
+        setSubstitutes([]);
+        setOutOfStockProduct(null);
+        setPaymentMode('Cash');
+        setMixedPayments({ cash: 0, card: 0, upi: 0 });
+        setStatus('Paid');
+        setDiscount(0);
+        setDiscountType('%');
+        setPaidAmount(0);
+        clearDraft();
+    };
 
     const filteredPatients = patientName.length > 0
         ? recentPatients.filter(p => p.name.toLowerCase().includes(patientName.toLowerCase())).slice(0, 5)
@@ -550,6 +583,13 @@ const BillingPage = () => {
                     <p className="text-[10px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 mt-1 uppercase tracking-wider">Invoices & Sales Management</p>
                 </div>
                 <div className="flex items-center gap-2 md:gap-3">
+                    <button 
+                        onClick={handleClear}
+                        className="px-3 py-1.5 md:px-5 md:py-2.5 bg-rose-50 dark:bg-rose-900/20 rounded-xl md:rounded-2xl border border-rose-100 dark:border-rose-800/30 flex items-center gap-2 text-[10px] md:text-xs font-bold text-rose-600 hover:bg-rose-100 uppercase tracking-wider transition-colors"
+                    >
+                        <Trash2 size={14} className="md:w-4 md:h-4" />
+                        Clear Form
+                    </button>
                     <div className="px-3 py-1.5 md:px-5 md:py-2.5 bg-teal-50 dark:bg-teal-900/20 rounded-xl md:rounded-2xl border border-teal-100 dark:border-teal-800/30 flex items-center gap-2">
                         <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-teal-500" />
                         <span className="text-[10px] md:text-xs font-bold text-teal-600 uppercase tracking-wider">Active Device</span>

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, usePathname } from "next/navigation";
 import toast from "react-hot-toast";
 import { hospitalAdminService, getStaffTrainingHistoryAction } from "@/lib/integrations";
 import {
@@ -27,6 +27,9 @@ import {
 function StaffDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const pathname = usePathname();
+  const basePath = pathname.includes('/hr') ? '/hr' : '/hospital-admin';
+  const hospitalId = params.hospitalId as string;
   const id = params.id as string;
 
   const [staff, setStaff] = useState<any>(null);
@@ -77,7 +80,7 @@ function StaffDetailPage() {
     } catch (error: any) {
       console.error("Failed to fetch staff:", error);
       toast.error(error.message || "Failed to load staff details");
-      router.push('/hospital-admin/staff');
+      router.push(`/${hospitalId}${basePath}/staff`);
     } finally {
       setLoading(false);
     }
@@ -127,7 +130,7 @@ function StaffDetailPage() {
     try {
       await hospitalAdminService.deleteStaff(id);
       toast.success(`${staff?.name} has been permanently removed`);
-      router.push('/hospital-admin/staff');
+      router.push(`/${hospitalId}${basePath}/staff`);
     } catch (error: any) {
       console.error("Failed to delete staff:", error);
       toast.error(error.message || "Operation failed during directory purge");
@@ -203,7 +206,7 @@ function StaffDetailPage() {
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => router.push(`/hospital-admin/staff/edit/${id}`)}
+              onClick={() => router.push(`/${hospitalId}${basePath}/staff/edit/${id}`)}
               className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-white border border-gray-200 dark:border-white/10 rounded-xl text-xs font-semibold hover:bg-gray-50 dark:hover:bg-white/5 transition-all active:scale-95"
             >
               <Edit size={14} /> Edit Profile

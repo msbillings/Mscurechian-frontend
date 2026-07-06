@@ -491,6 +491,21 @@ const IPDBillingPage = () => {
         </div>
     );
 
+    const handleClear = () => {
+        setCart([]);
+        setSearchTerm('');
+        setSearchResults([]);
+        setSelectedProduct(null);
+        setQuantity(1);
+        setPrice(0);
+        setFrequency(INITIAL_FREQUENCY);
+        if (orderId || admissionId) {
+            router.push(getPath("/pharmacy/ipd-billing"));
+        }
+        setOrder(null);
+        setPreviousIssuances([]);
+    };
+
     return (
         <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 pb-20 sm:pb-10">
             {/* Header */}
@@ -506,6 +521,15 @@ const IPDBillingPage = () => {
                         </h1>
                         <p className="text-[10px] md:text-xm font-black text-slate-400 uppercase tracking-widest mt-0.5 md:mt-1 italic">Deferred pharmaceutical Billing System</p>
                     </div>
+                </div>
+                <div className="flex items-center gap-2">
+                    <button 
+                        onClick={handleClear}
+                        className="px-3 py-1.5 md:px-5 md:py-2.5 bg-rose-50 rounded-xl md:rounded-2xl border border-rose-100 flex items-center gap-2 text-[10px] md:text-xs font-bold text-rose-600 hover:bg-rose-100 uppercase tracking-wider transition-colors"
+                    >
+                        <Trash2 size={14} className="md:w-4 md:h-4" />
+                        Clear Form
+                    </button>
                 </div>
             </div>
 

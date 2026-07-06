@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
 import { userService } from "@/lib/integrations/services/user.service";
 import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
+import { apiClient } from "@/lib/integrations/api/apiClient";
 import {
   User,
   Mail,
@@ -21,8 +22,13 @@ import {
   Hash,
   MapPin,
   Globe,
-  Activity
+  Activity,
+  Upload
 } from "lucide-react";
+import ImageCropper from '@/components/ui/ImageCropper';
+import SupportBadgeToggle from "@/components/common/SupportBadgeToggle";
+import PrinterSettingsCard from "@/components/printers/PrinterSettingsCard";
+import ProfileHeroCard from '@/components/shared/ProfileHeroCard';
 
 function HospitalAdminProfile() {
   const router = useRouter();
@@ -31,6 +37,98 @@ function HospitalAdminProfile() {
   const [hospital, setHospital] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPhotoUploading, setIsPhotoUploading] = useState(false);
+  const [showSecurityModal, setShowSecurityModal] = useState(false);
+  const [securityForm, setSecurityForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  // Cropper State
+  const [cropper, setCropper] = useState<{
+    isOpen: boolean;
+    image: string;
+  }>({
+    isOpen: false,
+    image: ''
+  });
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be smaller than 5MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropper({
+        isOpen: true,
+        image: reader.result as string
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropComplete = async (croppedDataUrl: string) => {
+    try {
+      setCropper({ isOpen: false, image: '' });
+      setIsPhotoUploading(true);
+
+      const resBlob = await fetch(croppedDataUrl);
+      const blob = await resBlob.blob();
+      const file = new File([blob], "profile-pic.png", { type: "image/png" });
+
+      const photoData = new FormData();
+      photoData.append("profilePic", file);
+
+      const uploadToast = toast.loading("Uploading cropped photo...");
+      
+      setProfile((prev: any) => ({ ...prev, image: croppedDataUrl }));
+      useAuthStore.getState().setUser({ 
+        ...useAuthStore.getState().user, 
+        image: croppedDataUrl,
+        avatar: croppedDataUrl,
+        profilePic: croppedDataUrl 
+      } as any);
+
+      const res = await userService.updateProfile(photoData);
+
+      if (res && (res as any).image) {
+        const userData = res;
+        const rawPic = userData.image || userData.avatar;
+        
+        if (!rawPic) {
+          toast.error('Success, but no image URL returned', { id: uploadToast });
+          return;
+        }
+
+        const newPic = `${rawPic}${rawPic.includes('?') ? '&' : '?'}t=${Date.now()}`;
+
+        setProfile((prev: any) => ({ ...prev, image: newPic }));
+        useAuthStore.getState().setUser({ 
+          ...useAuthStore.getState().user, 
+          image: newPic,
+          avatar: newPic,
+          profilePic: newPic 
+        } as any);
+
+        toast.success("Profile photo updated successfully!", { id: uploadToast });
+        checkAuth();
+      } else {
+        toast.error("Failed to update profile photo", { id: uploadToast });
+      }
+    } catch (err: any) {
+      console.error("Photo upload error:", err);
+      toast.error("An error occurred during photo upload");
+    } finally {
+      setIsPhotoUploading(false);
+    }
+  };
   
   // Personal Info Form
   const [formData, setFormData] = useState({
@@ -72,9 +170,21 @@ function HospitalAdminProfile() {
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate phone number
+    const mobileTrimmed = (formData.mobile || '').trim();
+    if (!mobileTrimmed) {
+      toast.error("Mobile number is required");
+      return;
+    }
+    if (!/^[0-9]{10}$/.test(mobileTrimmed)) {
+      toast.error("Please enter a valid 10-digit mobile number");
+      return;
+    }
+
     setIsSaving(true);
     try {
-      await userService.updateProfile(formData);
+      await userService.updateProfile({ ...formData, mobile: mobileTrimmed });
       toast.success("Profile updated successfully");
       await checkAuth(); // Refresh global auth state
       await loadData(); // Refresh local state
@@ -82,6 +192,63 @@ function HospitalAdminProfile() {
       toast.error(error.message || "Failed to update profile");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handlePasswordChangeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!securityForm.currentPassword) {
+      toast.error("Current password is required");
+      return;
+    }
+    
+    const { newPassword, confirmPassword } = securityForm;
+    
+    if (newPassword.length < 8) {
+      toast.error("New password must be at least 8 characters long");
+      return;
+    }
+    
+    if (!/[A-Z]/.test(newPassword)) {
+      toast.error("Password must contain at least one uppercase letter");
+      return;
+    }
+    if (!/[a-z]/.test(newPassword)) {
+      toast.error("Password must contain at least one lowercase letter");
+      return;
+    }
+    if (!/[0-9]/.test(newPassword)) {
+      toast.error("Password must contain at least one digit");
+      return;
+    }
+    if (!/[@$!%*?&#^()_+\-=]/.test(newPassword)) {
+      toast.error("Password must contain at least one special character");
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+    
+    setIsChangingPassword(true);
+    const saveToast = toast.loading("Updating security credentials...");
+    try {
+      await apiClient('/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify({
+          currentPassword: securityForm.currentPassword,
+          newPassword: securityForm.newPassword
+        })
+      });
+      toast.success("Security credentials updated successfully", { id: saveToast });
+      setShowSecurityModal(false);
+      setSecurityForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update security credentials", { id: saveToast });
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -98,6 +265,15 @@ function HospitalAdminProfile() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6 pb-12">
+      {cropper.isOpen && (
+        <ImageCropper
+          src={cropper.image}
+          onCrop={handleCropComplete}
+          onCancel={() => setCropper({ isOpen: false, image: '' })}
+          aspectRatio={1}
+          circular={true}
+        />
+      )}
       {/* Page Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-gray-800 p-3 md:p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
         <div className="flex items-center gap-4">
@@ -131,29 +307,30 @@ function HospitalAdminProfile() {
               <Shield className="text-emerald-600" size={18} />
               <h2 className="text-sm font-bold text-gray-900 dark:text-white uppercase">Account Credentials</h2>
             </div>
+            <div className="space-y-6">
+              <ProfileHeroCard
+                name={profile?.name || ""}
+                role="Administrator"
+                roleBadge="Full Access"
+                roleColor="bg-emerald-100 text-emerald-700"
+                imageUrl={profile?.image || profile?.avatar}
+                bio={profile?.bio || profile?.user?.bio}
+                isPhotoUploading={isPhotoUploading}
+                onPhotoUpload={handlePhotoUpload}
+                onBioSave={async (newBio: string) => {
+                  try {
+                    await userService.updateProfile({ bio: newBio });
+                    setProfile((prev: any) => prev ? { ...prev, bio: newBio } : null);
+                    toast.success("Bio updated successfully");
+                  } catch (error: any) {
+                    toast.error(error.message || "Failed to update bio");
+                    throw error;
+                  }
+                }}
+              />
+            </div>
             
             <form onSubmit={handleUpdateProfile} className="p-3 md:p-8 space-y-6">
-              <div className="flex flex-col md:flex-row gap-8 items-start md:items-center">
-                <div className="relative group">
-                  <div className="w-24 h-24 rounded-3xl bg-primary-theme flex items-center justify-center text-white text-4xl font-black ">
-                    {profile?.name?.charAt(0).toUpperCase() || "A"}
-                  </div>
-                  <button type="button" className="absolute -bottom-2 -right-2 p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl shadow-md text-gray-600 dark:text-gray-300 hover:scale-110 active:scale-95 transition-all">
-                    <Camera size={16} />
-                  </button>
-                </div>
-                <div className="flex-1 space-y-1">
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">{profile?.name}</h3>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-full">
-                      Administrator
-                    </span>
-                    <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest rounded-full">
-                      Full Access
-                    </span>
-                  </div>
-                </div>
-              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                 <div className="space-y-2">
@@ -239,7 +416,10 @@ function HospitalAdminProfile() {
               <h3 className="text-sm md:text-lg font-bold mb-2">System Security</h3>
               <p className="text-gray-400 text-sm mb-6 max-w-md">Your account is protected by mandatory multi-factor authentication and role-based access control.</p>
               <div className="flex gap-4">
-                <button className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-bold transition-all flex items-center gap-2 border border-white/10">
+                <button 
+                  onClick={() => setShowSecurityModal(true)}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold transition-all flex items-center gap-2 shadow-sm border border-emerald-500"
+                >
                   <Hash size={16} /> Change Passcode
                 </button>
                 <button className="px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-lg text-sm font-bold transition-all border border-emerald-500/20">
@@ -322,8 +502,92 @@ function HospitalAdminProfile() {
                </div>
              </div>
           </div>
+
+          <PrinterSettingsCard />
+          <SupportBadgeToggle />
         </div>
       </div>
+
+      {/* Security Credentials Modal */}
+      {showSecurityModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/20">
+              <div className="flex items-center gap-2">
+                <Shield className="text-emerald-600" size={18} />
+                <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Change Credentials</h3>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowSecurityModal(false);
+                  setSecurityForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                }} 
+                className="p-1 text-gray-400 hover:text-gray-600 rounded-lg transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handlePasswordChangeSubmit} className="p-6 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Current Password</label>
+                <input
+                  type="password"
+                  required
+                  value={securityForm.currentPassword}
+                  onChange={(e) => setSecurityForm({ ...securityForm, currentPassword: e.target.value })}
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all text-gray-900 dark:text-white text-sm"
+                  placeholder="Enter current password"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">New Password</label>
+                <input
+                  type="password"
+                  required
+                  value={securityForm.newPassword}
+                  onChange={(e) => setSecurityForm({ ...securityForm, newPassword: e.target.value })}
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all text-gray-900 dark:text-white text-sm"
+                  placeholder="At least 8 chars, 1 upper, 1 special"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Confirm New Password</label>
+                <input
+                  type="password"
+                  required
+                  value={securityForm.confirmPassword}
+                  onChange={(e) => setSecurityForm({ ...securityForm, confirmPassword: e.target.value })}
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all text-gray-900 dark:text-white text-sm"
+                  placeholder="Retype new password"
+                />
+              </div>
+
+              <div className="flex gap-3 justify-end pt-4 border-t border-gray-100 dark:border-gray-700">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSecurityModal(false);
+                    setSecurityForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                  }}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isChangingPassword}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-primary-theme hover:bg-primary-theme/90 text-white rounded-lg text-xs font-bold transition-all disabled:opacity-50"
+                >
+                  {isChangingPassword ? "Updating..." : "Update Credentials"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -41,7 +41,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { calculateStayDuration } from '@/lib/utils/date-utils';
 import { ipdService } from '@/lib/integrations';
-import { getSocket } from '@/lib/integrations/api/socket';
+import { getSocket, joinSocketRoom } from '@/lib/integrations/api/socket';
 
 import { useDoctorInpatients } from '@/lib/integrations/hooks';
 import { useAuthStore } from '@/stores/authStore';
@@ -106,6 +106,16 @@ export default function DoctorInpatientsPage() {
         const setupSocket = async () => {
             socketInstance = await getSocket();
             if (socketInstance) {
+                const performRoomJoin = async () => {
+                    if (user) {
+                        await joinSocketRoom({ role: user.role, userId: user.id, hospitalId: user.hospital });
+                    }
+                };
+                if (socketInstance.connected) {
+                    await performRoomJoin();
+                }
+                socketInstance.on('connect', performRoomJoin);
+
                 socketInstance.on('ipd:bed_updated', (data: any) => {
                     console.log('📡 [Doctor] Bed Update Sync:', data);
                     fetchAdmissions(); // Trigger query refresh
@@ -124,12 +134,13 @@ export default function DoctorInpatientsPage() {
         setupSocket();
         return () => {
             if (socketInstance) {
+                socketInstance.off('connect');
                 socketInstance.off('ipd:bed_updated');
                 socketInstance.off('vitals_updated');
                 socketInstance.off('doctoral_vital_alert');
             }
         };
-    }, [fetchAdmissions]);
+    }, [fetchAdmissions, user]);
 
     // ✅ Dynamic Filter Options Derived from Admissions
     const unitTypeOptions = Array.from(new Set(admissions.map(adm => adm.bed?.type).filter(Boolean))).sort();

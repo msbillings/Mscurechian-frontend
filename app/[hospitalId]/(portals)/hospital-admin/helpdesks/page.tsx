@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, usePathname } from 'next/navigation';
 import toast from "react-hot-toast";
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
@@ -93,6 +93,8 @@ const TAB_ORDER = ["basic", "employment", "schedule", "financial", "bank"] as co
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function HelpdeskManagement() {
   const router = useRouter();
+  const pathname = usePathname();
+  const basePath = pathname.includes("/hr") ? "/hr" : "/hospital-admin";
   const params = useParams();
   const hospitalId = params.hospitalId as string;
   const queryClient = useQueryClient();
@@ -196,7 +198,7 @@ export default function HelpdeskManagement() {
 
   // ── Edit / Delete / Reset ──────────────────────────────────────────────────
   const handleEditClick = (h: Helpdesk) => {
-    router.push(`/${hospitalId}/hospital-admin/helpdesks/${h._id}/edit`);
+    router.push(`/${hospitalId}${basePath}/helpdesks/${h._id}/edit`);
   };
 
 
@@ -280,63 +282,86 @@ export default function HelpdeskManagement() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto min-h-screen bg-slate-50/50 space-y-6">
+      {/* Dynamic Header */}
+      <div className="flex flex-col gap-4 bg-white py-3 px-4 md:py-4 md:px-5 rounded-2xl border border-gray-100 shadow-sm shrink-0 mt-4 md:mt-6">
+        
+        {/* Top Row: Title, Action Button */}
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-2 xl:gap-4 shrink-0">
+            <div className="shrink-0 flex items-center gap-2 px-1">
+              <div className="p-1.5 md:p-2 bg-blue-50 rounded-lg text-blue-600">
+                <Headphones className="w-5 h-5 md:w-6 md:h-6" />
+              </div>
+              <div className="flex flex-col justify-center">
+                <h1 className="text-sm md:text-base font-bold text-gray-900 tracking-tight leading-none uppercase">
+                  Helpdesk Staff
+                </h1>
+                <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 line-clamp-1">
+                  Manage support hub personnel and credentials
+                </p>
+                {/* Capacity indicator */}
+                <div className="flex items-center gap-2 mt-1.5 hidden md:flex">
+                  {[0,1].map(i => (
+                    <span key={i} className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full border ${
+                      helpdesks[i]
+                        ? 'bg-blue-50 border-blue-200 text-blue-600'
+                        : 'bg-slate-50 border-slate-200 text-slate-400'
+                    }`}>
+                      {helpdesks[i] ? `● Desk ${i+1}: ${helpdesks[i].name?.split(' ')[0] || 'Active'}` : `○ Desk ${i+1}: Empty`}
+                    </span>
+                  ))}
+                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
+                    atCapacity ? 'bg-amber-50 border-amber-200 text-amber-600' : 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                  }`}>
+                    {helpdesks.length}/2 slots used
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
 
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:justify-between items-start md:items-end gap-3 md:gap-0">
-        <div>
-          <h1 className="text-lg md:text-xl lg:text-xl font-semibold text-slate-800 flex items-center gap-2">
-            <Headphones size={24} className="text-blue-500"/> Helpdesk Staff
-          </h1>
-          <p className="text-sm text-slate-500">Manage support hub personnel and credentials</p>
-          {/* Capacity indicator */}
-          <div className="flex items-center gap-2 mt-1.5">
-            {[0,1].map(i => (
-              <span key={i} className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                helpdesks[i]
-                  ? 'bg-blue-50 border-blue-200 text-blue-600'
-                  : 'bg-slate-50 border-slate-200 text-slate-400'
-              }`}>
-                {helpdesks[i] ? `● Desk ${i+1}: ${helpdesks[i].name?.split(' ')[0] || 'Active'}` : `○ Desk ${i+1}: Empty`}
-              </span>
-            ))}
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-              atCapacity ? 'bg-amber-50 border-amber-200 text-amber-600' : 'bg-emerald-50 border-emerald-200 text-emerald-600'
-            }`}>
-              {helpdesks.length}/2 slots used
-            </span>
+          <div className="flex flex-col items-end justify-center w-full xl:w-auto shrink-0 relative">
+            <button
+              disabled={atCapacity}
+              onClick={() => {
+                if (atCapacity) return;
+                router.push(`/${hospitalId}${basePath}/helpdesks/create`);
+              }}
+              title={atCapacity ? "Maximum 2 helpdesk accounts allowed per hospital" : "Add new helpdesk staff"}
+              className={`w-full xl:w-auto flex items-center justify-center gap-2 px-3 md:px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all h-[34px] shadow-sm whitespace-nowrap ${
+                atCapacity
+                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+              }`}
+            >
+              <Plus size={14} strokeWidth={3} className="shrink-0" /> Add Hub Staff
+            </button>
+            {atCapacity && (
+              <p className="text-[9px] text-amber-600 font-semibold mt-1.5 text-right w-full">
+                ⚠ Max 2 helpdesk pairs allowed per hospital
+              </p>
+            )}
           </div>
         </div>
-        <div className="text-right mt-3 md:mt-0 flex flex-col justify-end items-end">
-          <button
-            disabled={atCapacity}
-            onClick={() => {
-              if (atCapacity) return;
-              router.push(`/${hospitalId}/hospital-admin/helpdesks/create`);
-            }}
-            title={atCapacity ? "Maximum 2 helpdesk accounts allowed per hospital" : "Add new helpdesk staff"}
-            className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-[10px] md:text-sm font-medium flex items-center gap-1.5 md:gap-2 transition-all shadow-sm whitespace-nowrap ${
-              atCapacity
-                ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
-            }`}
-          >
-            <Plus size={14} className="md:w-[18px] md:h-[18px]" /> Add Hub Staff
-          </button>
-          {atCapacity && (
-            <p className="text-[9px] md:text-[10px] text-amber-600 font-semibold mt-1.5 text-right w-full">
-              ⚠ Max 2 helpdesk pairs allowed per hospital
-            </p>
-          )}
-        </div>
-      </div>
 
-      {/* Search */}
-      <div className="relative group">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={18}/>
-        <input type="text" placeholder="Search by name, login ID, or mobile..."
-          value={search} onChange={e => setSearch(e.target.value)}
-          className="w-full bg-white border border-slate-200 rounded-xl pl-12 pr-4 py-3 outline-none transition-all text-sm"/>
+        {/* Bottom Row: Control Center (Search, Filters) */}
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 border-t border-gray-50 pt-4">
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 w-full">
+            
+            {/* Search Bar */}
+            <div className="relative flex-1 w-full lg:w-auto">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search by name, login ID, or mobile..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Table */}

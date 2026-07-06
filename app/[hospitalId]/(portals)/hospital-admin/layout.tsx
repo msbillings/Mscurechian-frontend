@@ -95,9 +95,9 @@ const hospitalAdminMenu: MenuItem[] = [
     label: "Pharmacy Unit",
     subItems: [
       { label: "Dashboard", path: "/hospital-admin/pharma/dashboard" },
-      { label: "Medicine Inventory", path: "/hospital-admin/pharma/products" },
-      { label: "Returned Stock", path: "/hospital-admin/pharma/returns" },
-      { label: "Suppliers", path: "/hospital-admin/pharma/suppliers" },
+      { label: "Products Registry", path: "/hospital-admin/pharma/products" },
+      { label: "Supplier Network", path: "/hospital-admin/pharma/suppliers" },
+      { label: "Transaction Logs", path: "/hospital-admin/pharma/transactions" },
       { label: "Pharmacy Settings", path: "/hospital-admin/management/pharmacy-settings" },
     ],
   },
@@ -106,6 +106,7 @@ const hospitalAdminMenu: MenuItem[] = [
     label: "Lab Unit",
     subItems: [
       { label: "Dashboard", path: "/hospital-admin/labs/dashboard" },
+      { label: "Transactions", path: "/hospital-admin/labs/transactions" },
       { label: "Departments", path: "/hospital-admin/labs/departments" },
       { label: "Test Master", path: "/hospital-admin/labs/tests" },
       { label: "Edited Results", path: "/hospital-admin/labs/edited-results" },

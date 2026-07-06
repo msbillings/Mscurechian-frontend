@@ -51,7 +51,7 @@ const PharmacyLayout = ({ children }: { children: React.ReactNode }) => {
 
     useRealtime(['pharmacy', 'inventory', 'billing', 'patients', 'system']);
 
-    const isPharma = user?.role === 'pharma-owner' || user?.role === 'pharmacy';
+    const isPharma = user?.role === 'pharma-owner' || user?.role === 'pharmacy' || user?.role === 'hospital-admin';
     const isLoginPage = pathname?.includes('/pharmacy/login');
 
     const { data: activeOrdersCountData } = useQuery<{ count: number }>({

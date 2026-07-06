@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, usePathname } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { hospitalAdminService } from "@/lib/integrations";
 import {
@@ -110,6 +110,8 @@ function Field({ label, name, value, onChange, error, touched, type = "text",
 /* ─────────────────────────── page ──────────────────────────── */
 function CreateNurse() {
   const router = useRouter();
+  const pathname = usePathname();
+  const basePath = pathname.includes("/hr") ? "/hr" : "/hospital-admin";
   const { hospitalId } = useParams();
   const queryClient = useQueryClient();
 
@@ -303,7 +305,7 @@ function CreateNurse() {
       toast.success(`Nurse "${formData.name}" added to registry successfully!`, { duration: 4000 });
       queryClient.invalidateQueries({ queryKey: ['hospital-admin-nurses'] });
       queryClient.invalidateQueries({ queryKey: ['hospital-admin', 'dashboard'] });
-      router.push(`/${hospitalId}/hospital-admin/nurses`);
+      router.push(`/${hospitalId}${basePath}/nurses`);
     } catch (err: any) {
       toast.error(err.message || "Failed to add nurse to registry", { duration: 5000 });
     } finally { setLoading(false); }
@@ -324,7 +326,7 @@ function CreateNurse() {
         {/* header */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-3 md:p-6 border border-gray-100 dark:border-white/5 shadow-sm">
           <div className="flex items-center gap-4">
-            <button onClick={() => router.push(`/${hospitalId}/hospital-admin/nurses`)}
+            <button onClick={() => router.push(`/${hospitalId}${basePath}/nurses`)}
               className="p-2 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl transition-all">
               <ArrowLeft size={16} />
             </button>
@@ -735,7 +737,7 @@ function CreateNurse() {
                 className="w-full flex items-center justify-center gap-2 py-3.5 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-emerald-500/20">
                 {loading ? <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Plus size={18} /> Confirm Registry Addition</>}
               </button>
-              <button type="button" onClick={() => router.push(`/${hospitalId}/hospital-admin/nurses`)} disabled={loading}
+              <button type="button" onClick={() => router.push(`/${hospitalId}${basePath}/nurses`)} disabled={loading}
                 className="w-full mt-3 py-3 text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors">
                 Abort Registration
               </button>

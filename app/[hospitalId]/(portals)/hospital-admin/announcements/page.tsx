@@ -58,6 +58,7 @@ function AnnouncementManagement() {
     staleTime: 5 * 60 * 1000, // 5 minutes cache
     gcTime: 15 * 60 * 1000,
     retry: 1,
+    refetchInterval: 10000, // Auto-refresh every 10 seconds
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -163,54 +164,96 @@ function AnnouncementManagement() {
   };
 
   return (
-    <div className="space-y-8 bg-slate-50/50 min-h-screen">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-200">
-        <div className="flex items-center gap-4">
-          <div>
-            <h1 className="text-lg md:text-xl font-bold text-slate-900 tracking-tight">Notice Board</h1>
-            <p className="text-xs text-slate-500 font-medium italic tracking-tight">Hospital-wide Global Broadcasts & Personnel Awareness</p>
-          </div>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary-theme text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all w-fit self-center mt-1"
-          >
-            <Plus size={12} strokeWidth={3} /> New Broadcast
-          </button>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          {[
-            { label: "Active Sector", value: announcements.filter(a => a.isActive).length, icon: Megaphone, color: "text-blue-600", bg: "bg-blue-50" },
-            { label: "Critical Priority", value: announcements.filter(a => a.priority === 'high').length, icon: AlertTriangle, color: "text-rose-600", bg: "bg-rose-50" },
-            { label: "Aggregate Sent", value: announcements.length, icon: Send, color: "text-emerald-600", bg: "bg-emerald-50" }
-          ].map((stat, i) => (
-            <div key={i} className="bg-white px-3 py-2 rounded-xl border border-slate-100 shadow-sm flex items-center gap-3 min-w-[140px]">
-              <div className={`p-1.5 rounded-lg ${stat.bg} ${stat.color}`}>
-                <stat.icon size={14} strokeWidth={3} />
+    <div className="max-w-7xl mx-auto min-h-screen bg-slate-50/50">
+      {/* Dynamic Header */}
+      <div className="flex flex-col gap-4 bg-white py-3 px-4 md:py-4 md:px-5 rounded-2xl border border-gray-100 shadow-sm shrink-0 mb-6">
+        
+        {/* Top Row: Title, Minibadges, Action Button */}
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
+          
+          <div className="flex flex-wrap items-center gap-2 xl:gap-4 shrink-0">
+            <div className="shrink-0 flex items-center gap-2 px-1">
+              <div className="p-1.5 md:p-2 bg-blue-50 rounded-lg text-blue-600">
+                <Megaphone className="w-5 h-5 md:w-6 md:h-6" />
               </div>
-              <div>
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">{stat.label}</p>
-                <h3 className="text-sm font-black text-slate-900 italic mt-0.5">{stat.value}</h3>
+              <div className="flex flex-col justify-center">
+                <h1 className="text-sm md:text-base font-bold text-gray-900 tracking-tight leading-none uppercase">
+                  Notice Board
+                </h1>
+                <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 line-clamp-1">
+                  Hospital-wide Global Broadcasts
+                </p>
               </div>
             </div>
-          ))}
+
+            <div className="hidden lg:flex items-center gap-2 ml-4 pl-4 border-l border-slate-100">
+              {[
+                { label: "Active Sector", value: announcements.filter(a => a.isActive).length, color: "text-blue-600", bg: "bg-blue-50" },
+                { label: "Critical Priority", value: announcements.filter(a => a.priority === 'high').length, color: "text-rose-600", bg: "bg-rose-50" },
+                { label: "Aggregate Sent", value: announcements.length, color: "text-emerald-600", bg: "bg-emerald-50" }
+              ].map((stat, i) => (
+                <div key={i} className={`flex items-center gap-1.5 px-2 py-1 rounded-md ${stat.bg} ${stat.color} border border-slate-100/50`}>
+                  <span className="text-[8px] font-bold uppercase tracking-widest">{stat.label}</span>
+                  <span className="text-xs font-black">{stat.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end w-full xl:w-auto shrink-0">
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex-1 xl:flex-none flex items-center justify-center gap-2 px-3 md:px-6 py-2 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all h-[34px] shadow-sm whitespace-nowrap"
+            >
+              <Plus size={14} className="shrink-0" /> New Broadcast
+            </button>
+          </div>
+        </div>
+
+        {/* Bottom Row: Control Center (Search, Filters, View Toggles) */}
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 border-t border-gray-50 pt-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:flex-1">
+            
+            {/* Search Bar - Takes remaining width */}
+            <div className="relative flex-1 w-full lg:w-auto">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input 
+                type="text" 
+                placeholder="Search announcements..." 
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              />
+            </div>
+            
+            {/* Pagination Controls */}
+            {announcements.length > 0 && (
+              <div className="flex items-center gap-1 bg-gray-50 rounded-lg border border-gray-200 p-1 h-[34px] shrink-0">
+                <button
+                  onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1 text-[10px] font-black text-slate-500 hover:text-slate-800 disabled:opacity-30"
+                >
+                  &lt;
+                </button>
+                <span className="text-[10px] font-black text-slate-700 px-1">
+                  {currentPage} / {totalPages || 1}
+                </span>
+                <button
+                  onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1 text-[10px] font-black text-slate-500 hover:text-slate-800 disabled:opacity-30"
+                >
+                  &gt;
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Clean Content Registry */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-2 md:p-4 border-b border-slate-50 bg-slate-50/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Filter announcements by nomenclature or entity..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-11 pr-4 py-2 bg-slate-100/50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500/10 outline-none transition-all"
-            />
-          </div>
-        </div>
 
         <div className="overflow-x-auto">
           {loading ? (
@@ -316,45 +359,6 @@ function AnnouncementManagement() {
           )}
         </div>
 
-        {/* Pagination Controls */}
-        {announcements.length > 0 && (
-          <div className="flex items-center justify-between px-3 md:px-6 py-4 border-t border-slate-50 bg-slate-50/30">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-              Showing <span className="text-slate-900">{indexOfFirstItem + 1}</span> to <span className="text-slate-900">{Math.min(indexOfLastItem, announcements.length)}</span> of <span className="text-slate-900">{announcements.length}</span>
-            </p>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-500 disabled:opacity-50 hover:bg-slate-50 transition-colors"
-              >
-                Previous
-              </button>
-
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => handlePageChange(page)}
-                  className={`w-7 h-7 rounded-lg text-[10px] font-black transition-all ${currentPage === page
-                    ? 'bg-primary-theme text-white shadow-lg shadow-slate-900/20'
-                    : 'bg-white text-slate-500 hover:bg-slate-50 border border-slate-200'
-                    }`}
-                >
-                  {page}
-                </button>
-              ))}
-
-              <button
-                onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-500 disabled:opacity-50 hover:bg-slate-50 transition-colors"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Modern Broadcast Modal */}

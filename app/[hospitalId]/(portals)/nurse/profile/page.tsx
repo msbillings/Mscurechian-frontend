@@ -38,8 +38,7 @@ import { History } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { DocumentViewerModal } from '@/components/common/DocumentViewerModal';
 import PrinterSettingsCard from '@/components/printers/PrinterSettingsCard';
-
-
+import ProfileHeroCard from '@/components/shared/ProfileHeroCard';
 
 export default function NurseProfilePage() {
     const [profile, setProfile] = useState<StaffProfile | null>(null);
@@ -413,53 +412,31 @@ export default function NurseProfilePage() {
                 )}
 
                 {/* 1. HEADER / OVERVIEW CARD */}
-                <div className="bg-white rounded-2xl lg:rounded-[1.5rem] p-4 lg:p-6 border border-slate-200 shadow-sm relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-48 h-48 lg:w-64 lg:h-64 bg-emerald-50 rounded-full blur-3xl -mr-20 -mt-20 group-hover:bg-emerald-100 transition-colors"></div>
+                <ProfileHeroCard
+                    name={profile.user.name}
+                    role={profile.designation || 'Staff Nurse'}
+                    roleBadge={`${profile.experienceYears || 0}yr Exp.`}
+                    roleColor="bg-emerald-100 text-emerald-700"
+                    imageUrl={(profile.user as any).image || (profile.user as any).avatar}
+                    bio={profile.bio || (profile.user as any).bio}
+                    onBioSave={async (newBio: string) => {
+                        try {
+                            await staffService.updateProfile({ bio: newBio });
+                            setProfile(prev => prev ? { ...prev, bio: newBio } : null);
+                            toast.success("Bio updated successfully");
+                        } catch (error: any) {
+                            toast.error(error.message || "Failed to update bio");
+                            throw error;
+                        }
+                    }}
+                    onEditClick={() => handleEdit('personal')}
+                    editLabel="Edit Personal"
+                />
 
-                    <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start gap-4 lg:gap-6 text-center sm:text-left">
-                        <div className="shrink-0">
-                            {/* Static Avatar — upload is done via Edit Personal */}
-                            <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl lg:rounded-[1.25rem] bg-slate-100 border-2 sm:border-4 border-white shadow-lg overflow-hidden flex items-center justify-center text-slate-300">
-                                {((profile.user as any).image || (profile.user as any).avatar) ? (
-                                    <img
-                                        src={
-                                            ((profile.user as any).image || (profile.user as any).avatar).includes('t=')
-                                                ? ((profile.user as any).image || (profile.user as any).avatar)
-                                                : `${((profile.user as any).image || (profile.user as any).avatar)}${((profile.user as any).image || (profile.user as any).avatar).includes('?') ? '&' : '?'}t=${Date.now()}`
-                                        }
-                                        alt="Profile"
-                                        className="w-full h-full object-cover"
-                                    />
-                                ) : <User size={32} className="sm:size-[48px]" />}
-                            </div>
-                        </div>
-
-                        <div className="flex-1 space-y-2 sm:space-y-4 w-full">
-                            <div>
-                                <h1 className="text-lg md:text-xl lg:text-xl font-black text-slate-900 tracking-tight uppercase leading-tight">{profile.user.name}</h1>
-                                <p className="text-[10px] sm:text-base text-slate-500 font-bold uppercase tracking-widest mt-1">{profile.designation || 'Staff Nurse'} <span className="hidden sm:inline">•</span> <span className="block sm:inline">{profile.hospital?.name}</span></p>
-                            </div>
-
-                            <div className="flex flex-wrap justify-center sm:justify-start gap-2 sm:gap-3">
-                                <Badge icon={<CheckCircle2 size={12} className="sm:size-[14px]" />} text="Active" color="emerald" />
-                                <Badge icon={<Briefcase size={12} className="sm:size-[14px]" />} text={`${profile.experienceYears || 0}yr Exp.`} color="slate" />
-                                <Badge icon={<MapPin size={12} className="sm:size-[14px]" />} text={Array.isArray(profile.department) ? profile.department.join(', ') : profile.department} color="blue" />
-                            </div>
-                        </div>
-
-                        <button
-                            onClick={() => handleEdit('personal')}
-                            className="absolute top-0 right-0 sm:top-8 sm:right-8 p-2 sm:p-3 rounded-xl bg-slate-50 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
-                        >
-                            <Edit3 size={16} className="sm:size-[20px]" />
-                        </button>
-                    </div>
-
-                    <div className="mt-4 lg:mt-6 pt-4 lg:pt-6 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 relative z-10">
-                        <InfoItem icon={<Mail size={14} className="sm:size-[16px]" />} label="Email" value={profile.user.email} />
-                        <InfoItem icon={<Phone size={14} className="sm:size-[16px]" />} label="Mobile" value={profile.user.mobile} />
-                        <InfoItem icon={<Building size={14} className="sm:size-[16px]" />} label="Emp ID" value={profile.employeeId} />
-                    </div>
+                <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6">
+                    <InfoItem icon={<Mail size={14} className="sm:size-[16px]" />} label="Email" value={profile.user.email} />
+                    <InfoItem icon={<Phone size={14} className="sm:size-[16px]" />} label="Mobile" value={profile.user.mobile} />
+                    <InfoItem icon={<Building size={14} className="sm:size-[16px]" />} label="Emp ID" value={profile.employeeId} />
                 </div>
 
                 <SupportBadgeToggle />

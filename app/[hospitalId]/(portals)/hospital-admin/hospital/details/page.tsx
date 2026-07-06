@@ -176,41 +176,53 @@ const HospitalDetailsPage = () => {
 
   return (
     <div className="max-w-7xl mx-auto pb-12">
-      {/* Header Area */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
-        <PageHeader
-          icon={<Building2 className="text-primary-theme" />}
-          title="Hospital Profile"
-          subtitle="Manage hospital details, contact information, and basic settings"
-        />
-
-        <div className="flex items-center gap-3">
-          <div className="flex bg-slate-100 p-1 rounded-xl relative w-44 h-11 border border-slate-200">
-            <button
-              onClick={() => setMode('view')}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all z-10 ${mode === 'view' ? 'text-slate-900 bg-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              <Eye size={14} /> View
-            </button>
-            <button
-              onClick={() => setMode('edit')}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all z-10 ${mode === 'edit' ? 'text-slate-900 bg-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              <Edit3 size={14} /> Edit
-            </button>
+      {/* Dynamic Header */}
+      <div className="flex flex-col gap-4 bg-white py-3 px-4 md:py-4 md:px-5 rounded-2xl border border-gray-100 shadow-sm shrink-0 mb-6">
+        
+        {/* Top Row: Identification, Process Button, and Stats */}
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 md:gap-4">
+          
+          <div className="shrink-0 flex items-center gap-2 px-1">
+            <div className="p-1.5 md:p-2 bg-indigo-50 rounded-lg text-indigo-600">
+              <Building2 className="w-5 h-5 md:w-6 md:h-6" />
+            </div>
+            <div className="flex flex-col justify-center">
+              <h1 className="text-sm md:text-base font-bold text-gray-900 tracking-tight leading-none uppercase">
+                Hospital Profile
+              </h1>
+              <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1">
+                Manage hospital details, contact information, and basic settings
+              </p>
+            </div>
           </div>
 
-          {isEdit && (
-            <Button
-              onClick={handleSave}
-              loading={saving}
-              variant="primary"
-              className="bg-primary-theme hover:bg-primary-theme/80 h-11 px-3 md:px-6 rounded-xl shadow-lg shadow-primary-theme/10 flex items-center gap-2"
-            >
-              <Save size={16} />
-              Save Changes
-            </Button>
-          )}
+          <div className="flex items-center gap-3 w-full xl:w-auto overflow-x-auto custom-scrollbar">
+            <div className="flex bg-gray-50 p-1 rounded-lg border border-gray-200">
+              <button
+                onClick={() => setMode('view')}
+                className={`flex items-center justify-center gap-2 px-4 py-1.5 rounded shadow-sm text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'view' ? 'text-indigo-600 bg-white' : 'text-gray-400 hover:text-gray-600 bg-transparent shadow-none'}`}
+              >
+                <Eye size={14} /> View
+              </button>
+              <button
+                onClick={() => setMode('edit')}
+                className={`flex items-center justify-center gap-2 px-4 py-1.5 rounded shadow-sm text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'edit' ? 'text-indigo-600 bg-white' : 'text-gray-400 hover:text-gray-600 bg-transparent shadow-none'}`}
+              >
+                <Edit3 size={14} /> Edit
+              </button>
+            </div>
+
+            {isEdit && (
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex items-center gap-2 px-3 md:px-6 py-2 bg-indigo-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shrink-0 h-[34px] disabled:opacity-50"
+              >
+                {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
+                Save Changes
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

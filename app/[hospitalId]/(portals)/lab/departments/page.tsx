@@ -226,25 +226,25 @@ function DepartmentMasterPage() {
                         </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-4 lg:mt-0">
-                        <div className="flex-1 sm:flex-none px-4 sm:px-5 py-2 sm:py-3 bg-slate-50 dark:bg-gray-700/50 rounded-xl border border-slate-100 dark:border-gray-600 text-center">
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Total Units</p>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white">{departments.length}</p>
+                    <div className="flex flex-wrap items-center gap-2 mt-4 lg:mt-0">
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-gray-700/50 rounded-lg border border-slate-100 dark:border-gray-600 shadow-sm">
+                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Total Units:</p>
+                            <p className="text-sm font-bold text-gray-900 dark:text-white">{departments.length}</p>
                         </div>
-                        <div className="flex-1 sm:flex-none px-4 sm:px-5 py-2 sm:py-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800/30 text-center">
-                            <p className="text-[10px] sm:text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide mb-0.5 sm:mb-1">Active Tests</p>
-                            <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-300">{totalTests}</p>
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800/30 shadow-sm">
+                            <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">Active Tests:</p>
+                            <p className="text-sm font-bold text-indigo-700 dark:text-indigo-300">{totalTests}</p>
                         </div>
 
                         {/* Bulk Import toggle */}
                         <button
                             onClick={() => { setShowBulk(v => !v); resetBulk(); }}
-                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border transition-all ${showBulk
-                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-100 dark:shadow-none'
-                                : 'bg-white dark:bg-gray-800 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all shadow-sm ${showBulk
+                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-emerald-100 dark:shadow-none'
+                                : 'bg-white dark:bg-gray-800 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
                                 }`}
                         >
-                            <FileSpreadsheet className="w-4 h-4" />
+                            <FileSpreadsheet className="w-3.5 h-3.5" />
                             Bulk Import
                         </button>
                     </div>
@@ -558,17 +558,17 @@ function DepartmentMasterPage() {
                                                         <div className="flex items-center justify-end gap-1">
                                                             <button
                                                                 onClick={(e) => { e.stopPropagation(); setEditingId(dept._id); setFormData({ name: dept.name, description: dept.description || '' }); }}
-                                                                className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
+                                                                className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-md transition-colors"
                                                                 title="Edit"
                                                             >
-                                                                <Edit3 size={16} />
+                                                                <Edit3 size={14} />
                                                             </button>
                                                             <button
                                                                 onClick={(e) => { e.stopPropagation(); handleDelete(dept._id); }}
-                                                                className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors"
+                                                                className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-md transition-colors"
                                                                 title="Delete"
                                                             >
-                                                                <Trash2 size={16} />
+                                                                <Trash2 size={14} />
                                                             </button>
                                                         </div>
                                                     </td>

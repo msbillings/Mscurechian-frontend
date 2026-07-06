@@ -12,9 +12,12 @@ import {
     RefreshCcw,
     FileText,
     Package,
-    LayoutTemplate
+    LayoutTemplate,
+    X,
+    Filter
 } from 'lucide-react';
 import { usePrintStore } from '@/stores/printStore';
+import { clearApiCache } from '@/lib/integrations/api/apiClient';
 import { PharmacyBillingService } from '@/lib/integrations/services/pharmacyBilling.service';
 import { PharmacyBill } from '@/lib/integrations/types/pharmacyBilling';
 import PharmacyBillPrint, { ShopDetails } from '@/components/pharmacy/billing/PharmacyBillPrint';
@@ -39,7 +42,9 @@ const TransactionsPage = () => {
     const [totalBills, setTotalBills] = useState(0);
     const [searchTerm, setSearchTerm] = useState('');
     const [paymentFilter, setPaymentFilter] = useState('All Methods');
-    const [dateFilter, setDateFilter] = useState('');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [showFilters, setShowFilters] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
 
     const [selectedBill, setSelectedBill] = useState<PharmacyBill | null>(null);
@@ -73,7 +78,8 @@ const TransactionsPage = () => {
                 10,
                 searchTerm,
                 paymentFilter,
-                dateFilter
+                startDate,
+                endDate
             );
             setBills(data.bills);
             setTotalPages(data.totalPages);
@@ -85,7 +91,7 @@ const TransactionsPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [searchTerm, paymentFilter, dateFilter]);
+    }, [searchTerm, paymentFilter, startDate, endDate]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -149,7 +155,7 @@ const TransactionsPage = () => {
         }
         setIsExporting(true);
         try {
-            const exportData = await PharmacyBillingService.getBills(1, 2000, searchTerm, paymentFilter, dateFilter);
+            const exportData = await PharmacyBillingService.getBills(1, 2000, searchTerm, paymentFilter, startDate, endDate);
             const allBills = exportData.bills;
 
             const workbook = new ExcelJS.Workbook();
@@ -173,8 +179,8 @@ const TransactionsPage = () => {
             // 3. Date Range Info
             worksheet.mergeCells('A3:J3');
             const dateRangeRow = worksheet.getRow(3);
-            const dateText = dateFilter
-                ? `Period: ${dateFilter}`
+            const dateText = (startDate || endDate)
+                ? `Period: ${startDate || ''} to ${endDate || ''}`
                 : `Report Date: ${new Date().toLocaleDateString()}`;
             dateRangeRow.getCell(1).value = dateText;
             dateRangeRow.getCell(1).font = { size: 10, italic: true };
@@ -405,130 +411,158 @@ const TransactionsPage = () => {
 
     return (
         <div className="space-y-4 md:space-y-6 lg:space-y-8 text-gray-900 dark:text-white w-full max-w-[100vw] overflow-x-hidden pt-2">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-6 px-1">
-                <div>
-                    <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Sales History</h1>
-                    <p className="text-[10px] md:text-xs font-semibold text-gray-500 dark:text-gray-400 mt-1 uppercase tracking-wider">Pharmacy Sales Ledger</p>
-                </div>
-                <div className="flex items-center gap-2 md:gap-3 flex-wrap">
-                    {/* Header & Footer Toggle */}
-                    <button
-                        onClick={() => setPrintWithHeader(!printWithHeader)}
-                        className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 md:py-2.5 border rounded-lg text-[10px] md:text-xs font-bold uppercase tracking-wider shadow-sm transition-colors ${
-                            printWithHeader
-                                ? 'bg-indigo-50 text-indigo-600 border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-950/20 dark:border-indigo-900/30'
-                                : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700'
-                        }`}
-                        title={printWithHeader ? 'Header & Footer ON' : 'Header & Footer OFF'}
-                    >
-                        <LayoutTemplate size={14} className="md:w-4 md:h-4" />
-                        <span className="hidden sm:inline">Header &amp; Footer</span>
-                        <span className={`ml-1 px-1.5 py-0.5 rounded text-[9px] font-black ${
-                            printWithHeader ? 'bg-indigo-200 text-indigo-700' : 'bg-gray-200 text-gray-500'
-                        }`}>{printWithHeader ? 'ON' : 'OFF'}</span>
-                    </button>
+            
+            {/* Unified Top Action Bar */}
+            <div className="flex flex-col gap-2 mx-1">
+                {/* Main Action Row */}
+                <div className="bg-white dark:bg-gray-800 p-2 md:p-3 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-wrap lg:flex-nowrap items-center gap-2 md:gap-3">
+                    
+                    {/* Heading */}
+                    <div className="shrink-0 flex flex-col justify-center min-w-max px-1">
+                        <h1 className="text-sm md:text-base font-bold text-gray-900 dark:text-white tracking-tight leading-none">Sales History</h1>
+                        <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-0.5">Pharmacy Ledger</p>
+                    </div>
 
-                    <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 hidden sm:block" />
+                    <div className="hidden lg:block h-6 w-px bg-gray-200 dark:bg-gray-700 shrink-0" />
 
-                    <button
-                        onClick={handleExportExcel}
-                        disabled={isExporting}
-                        className="flex items-center gap-1.5 md:gap-2 px-3 md:px-6 py-2 md:py-3 bg-teal-50 text-teal-600 border border-teal-100 rounded-lg text-[10px] md:text-xs font-bold uppercase tracking-wider hover:bg-teal-100 shadow-sm dark:bg-teal-950/20 dark:border-teal-900/30 disabled:opacity-50 transition-colors"
-                    >
-                        <Download size={14} className="md:w-4 md:h-4" />
-                        <span>{isExporting ? 'Exporting...' : 'Export'}</span>
-                    </button>
-                    <button
-                        onClick={() => fetchBills(currentPage)}
-                        className="p-2 md:p-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg text-gray-400 hover:text-teal-600 shadow-sm transition-colors"
-                    >
-                        <RefreshCcw size={16} className={loading ? 'animate-spin' : ''} />
-                    </button>
-                </div>
-            </div>
-
-            {/* Summary Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 px-1">
-                <div className="bg-white dark:bg-gray-800 p-4 md:p-5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col">
-                    <p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Transactions Today</p>
-                    <div className="flex items-end justify-between mt-auto">
-                        <h3 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white">{stats?.todayStats.billCount || 0}</h3>
-                        <div className="p-2 bg-teal-50 dark:bg-teal-900/20 rounded-lg text-teal-600">
-                            <FileText size={18} />
+                    {/* Compact Stats */}
+                    <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-900 px-2 py-1.5 rounded-lg border border-gray-100 dark:border-gray-700">
+                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Txn:</span>
+                            <span className="text-xs font-black text-gray-900 dark:text-white">{stats?.todayStats.billCount || 0}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 bg-teal-50 dark:bg-teal-900/20 px-2 py-1.5 rounded-lg border border-teal-100 dark:border-teal-900/30">
+                            <span className="text-[9px] font-bold text-teal-600/70 uppercase tracking-wider">Rev:</span>
+                            <span className="text-xs font-black text-teal-700 dark:text-teal-400">
+                                ₹{Math.round(stats?.todayStats.revenue || 0).toLocaleString()}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 bg-purple-50 dark:bg-purple-900/20 px-2 py-1.5 rounded-lg border border-purple-100 dark:border-purple-900/30">
+                            <span className="text-[9px] font-bold text-purple-600/70 uppercase tracking-wider">Items:</span>
+                            <span className="text-xs font-black text-purple-700 dark:text-purple-400">{stats?.todayStats.itemsSold || 0}</span>
                         </div>
                     </div>
-                </div>
 
-                <div className="bg-white dark:bg-gray-800 p-4 md:p-5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col">
-                    <p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Revenue Today</p>
-                    <div className="flex items-end justify-between mt-auto">
-                        <h3 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white">
-                            {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(stats?.todayStats.revenue || 0)}
-                        </h3>
-                        <div className="p-2 bg-teal-50 dark:bg-teal-900/20 rounded-lg text-teal-600">
-                            <Hash size={18} />
-                        </div>
-                    </div>
-                </div>
+                    <div className="hidden lg:block h-6 w-px bg-gray-200 dark:bg-gray-700 shrink-0" />
 
-                <div className="bg-white dark:bg-gray-800 p-4 md:p-5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col sm:col-span-2 lg:col-span-1">
-                    <p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Items Sold Today</p>
-                    <div className="flex items-end justify-between mt-auto">
-                        <h3 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white">{stats?.todayStats.itemsSold || 0}</h3>
-                        <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-purple-600">
-                            <Package size={18} />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Controller Area */}
-            <div className="bg-white dark:bg-gray-800 p-3 md:p-5 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col gap-3 md:gap-4 px-1 mx-1">
-                <div className="flex flex-col lg:flex-row w-full gap-3 md:gap-4 items-center">
-
-                    {/* Date Filter */}
-                    <div className="relative w-full lg:w-auto min-w-[160px]">
-                        <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                            type="date"
-                            value={dateFilter}
-                            onChange={(e) => setDateFilter(e.target.value)}
-                            className="w-full pl-9 md:pl-10 pr-4 py-2.5 md:py-3 bg-gray-50 dark:bg-gray-700/50 border-none rounded-xl text-[10px] md:text-xs font-bold focus:ring-2 focus:ring-teal-500 outline-none dark:text-white"
-                        />
-                    </div>
-
-                    {/* Payment Filter */}
-                    <div className="relative w-full lg:w-auto min-w-[160px]">
-                        <select
-                            className="w-full bg-gray-50 dark:bg-gray-700/50 border-none rounded-xl px-3 md:px-4 py-2.5 md:py-3 text-[10px] md:text-xs font-bold outline-none ring-1 ring-gray-100 dark:ring-gray-700 focus:ring-2 focus:ring-teal-500 dark:text-white cursor-pointer appearance-none"
-                            value={paymentFilter}
-                            onChange={e => setPaymentFilter(e.target.value)}
-                        >
-                            <option>All Methods</option>
-                            <option>Cash</option>
-                            <option>Card</option>
-                            <option>UPI</option>
-                            <option>Mixed</option>
-                            <option>Credit</option>
-                        </select>
-                        <ChevronLeft className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 -rotate-90 pointer-events-none" />
-                    </div>
-
-                    <div className="h-8 md:h-10 w-px bg-gray-100 dark:bg-gray-700 hidden lg:block" />
-
-                    {/* Search */}
-                    <div className="relative flex-1 w-full text-black dark:text-white">
-                        <Search className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                    {/* Search Bar - Flex 1 */}
+                    <div className="relative flex-1 min-w-[140px] md:min-w-[180px]">
+                        <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
                         <input
                             type="text"
-                            placeholder="Patient name, or mobile..."
+                            placeholder="Search patient, mobile..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 md:pl-11 pr-4 py-2.5 md:py-3 bg-gray-50 dark:bg-gray-700/50 border-none rounded-xl text-[10px] md:text-xs font-bold focus:ring-2 focus:ring-teal-500 outline-none dark:text-white"
+                            className="w-full pl-8 pr-6 py-1.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg text-[10px] md:text-xs font-bold focus:ring-2 focus:ring-teal-500 outline-none dark:text-white"
                         />
+                        {searchTerm && (
+                            <button onClick={() => setSearchTerm('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                <X className="w-3 h-3" />
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Toggle Filters Button */}
+                    <button
+                        onClick={() => setShowFilters(!showFilters)}
+                        className={`flex items-center gap-1.5 px-2 md:px-3 py-1.5 rounded-lg border text-[10px] md:text-xs font-bold uppercase tracking-wider transition-colors shrink-0 ${
+                            showFilters 
+                            ? 'bg-teal-50 text-teal-600 border-teal-200 dark:bg-teal-900/20 dark:border-teal-900/30' 
+                            : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100 dark:bg-gray-700/50 dark:border-gray-600'
+                        }`}
+                        title="Toggle Filters"
+                    >
+                        <Filter size={14} />
+                        <span className="hidden sm:inline">{showFilters ? 'Hide Filters' : 'Filters'}</span>
+                    </button>
+
+                    {/* Pagination */}
+                    <div className="flex items-center gap-1 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg px-1 py-1 shrink-0">
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                            className="p-0.5 text-gray-500 hover:text-teal-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Previous Page"
+                        >
+                            <ChevronLeft size={14} />
+                        </button>
+                        <span className="text-[10px] font-bold text-gray-600 dark:text-gray-300 min-w-[28px] text-center">
+                            {currentPage}/{totalPages}
+                        </span>
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                            className="p-0.5 text-gray-500 hover:text-teal-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Next Page"
+                        >
+                            <ChevronLeft size={14} className="rotate-180" />
+                        </button>
+                    </div>
+
+                    {/* Actions: Export & Refresh */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                            onClick={handleExportExcel}
+                            disabled={isExporting}
+                            className="p-1.5 bg-teal-50 text-teal-600 border border-teal-100 rounded-lg hover:bg-teal-100 dark:bg-teal-900/20 dark:border-teal-900/30 transition-colors"
+                            title="Export Excel"
+                        >
+                            <Download size={14} />
+                        </button>
+                        <button
+                            onClick={() => { clearApiCache(); fetchBills(currentPage); }}
+                            className="p-1.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-500 hover:text-teal-600 transition-colors"
+                            title="Refresh"
+                        >
+                            <RefreshCcw size={14} className={loading ? 'animate-spin' : ''} />
+                        </button>
                     </div>
                 </div>
+
+                {/* Secondary Filters Row */}
+                {showFilters && (
+                    <div className="bg-white dark:bg-gray-800 p-2 md:p-3 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-wrap items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                        {/* Start Date & End Date */}
+                        <div className="flex items-center gap-1 shrink-0">
+                            <div className="relative">
+                                <Calendar className="w-3.5 h-3.5 text-gray-400 absolute left-2 top-1/2 -translate-y-1/2" />
+                                <input 
+                                    type="date" 
+                                    value={startDate} 
+                                    onChange={(e) => setStartDate(e.target.value)} 
+                                    className="w-28 md:w-32 pl-6 pr-1 py-1.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg text-[10px] md:text-xs font-bold focus:ring-2 focus:ring-teal-500 outline-none dark:text-white"
+                                />
+                            </div>
+                            <span className="text-[10px] font-bold text-gray-400">-</span>
+                            <div className="relative">
+                                <Calendar className="w-3.5 h-3.5 text-gray-400 absolute left-2 top-1/2 -translate-y-1/2" />
+                                <input 
+                                    type="date" 
+                                    value={endDate} 
+                                    onChange={(e) => setEndDate(e.target.value)} 
+                                    className="w-28 md:w-32 pl-6 pr-1 py-1.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg text-[10px] md:text-xs font-bold focus:ring-2 focus:ring-teal-500 outline-none dark:text-white"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Payment Filter */}
+                        <div className="shrink-0 relative">
+                            <select
+                                className="w-32 md:w-40 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-[10px] md:text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500 dark:text-white cursor-pointer appearance-none"
+                                value={paymentFilter}
+                                onChange={e => setPaymentFilter(e.target.value)}
+                            >
+                                <option>All Methods</option>
+                                <option>Cash</option>
+                                <option>Card</option>
+                                <option>UPI</option>
+                                <option>Mixed</option>
+                                <option>Credit</option>
+                            </select>
+                            <ChevronLeft className="w-3 h-3 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 -rotate-90 pointer-events-none" />
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Transactions Table */}
@@ -650,32 +684,7 @@ const TransactionsPage = () => {
                         </table>
                     </div>
 
-                    {/* Pagination Controls */}
-                    {!loading && bills.length > 0 && (
-                        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 p-4 md:p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 mx-1">
-                            <div className="flex items-center gap-2 order-2 sm:order-1">
-                                <button
-                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                    disabled={currentPage === 1}
-                                    className="px-4 md:px-6 py-2.5 md:py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 bg-gray-50 rounded-xl hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700/50 dark:text-gray-300 dark:hover:bg-gray-600 border border-gray-100 dark:border-gray-700"
-                                >
-                                    Prev
-                                </button>
-                                <button
-                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                    disabled={currentPage === totalPages}
-                                    className="px-4 md:px-6 py-2.5 md:py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 bg-gray-50 rounded-xl hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700/50 dark:text-gray-300 dark:hover:bg-gray-600 border border-gray-100 dark:border-gray-700"
-                                >
-                                    Next
-                                </button>
-                            </div>
-                            <div className="flex items-center gap-3 order-1 sm:order-2">
-                                <span className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                    Page <span className="text-teal-600">{currentPage}</span> of {totalPages}
-                                </span>
-                            </div>
-                        </div>
-                    )}
+                    {/* Pagination Controls Removed from Bottom */}
                 </div>
             )}
 

@@ -14,6 +14,7 @@ import {
     Clock,
     BarChart as BarChartIcon,
 } from 'lucide-react';
+import { clearApiCache } from '@/lib/integrations/api/apiClient';
 import {
     LineChart,
     Line,
@@ -365,7 +366,7 @@ const PharmacyAnalytics = () => {
 
                     <div className="flex items-center gap-2 ml-auto sm:ml-0">
                         <button
-                            onClick={fetchAnalytics}
+                            onClick={() => { clearApiCache(); fetchAnalytics(); }}
                             className="p-2.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-teal-600 hover:bg-gray-50 transition-colors shadow-sm"
                         >
                             <RefreshCcw size={18} className={isLoading ? 'animate-spin' : ''} />

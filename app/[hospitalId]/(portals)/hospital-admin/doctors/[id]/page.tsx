@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, usePathname } from "next/navigation";
 import toast from "react-hot-toast";
 import { hospitalAdminService } from "@/lib/integrations";
 import { ConfirmModal } from "@/components/admin/Modal";
@@ -32,6 +32,8 @@ import { DocumentViewerModal } from "@/components/common/DocumentViewerModal";
 
 function DoctorDetailPage() {
   const router = useRouter();
+  const pathname = usePathname();
+  const basePath = pathname.includes("/hr") ? "/hr" : "/hospital-admin";
   const params = useParams();
   const id = params.id as string;
 
@@ -86,7 +88,7 @@ function DoctorDetailPage() {
     } catch (error: any) {
       console.error("Failed to fetch doctor:", error);
       toast.error(error.message || "Failed to load doctor details");
-      router.push('/hospital-admin/doctors');
+      router.push(`${basePath}/doctors`);
     } finally {
       setLoading(false);
     }
@@ -102,7 +104,7 @@ function DoctorDetailPage() {
         try {
           await hospitalAdminService.deleteDoctor(doctor?.doctorProfileId || id);
           toast.success(`Dr. ${doctor?.name} has been deactivated successfully`);
-          router.push('/hospital-admin/doctors');
+          router.push(`${basePath}/doctors`);
         } catch (error: any) {
           console.error("Failed to deactivate doctor:", error);
           toast.error(error.message || "Failed to deactivate doctor");
@@ -136,7 +138,7 @@ function DoctorDetailPage() {
         <div className="flex flex-wrap items-center gap-4 md:gap-8">
           {/* Back Button */}
           <button
-            onClick={() => router.push('/hospital-admin/doctors')}
+            onClick={() => router.push(`${basePath}/doctors`)}
             className="flex items-center gap-2 text-gray-500 hover:text-blue-600 font-medium text-sm transition-all pr-4 md:border-r border-gray-200 dark:border-gray-700 group"
           >
             <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
@@ -172,7 +174,7 @@ function DoctorDetailPage() {
           {doctor.status !== 'inactive' ? (
             <>
               <Button
-                onClick={() => router.push(`/hospital-admin/doctors/edit/${id}`)}
+                onClick={() => router.push(`${basePath}/doctors/edit/${id}`)}
                 icon={<Edit size={16} />}
                 variant="secondary"
                 className="!text-xs !py-2.5 !px-5 !rounded-xl border-gray-200 transition-all hover:border-blue-300 hover:bg-blue-50/50"

@@ -75,7 +75,11 @@ export function NurseLayout({ children }: { children: React.ReactNode }) {
     initEvents();
     checkAuth();
     verifyLicense();
-  }, [checkAuth, initEvents, isAuthenticated]);
+    // ✅ FIX BUG 4: Do NOT include isAuthenticated in deps — it causes a re-run loop.
+    // When token rotates, isAuthenticated briefly becomes false → checkAuth re-fires →
+    // during that re-fire window, the redirect effect sees !isAuthenticated → logouts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const verifyLicense = async () => {
     if (!isAuthenticated) {

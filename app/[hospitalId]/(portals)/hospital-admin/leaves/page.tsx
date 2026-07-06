@@ -286,88 +286,117 @@ export default function HospitalAdminLeaves() {
 
    return (
       <div className="space-y-8 pb-12 bg-gray-50 min-h-screen">
-         {/* Header */}
-         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div>
-               <h1 className="text-lg font-bold text-gray-900 dark:text-white uppercase leading-none">Leave Management</h1>
-               <p className="text-gray-500 font-bold mt-2 uppercase tracking-[0.2em] text-[10px] flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-pulse" />
-                  Total Leave Requests: {leaves.length}
-               </p>
-            </div>
-            <div className="flex items-center gap-4">
-
-            </div>
-         </div>
-
-         {/* Stats Summary */}
-         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-            {[
-               { label: 'Total Requests', value: stats.total, icon: ClipboardList, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-               { label: 'Pending Requests', value: stats.pending, icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-50' },
-               { label: 'Approved Requests', value: stats.approved, icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-               { label: 'Rejected Requests', value: stats.rejected, icon: XCircle, color: 'text-rose-600', bg: 'bg-rose-50' }
-            ].map((stat, i) => (
-               <div key={i} className="bg-white p-3 md:p-6 rounded-2xl shadow-sm border border-gray-100 group hover:border-indigo-200 transition-colors">
-                  <div className="flex items-center gap-4">
-                     <div className={`w-12 h-12 ${stat.bg} rounded-xl flex items-center justify-center ${stat.color} group-hover:scale-110 transition-transform`}>
-                        <stat.icon className="w-6 h-6" />
-                     </div>
-                     <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{stat.label}</p>
-                        <h3 className="text-2xl font-black text-gray-900 tracking-tighter">{stat.value}</h3>
-                     </div>
+         {/* Dynamic Header with Advanced Filters */}
+         <div className="flex flex-col gap-4 bg-white py-3 px-4 md:py-4 md:px-5 rounded-2xl border border-gray-100 shadow-sm shrink-0">
+            {/* Top Row: Identification & Stats */}
+            <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 md:gap-4 pb-4 border-b border-gray-50">
+               {/* Heading */}
+               <div className="shrink-0 flex items-center gap-2 px-1">
+                  <div className="p-1.5 md:p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                     <ClipboardList className="w-5 h-5 md:w-6 md:h-6" />
+                  </div>
+                  <div className="flex flex-col justify-center">
+                     <h1 className="text-sm md:text-base font-bold text-gray-900 tracking-tight leading-none uppercase">
+                        Leave Management
+                     </h1>
+                     <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-pulse" />
+                        Total Requests: {leaves.length}
+                     </p>
                   </div>
                </div>
-            ))}
-         </div>
 
-         {/* Navigation Tabs */}
-         <div className="flex flex-wrap items-center gap-2 p-1 bg-white rounded-xl border border-gray-100 w-full sm:w-fit">
-            <button
-               onClick={() => setActiveTab('active')}
-               className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 md:px-8 py-3 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'active'
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100'
-                  : 'text-gray-400 hover:text-gray-600'}`}
-            >
-               <AlertCircle size={14} className="shrink-0" /> <span className="truncate">Active Requests ({stats.pending})</span>
-            </button>
-            <button
-               onClick={() => setActiveTab('history')}
-               className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 md:px-8 py-3 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'history'
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100'
-                  : 'text-gray-400 hover:text-gray-600'}`}
-            >
-               <History size={14} className="shrink-0" /> <span className="truncate">Leave History ({stats.total - stats.pending})</span>
-            </button>
-         </div>
-
-         {/* Filter Bar */}
-         <div className="bg-white p-4 md:p-5 rounded-2xl border border-gray-100 flex flex-col md:flex-row items-center gap-3 md:gap-4">
-            <div className="relative flex-1 w-full">
-               <Search className="w-4 h-4 text-gray-400 absolute left-4 md:left-5 top-1/2 -translate-y-1/2" />
-               <input
-                  type="text"
-                  placeholder="Search by employee name..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 md:pl-12 pr-4 py-2.5 md:py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-               />
+               {/* Miniature Stats Row */}
+               <div className="w-full xl:w-auto flex flex-1 flex-wrap sm:flex-nowrap items-stretch sm:items-center justify-start xl:justify-end gap-2 shrink-0">
+                  {[
+                     { label: 'Total', value: stats.total, icon: ClipboardList, color: 'text-indigo-600', border: 'border-indigo-100' },
+                     { label: 'Pending', value: stats.pending, icon: AlertCircle, color: 'text-amber-600', border: 'border-amber-100' },
+                     { label: 'Approved', value: stats.approved, icon: CheckCircle, color: 'text-emerald-600', border: 'border-emerald-100' },
+                     { label: 'Rejected', value: stats.rejected, icon: XCircle, color: 'text-rose-600', border: 'border-rose-100' }
+                  ].map((stat, i) => (
+                     <div key={i} className={`flex-1 sm:flex-none flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border ${stat.border} shadow-sm min-w-[100px] justify-center sm:justify-start`}>
+                        <stat.icon className={`w-3.5 h-3.5 ${stat.color} shrink-0`} />
+                        <div className="flex flex-col">
+                           <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest leading-none truncate">{stat.label}</span>
+                           <span className={`text-xs font-black ${stat.color} leading-none mt-0.5`}>{stat.value}</span>
+                        </div>
+                     </div>
+                  ))}
+               </div>
             </div>
-            <div className="flex items-center gap-3 w-full md:w-auto">
-               <div className="relative flex-1 md:w-44">
-                  <User className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                  <select
-                     value={filterRole}
-                     onChange={(e) => setFilterRole(e.target.value)}
-                     className="w-full pl-10 md:pl-11 pr-4 py-2.5 md:py-3 bg-gray-50 border border-gray-100 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-indigo-500 outline-none appearance-none cursor-pointer"
+
+            {/* Bottom Row: Control Center (Tabs & Filters) */}
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+               {/* Navigation Tabs */}
+               <div className="flex flex-wrap items-center gap-1 p-1 bg-gray-50 rounded-xl border border-gray-200 shrink-0">
+                  <button
+                     onClick={() => setActiveTab('active')}
+                     className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 md:px-6 py-2 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'active'
+                        ? 'bg-indigo-600 text-white shadow-md'
+                        : 'text-gray-400 hover:text-gray-600'}`}
                   >
-                     <option value="all">All Roles</option>
-                     <option value="doctor">Doctors</option>
-                     <option value="nurse">Nurses</option>
-                     <option value="staff">Staff</option>
-                     <option value="hr">HR</option>
-                  </select>
+                     <AlertCircle size={14} className="shrink-0" /> <span className="truncate">Active ({stats.pending})</span>
+                  </button>
+                  <button
+                     onClick={() => setActiveTab('history')}
+                     className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 md:px-6 py-2 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'history'
+                        ? 'bg-indigo-600 text-white shadow-md'
+                        : 'text-gray-400 hover:text-gray-600'}`}
+                  >
+                     <History size={14} className="shrink-0" /> <span className="truncate">History ({stats.total - stats.pending})</span>
+                  </button>
+               </div>
+
+               {/* Filters & Pagination */}
+               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:flex-1">
+                  {/* Search Bar - Takes remaining width */}
+                  <div className="relative flex-1">
+                     <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                     <input
+                        type="text"
+                        placeholder="Search employee..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                     />
+                  </div>
+                  
+                  {/* Role Dropdown */}
+                  <div className="relative shrink-0 sm:w-32">
+                     <User className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                     <select
+                        value={filterRole}
+                        onChange={(e) => setFilterRole(e.target.value)}
+                        className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-indigo-500 outline-none appearance-none cursor-pointer"
+                     >
+                        <option value="all">All Roles</option>
+                        <option value="doctor">Doctors</option>
+                        <option value="nurse">Nurses</option>
+                        <option value="staff">Staff</option>
+                        <option value="hr">HR</option>
+                     </select>
+                  </div>
+
+                  {/* Header Pagination */}
+                  <div className="flex items-center gap-2 shrink-0 bg-gray-50 p-1 rounded-lg border border-gray-200">
+                     <button
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                        className="p-1 text-gray-500 hover:text-indigo-600 hover:bg-white disabled:opacity-30 transition-all rounded shadow-sm"
+                     >
+                        <ChevronLeft size={16} />
+                     </button>
+                     <span className="text-[10px] font-black tracking-widest text-gray-400 px-1">
+                        {page} / {totalPages || 1}
+                     </span>
+                     <button
+                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                        disabled={page >= totalPages}
+                        className="p-1 text-gray-500 hover:text-indigo-600 hover:bg-white disabled:opacity-30 transition-all rounded shadow-sm"
+                     >
+                        <ChevronRight size={16} />
+                     </button>
+                  </div>
                </div>
             </div>
          </div>
@@ -415,27 +444,6 @@ export default function HospitalAdminLeaves() {
                      )}
                   </tbody>
                </table></div>
-            </div>
-
-            {/* Pagination Interface */}
-            <div className="flex items-center justify-between p-2 md:p-4 md:p-8 bg-gray-50/50 border-t border-gray-100">
-               <button
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="flex items-center gap-3 px-4 md:px-8 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 bg-white rounded-xl border border-gray-100 hover:text-indigo-600 disabled:opacity-30 transition-all shadow-sm"
-               >
-                  <ChevronLeft size={16} /> Previous
-               </button>
-               <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400">
-                  Page {page} / {totalPages || 1}
-               </span>
-               <button
-                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                  disabled={page >= totalPages}
-                  className="flex items-center gap-3 px-4 md:px-8 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 bg-white rounded-xl border border-gray-100 hover:text-indigo-600 disabled:opacity-30 transition-all shadow-sm"
-               >
-                  Next <ChevronRight size={16} />
-               </button>
             </div>
          </div>
 

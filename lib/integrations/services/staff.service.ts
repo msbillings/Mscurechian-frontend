@@ -104,6 +104,13 @@ export const staffService = {
       body: JSON.stringify(data),
     }),
 
+  updateStaffProfile: (data: FormData) =>
+    apiClient<{ success: boolean; data?: any; error?: string }>(STAFF_ENDPOINTS.PROFILE, {
+      method: 'PATCH',
+      body: data,
+      headers: {}, // Let browser set Content-Type for FormData
+    }),
+
   uploadDocument: (file: File | Blob, fileName: string) => {
     const formData = new FormData();
     formData.append('document', file, fileName);

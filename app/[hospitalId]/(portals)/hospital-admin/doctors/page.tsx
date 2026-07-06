@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { useRouter } from "next/navigation";
+import { useRouter, useParams, usePathname } from "next/navigation";
 import toast from "react-hot-toast";
 import { useQuery } from '@tanstack/react-query';
 import { hospitalAdminService } from "@/lib/integrations";
@@ -26,10 +26,15 @@ import { useTenantLink } from '@/hooks/useTenantLink';
 
 function HospitalAdminDoctors() {
   const router = useRouter();
+  const params = useParams();
+  const pathname = usePathname();
   const { getPath } = useTenantLink();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterSpecialty, setFilterSpecialty] = useState("");
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+
+  const basePath = pathname.includes('/hr') ? '/hr' : '/hospital-admin';
+  const hospitalId = params.hospitalId as string;
 
   // ✅ CRITICAL FIX: Use React Query instead of useState + useEffect
   const { data: doctors = [], isLoading: loading, error, refetch } = useQuery<any[]>({
@@ -155,45 +160,69 @@ function HospitalAdminDoctors() {
   }
 
   return (
-    <div className="space-y-8 bg-slate-50/50 min-h-screen">
-      {/* Simple Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 tracking-tight">Clinical Consultants</h1>
-          <p className="text-xs md:text-sm text-slate-500 font-medium mt-1">Registry of {doctors.length} verified medical staff</p>
-        </div>
-        <button
-          onClick={() => router.push(getPath('/hospital-admin/doctors/create'))}
-          className="flex items-center justify-center gap-2 px-3 py-2 md:px-6 md:py-2.5 bg-blue-600 text-white rounded-lg md:rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all self-start md:self-auto w-full md:w-auto"
-        >
-          <Plus size={16} strokeWidth={3} /> Onboard Physician
-        </button>
-      </div>
+    <div className="max-w-7xl mx-auto min-h-screen bg-slate-50/50">
+      {/* Dynamic Header */}
+      <div className="flex flex-col gap-4 bg-white py-3 px-4 md:py-4 md:px-5 rounded-2xl border border-gray-100 shadow-sm shrink-0 mb-6">
+        
+        {/* Top Row: Title, Action Button */}
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-2 xl:gap-4 shrink-0">
+            <div className="shrink-0 flex items-center gap-2 px-1">
+              <div className="p-1.5 md:p-2 bg-blue-50 rounded-lg text-blue-600">
+                <Stethoscope className="w-5 h-5 md:w-6 md:h-6" />
+              </div>
+              <div className="flex flex-col justify-center">
+                <h1 className="text-sm md:text-base font-bold text-gray-900 tracking-tight leading-none uppercase">
+                  Clinical Consultants
+                </h1>
+                <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 line-clamp-1">
+                  Registry of {doctors.length} verified medical staff
+                </p>
+              </div>
+            </div>
+          </div>
 
-      {/* Simple Controller */}
-      <div className="bg-white p-2 md:p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-4">
-        <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search by faculty name, physician ID, or clinical email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-          />
+          <div className="flex items-center justify-end w-full xl:w-auto shrink-0 relative">
+            <button
+              onClick={() => router.push(`/${hospitalId}${basePath}/doctors/create`)}
+              className="flex-1 xl:flex-none flex items-center justify-center gap-2 px-3 md:px-6 py-2 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all h-[34px] shadow-sm whitespace-nowrap"
+            >
+              <Plus size={14} strokeWidth={3} className="shrink-0" /> Onboard Physician
+            </button>
+          </div>
         </div>
-        <div className="relative w-full md:w-64">
-          <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-          <select
-            value={filterSpecialty}
-            onChange={(e) => setFilterSpecialty(e.target.value)}
-            className="w-full pl-11 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-blue-500/20 outline-none appearance-none cursor-pointer transition-all"
-          >
-            <option value="">Global Specialties</option>
-            {specialties.map((spec) => (
-              <option key={spec} value={spec}>{spec}</option>
-            ))}
-          </select>
+
+        {/* Bottom Row: Control Center (Search, Filters) */}
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 border-t border-gray-50 pt-4">
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 w-full">
+            
+            {/* Search Bar - Takes remaining width */}
+            <div className="relative flex-1 w-full lg:w-auto">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search by faculty name, physician ID, or clinical email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              />
+            </div>
+
+            {/* Filter */}
+            <div className="relative w-full lg:w-64 shrink-0">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+              <select
+                value={filterSpecialty}
+                onChange={(e) => setFilterSpecialty(e.target.value)}
+                className="w-full pl-9 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-bold text-gray-700 uppercase tracking-widest outline-none h-[34px] cursor-pointer appearance-none transition-all focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Global Specialties</option>
+                {specialties.map((spec) => (
+                  <option key={spec} value={spec}>{spec}</option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -301,14 +330,14 @@ function HospitalAdminDoctors() {
 
                 <div className="flex gap-2">
                   <button
-                    onClick={() => router.push(getPath(`/hospital-admin/doctors/${doctor.doctorProfileId || doctor._id}`))}
+                    onClick={() => router.push(`/${hospitalId}${basePath}/doctors/${doctor.doctorProfileId || doctor._id}`)}
                     className="flex-1 py-3 bg-primary-theme text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all"
                   >
                     Full Profile
                   </button>
                   <div className="flex gap-1">
                     <button
-                      onClick={() => router.push(getPath(`/hospital-admin/doctors/edit/${doctor._id}`))}
+                      onClick={() => router.push(`/${hospitalId}${basePath}/doctors/edit/${doctor._id}`)}
                       className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-blue-600 transition-all hover:bg-slate-50"
                       title="Edit Profile"
                     >

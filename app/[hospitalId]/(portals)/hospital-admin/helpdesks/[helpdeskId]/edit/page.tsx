@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, usePathname } from 'next/navigation';
 import toast from "react-hot-toast";
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
@@ -90,6 +90,8 @@ const STEPS = [
 
 export default function EditHelpdesk() {
   const router = useRouter();
+  const pathname = usePathname();
+  const basePath = pathname.includes("/hr") ? "/hr" : "/hospital-admin";
   const params = useParams();
   const hospitalId = params.hospitalId as string;
   const helpdeskId = params.helpdeskId as string;
@@ -288,7 +290,7 @@ export default function EditHelpdesk() {
       toast.success("Helpdesk profile updated successfully");
       queryClient.invalidateQueries({ queryKey: ['helpdesks'] });
       queryClient.invalidateQueries({ queryKey: ['helpdesk', helpdeskId] });
-      router.push(`/${hospitalId}/hospital-admin/helpdesks`);
+      router.push(`/${hospitalId}${basePath}/helpdesks`);
     } catch (err: any) {
       toast.error(err.message || "Failed to update helpdesk profile");
     } finally {

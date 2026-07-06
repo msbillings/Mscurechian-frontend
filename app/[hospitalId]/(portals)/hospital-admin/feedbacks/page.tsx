@@ -106,36 +106,43 @@ export default function FeedbacksPage() {
     }
 
     return (
-        <div className="space-y-6 bg-slate-50/50 min-h-screen">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-xl md:text-2xl font-bold text-slate-900 flex items-center gap-3">
-                        <MessageSquare className="text-blue-600" />
-                        Patient Feedbacks
-                    </h1>
-                    <p className="text-slate-500 text-xs md:text-sm mt-1">
-                        Manage and review patient satisfaction and concerns.
-                    </p>
-                </div>
+        <div className="max-w-7xl mx-auto min-h-screen bg-slate-50/50">
+            {/* Dynamic Header */}
+            <div className="flex flex-col gap-4 bg-white py-3 px-4 md:py-4 md:px-5 rounded-2xl border border-gray-100 shadow-sm shrink-0 mb-6">
 
-                {/* Summary Card */}
-                {feedbacks.length > 0 && (
-                    <div className="flex items-center gap-4 md:gap-6 bg-white px-3 md:px-6 py-2 md:py-3 rounded-xl shadow-sm border border-slate-200">
-                        <div className="text-center">
-                            <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase">Total Feedbacks</p>
-                            <p className="text-lg md:text-2xl font-black text-slate-900">{feedbacks.length}</p>
-                        </div>
-                        <div className="w-px h-6 md:h-8 bg-slate-100"></div>
-                        <div className="text-center">
-                            <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase">Average Hospital Rating</p>
-                            <div className="flex items-center gap-1.5 md:gap-2 justify-center">
-                                <p className="text-lg md:text-2xl font-black text-primary-theme">{averageRating}</p>
-                                <Star size={14} className="fill-primary-theme text-primary-theme" />
+                {/* Top Row: Title, Minibadges */}
+                <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
+
+                    <div className="flex flex-wrap items-center gap-2 xl:gap-4 shrink-0">
+                        <div className="shrink-0 flex items-center gap-2 px-1">
+                            <div className="p-1.5 md:p-2 bg-blue-50 rounded-lg text-blue-600">
+                                <MessageSquare className="w-5 h-5 md:w-6 md:h-6" />
+                            </div>
+                            <div className="flex flex-col justify-center">
+                                <h1 className="text-sm md:text-base font-bold text-gray-900 tracking-tight leading-none uppercase">
+                                    Patient Feedbacks
+                                </h1>
+                                <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 line-clamp-1">
+                                    Manage and review patient satisfaction and concerns
+                                </p>
                             </div>
                         </div>
+
+                        {feedbacks.length > 0 && (
+                            <div className="hidden lg:flex items-center gap-2 ml-4 pl-4 border-l border-slate-100">
+                                {[
+                                    { label: "Total Feedbacks", value: feedbacks.length, color: "text-gray-900", bg: "bg-gray-100" },
+                                    { label: "Avg Rating", value: `${averageRating} ★`, color: "text-blue-600", bg: "bg-blue-50" }
+                                ].map((stat, i) => (
+                                    <div key={i} className={`flex items-center gap-1.5 px-2 py-1 rounded-md ${stat.bg} ${stat.color} border border-slate-100/50`}>
+                                        <span className="text-[8px] font-bold uppercase tracking-widest">{stat.label}</span>
+                                        <span className="text-xs font-black">{stat.value}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
-                )}
+                </div>
             </div>
 
             {/* Feedbacks Grid */}

@@ -106,30 +106,54 @@ function HospitalAdminHRManagement() {
   }
 
   return (
-    <div className="space-y-6 md:space-y-8 bg-slate-50/50 min-h-screen">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 tracking-tight">HR Management</h1>
-          <p className="text-xs md:text-sm text-slate-500 font-medium mt-1">Manage human resource personnel for your hospital</p>
-        </div>
-        <button
-          onClick={() => router.push('hr/create')}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 md:px-6 py-2.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
-        >
-          <Plus size={16} strokeWidth={3} /> Add HR Manager
-        </button>
-      </div>
+    <div className="max-w-7xl mx-auto min-h-screen bg-slate-50/50">
+      {/* Dynamic Header */}
+      <div className="flex flex-col gap-4 bg-white py-3 px-4 md:py-4 md:px-5 rounded-2xl border border-gray-100 shadow-sm shrink-0 mb-6 mt-4 md:mt-6">
+        
+        {/* Top Row: Title, Action Button */}
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-2 xl:gap-4 shrink-0">
+            <div className="shrink-0 flex items-center gap-2 px-1">
+              <div className="p-1.5 md:p-2 bg-blue-50 rounded-lg text-blue-600">
+                <Users className="w-5 h-5 md:w-6 md:h-6" />
+              </div>
+              <div className="flex flex-col justify-center">
+                <h1 className="text-sm md:text-base font-bold text-gray-900 tracking-tight leading-none uppercase">
+                  HR Management
+                </h1>
+                <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 line-clamp-1">
+                  Manage human resource personnel for your hospital
+                </p>
+              </div>
+            </div>
+          </div>
 
-      <div className="bg-white p-2 md:p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search by name or email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-          />
+          <div className="flex items-center justify-end w-full xl:w-auto shrink-0 relative">
+            <button
+              onClick={() => router.push('hr/create')}
+              className="flex-1 xl:flex-none flex items-center justify-center gap-2 px-3 md:px-6 py-2 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all h-[34px] shadow-sm whitespace-nowrap"
+            >
+              <Plus size={14} strokeWidth={3} className="shrink-0" /> Add HR Manager
+            </button>
+          </div>
+        </div>
+
+        {/* Bottom Row: Control Center (Search, Filters) */}
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 border-t border-gray-50 pt-4">
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 w-full">
+            
+            {/* Search Bar */}
+            <div className="relative flex-1 w-full lg:w-auto">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search by name or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              />
+            </div>
+          </div>
         </div>
       </div>
 

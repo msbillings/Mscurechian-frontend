@@ -173,59 +173,94 @@ function ShiftManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 dark:text-white">Shift Management</h1>
-          <p className="text-[10px] md:text-xm lg:text-xm text-gray-500 dark:text-gray-400 mt-1">Configure and monitor workforce shifts.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+      {/* Dynamic Header with Advanced Filters */}
+      <div className="flex flex-col gap-4 bg-white py-3 px-4 md:py-4 md:px-5 rounded-2xl border border-gray-100 shadow-sm shrink-0 mb-6">
+        
+        {/* Top Row: Identification, Process Button, and Stats */}
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 md:gap-4 pb-4 border-b border-gray-50">
+          
+          <div className="shrink-0 flex items-center gap-2 px-1">
+            <div className="p-1.5 md:p-2 bg-indigo-50 rounded-lg text-indigo-600">
+              <Clock className="w-5 h-5 md:w-6 md:h-6" />
+            </div>
+            <div className="flex flex-col justify-center">
+              <h1 className="text-sm md:text-base font-bold text-gray-900 tracking-tight leading-none uppercase">
+                Shift Management
+              </h1>
+              <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1">
+                Configure and monitor workforce shifts
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1 xl:pb-0 w-full xl:w-auto">
+            <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 rounded-lg border border-gray-100 shrink-0">
+              <div className="p-1.5 bg-white rounded-md shadow-sm"><Clock className="w-4 h-4 text-gray-500" /></div>
+              <div className="flex flex-col">
+                <span className="text-[8px] font-black uppercase tracking-widest text-gray-400">Total Shifts</span>
+                <span className="text-sm font-bold text-gray-700 leading-none">{shifts.length}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 px-4 py-2 bg-emerald-50/50 rounded-lg border border-emerald-100 shrink-0">
+              <div className="p-1.5 bg-white rounded-md shadow-sm"><Users className="w-4 h-4 text-emerald-500" /></div>
+              <div className="flex flex-col">
+                <span className="text-[8px] font-black uppercase tracking-widest text-emerald-600/70">Staff Assigned</span>
+                <span className="text-sm font-bold text-emerald-700 leading-none">
+                  {shifts.reduce((acc: number, s: any) => acc + (s.staff || 0), 0)}
+                </span>
+              </div>
+            </div>
             <button 
-              onClick={() => setView('grid')}
-              className={`p-2 rounded-md ${view === 'grid' ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
+              onClick={handleOpenCreateModal}
+              className="flex items-center gap-2 px-3 md:px-6 py-2 bg-indigo-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shrink-0 h-[34px]"
             >
-              <LayoutGrid className="w-4 h-4" />
-            </button>
-            <button 
-              onClick={() => setView('list')}
-              className={`p-2 rounded-md ${view === 'list' ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
-            >
-              <List className="w-4 h-4" />
+              <Plus size={14} className="shrink-0" /> Create Shift
             </button>
           </div>
-          <button 
-            onClick={handleOpenCreateModal}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 shadow-sm"
-          >
-            <Plus className="w-4 h-4" /> Create Shift
-          </button>
         </div>
-      </div>
 
-      {/* Control Bar */}
-      <div className="bg-white dark:bg-gray-800 p-2 md:p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col lg:flex-row items-center gap-4">
-        <div className="relative flex-1 w-full lg:w-auto">
-          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input 
-            type="text" 
-            placeholder="Search shifts..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-          />
-        </div>
-        <div className="flex items-center gap-3 w-full lg:w-auto">
-          <button 
-            onClick={() => setSortBy(sortBy === 'name' ? 'staff' : 'name')}
-            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-200 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-medium hover:text-blue-600 group"
-          >
-            <Filter className="w-4 h-4" /> 
-            Sort by {sortBy === 'name' ? 'Staff Count' : 'Name'}
-          </button>
-          <button className="p-2 bg-white dark:bg-gray-700 text-gray-400 border border-gray-200 dark:border-gray-600 rounded-lg hover:text-blue-600">
-            <Settings2 className="w-4 h-4" />
-          </button>
+        {/* Bottom Row: Control Center (Search, Filters, View Toggles) */}
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:flex-1">
+            
+            {/* Search Bar - Takes remaining width */}
+            <div className="relative flex-1">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input 
+                type="text" 
+                placeholder="Search shifts..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button 
+                onClick={() => setSortBy(sortBy === 'name' ? 'staff' : 'name')}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-indigo-600 hover:border-indigo-200 transition-all cursor-pointer h-[34px]"
+              >
+                <Filter className="w-3.5 h-3.5" /> 
+                Sort: {sortBy === 'name' ? 'Name' : 'Staff'}
+              </button>
+              
+              <div className="flex items-center bg-gray-50 p-1 rounded-lg border border-gray-200 h-[34px]">
+                <button 
+                  onClick={() => setView('grid')}
+                  className={`p-1.5 rounded transition-all shadow-sm ${view === 'grid' ? 'bg-white text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                </button>
+                <button 
+                  onClick={() => setView('list')}
+                  className={`p-1.5 rounded transition-all shadow-sm ${view === 'list' ? 'bg-white text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                  <List className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+          </div>
         </div>
       </div>
 

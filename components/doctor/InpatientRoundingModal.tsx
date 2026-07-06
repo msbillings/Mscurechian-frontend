@@ -158,55 +158,55 @@ export default function InpatientRoundingModal({
             <div className="w-full max-w-4xl bg-white dark:bg-[#111] h-full shadow-2xl flex flex-col border-l border-gray-200 dark:border-gray-800" style={slideLeftStyle}>
                 
                 {/* 1. Header Section */}
-                <div className="p-6 bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white shrink-0 relative overflow-hidden">
+                <div className="p-4 md:p-6 bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white shrink-0 relative overflow-hidden">
                     <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
                     
-                    <div className="flex items-start justify-between gap-4 relative z-10">
-                        <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center font-black text-2xl text-white shadow-inner shrink-0">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 relative z-10">
+                        <div className="flex items-center gap-3 sm:gap-4">
+                            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center font-black text-xl sm:text-2xl text-white shadow-inner shrink-0">
                                 {patient.name?.[0] || 'P'}
                             </div>
                             <div>
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <h2 className="text-xl font-black uppercase tracking-tight text-white">{patient.name || 'Patient'}</h2>
-                                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/30 border border-emerald-400/40 text-emerald-300 font-bold text-[10px] uppercase">
+                                    <h2 className="text-lg sm:text-xl font-black uppercase tracking-tight text-white">{patient.name || 'Patient'}</h2>
+                                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/30 border border-emerald-400/40 text-emerald-300 font-bold text-[9px] sm:text-[10px] uppercase">
                                         MRN: {patient.mrn || 'N/A'}
                                     </span>
-                                    <span className="px-2 py-0.5 rounded-full bg-white/10 border border-white/20 text-white font-black text-[10px] uppercase">
+                                    <span className="px-2 py-0.5 rounded-full bg-white/10 border border-white/20 text-white font-black text-[9px] sm:text-[10px] uppercase">
                                         BED: {admission.bed?.bedId || 'WARD'} ({admission.bed?.type || 'General'})
                                     </span>
                                 </div>
-                                <div className="flex items-center gap-3 mt-2 text-xs text-gray-300">
+                                <div className="flex items-center gap-2 sm:gap-3 mt-1.5 sm:mt-2 text-[10px] sm:text-xs text-gray-300 flex-wrap">
                                     <span>Age/Gender: <strong className="text-white">{patient.age || '45'}Y / {patient.gender || 'M'}</strong></span>
-                                    <span>•</span>
+                                    <span className="hidden sm:inline">•</span>
                                     <span>Principal Dx: <strong className="text-emerald-300 font-bold">{admission.reasonForAdmission || 'Pending Assessment'}</strong></span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
                             <button
                                 onClick={toggleRoundedToday}
-                                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-black text-xs uppercase tracking-wider transition-all shadow-md ${
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-black text-[10px] sm:text-xs uppercase tracking-wider transition-all shadow-md ${
                                     isRoundedToday 
                                         ? 'bg-emerald-500 text-white border border-emerald-400' 
                                         : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
                                 }`}
                             >
-                                <CheckCircle2 size={16} strokeWidth={2.5} />
+                                <CheckCircle2 size={16} strokeWidth={2.5} className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                 <span>{isRoundedToday ? 'Rounded Today ✓' : 'Mark Rounded'}</span>
                             </button>
                             <button 
                                 onClick={onClose}
                                 className="p-2 rounded-xl bg-white/10 hover:bg-rose-500/80 text-white transition-colors border border-white/10"
                             >
-                                <X size={20} />
+                                <X size={18} />
                             </button>
                         </div>
                     </div>
 
                     {/* Clinical Safety Banner */}
-                    <div className="flex items-center gap-2 mt-4 pt-3 border-t border-white/10 flex-wrap text-[11px]">
+                    <div className="flex items-center gap-2 mt-4 pt-3 border-t border-white/10 flex-wrap text-[10px] sm:text-[11px]">
                         <span className="font-bold text-gray-300 uppercase tracking-wider">Clinical Alerts:</span>
                         {patient.allergies?.length > 0 ? (
                             <span className="px-2 py-0.5 rounded bg-rose-500/30 text-rose-200 border border-rose-400/40 font-black uppercase">
@@ -227,12 +227,12 @@ export default function InpatientRoundingModal({
                 </div>
 
                 {/* 2. Navigation Tabs */}
-                <div className="flex items-center border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-[#161616] px-6 shrink-0 overflow-x-auto no-scrollbar">
+                <div className="flex items-center border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-[#161616] px-3 md:px-6 shrink-0 overflow-x-auto no-scrollbar">
                     {[
-                        { id: 'soap', label: '1. Daily SOAP Review & Notes', icon: FileText, count: savedNotes.length },
-                        { id: 'vitals', label: '2. Vitals Flowsheet & Labs', icon: Activity },
-                        { id: 'emar', label: '3. Active Meds (eMAR)', icon: Pill },
-                        { id: 'discharge', label: '4. Discharge Readiness', icon: LogOut, alert: admission.dischargeRequested }
+                        { id: 'soap', label: '1. SOAP Notes', icon: FileText, count: savedNotes.length },
+                        { id: 'vitals', label: '2. Vitals & Labs', icon: Activity },
+                        { id: 'emar', label: '3. eMAR Meds', icon: Pill },
+                        { id: 'discharge', label: '4. Discharge', icon: LogOut, alert: admission.dischargeRequested }
                     ].map((tab) => {
                         const Icon = tab.icon;
                         const isActive = activeTab === tab.id;
@@ -240,13 +240,13 @@ export default function InpatientRoundingModal({
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as any)}
-                                className={`flex items-center gap-2 py-4 px-4 font-black text-xs uppercase tracking-wider border-b-2 transition-all shrink-0 ${
+                                className={`flex items-center gap-1.5 py-3 px-2.5 sm:px-4 font-black text-[10px] sm:text-xs uppercase tracking-wider border-b-2 transition-all shrink-0 ${
                                     isActive 
                                         ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400 bg-white dark:bg-[#111]' 
                                         : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'
                                 }`}
                             >
-                                <Icon size={15} strokeWidth={isActive ? 2.5 : 2} />
+                                <Icon size={14} strokeWidth={isActive ? 2.5 : 2} />
                                 <span>{tab.label}</span>
                                 {tab.count !== undefined && (
                                     <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${isActive ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-gray-200 text-gray-700 dark:bg-gray-800 dark:text-gray-400'}`}>

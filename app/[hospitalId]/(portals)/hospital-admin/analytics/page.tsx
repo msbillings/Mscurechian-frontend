@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 import {
     Pill, FlaskConical, Building2, Users,
-    Search, Download
+    Search, Download, Activity
 } from 'lucide-react';
 import { apiClient } from '@/lib/integrations/api/apiClient';
 import { HOSPITAL_ADMIN_ENDPOINTS } from '@/lib/integrations/config/endpoints';
@@ -373,86 +373,95 @@ const AnalyticsPage = () => {
 
     return (
     <div className="space-y-6 md:space-y-8 bg-slate-50/50 min-h-screen">
-            {/* Header */}
-            <div className="flex flex-col gap-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                            <h1 className="text-lg md:text-xl lg:text-xl font-black text-slate-900">HOSPITAL ANALYTICS</h1>
+            {/* Unified Top Action Bar */}
+            <div className="bg-white dark:bg-gray-800 p-3 md:p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 md:gap-4 mb-2">
+                
+                {/* Heading */}
+                <div className="shrink-0 flex items-center gap-2 px-1">
+                    <div className="p-1.5 md:p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-indigo-600">
+                        <Activity className="w-5 h-5 md:w-6 md:h-6" />
+                    </div>
+                    <div className="flex flex-col justify-center">
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-sm md:text-base font-bold text-gray-900 dark:text-white tracking-tight leading-none uppercase">
+                                Hospital Analytics
+                            </h1>
                             {isFetching && (
-                                <div className="flex items-center gap-2 bg-indigo-50 px-3 py-1.5 rounded-full border border-indigo-100">
-                                    <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-pulse"></div>
-                                    <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest">Syncing</span>
+                                <div className="flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-0.5 rounded-full border border-indigo-100 dark:border-indigo-800">
+                                    <div className="w-1.5 h-1.5 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-pulse"></div>
+                                    <span className="text-[8px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Syncing</span>
                                 </div>
                             )}
                         </div>
-                        <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mt-1">Clinical and Financial Performance</p>
+                        <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1.5 md:mt-1">
+                            Clinical and Financial Performance
+                        </p>
                     </div>
                 </div>
 
-                {/* Controls Bar */}
-                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white border border-slate-200 rounded-xl p-2 md:p-4 shadow-sm">
-                    {/* Date Range Filters */}
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-slate-600 uppercase">From</span>
-                            <input
-                                type="date"
-                                value={startDate}
-                                onChange={(e) => {
-                                    setStartDate(e.target.value);
-                                    setRange('custom');
-                                }}
-                                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
-
-                        <span className="text-slate-200">-</span>
-
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-slate-600 uppercase">To</span>
-                            <input
-                                type="date"
-                                value={endDate}
-                                onChange={(e) => {
-                                    setEndDate(e.target.value);
-                                    setRange('custom');
-                                }}
-                                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
+                {/* Actions Row */}
+                <div className="w-full flex flex-1 flex-col sm:flex-row items-stretch sm:items-center gap-3 justify-between xl:justify-end">
+                    
+                    {/* Date Filters */}
+                    <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-1 text-xs shadow-sm w-full sm:w-auto">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1 mr-1">Date</span>
+                        <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => {
+                                setStartDate(e.target.value);
+                                setRange('custom');
+                            }}
+                            className="bg-transparent border-none text-[9px] md:text-[10px] font-bold outline-none text-gray-700 dark:text-gray-300 py-0.5 focus:ring-0 uppercase tracking-widest min-w-[100px]"
+                        />
+                        <span className="text-gray-400 font-bold">-</span>
+                        <input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => {
+                                setEndDate(e.target.value);
+                                setRange('custom');
+                            }}
+                            className="bg-transparent border-none text-[9px] md:text-[10px] font-bold outline-none text-gray-700 dark:text-gray-300 py-0.5 focus:ring-0 uppercase tracking-widest min-w-[100px]"
+                        />
+                        {(startDate || endDate) && (
+                            <button
+                                onClick={() => { setStartDate(""); setEndDate(""); setRange('30d'); }}
+                                className="text-xs font-bold text-rose-500 hover:text-rose-700 ml-1 px-1"
+                            >
+                                ✕
+                            </button>
+                        )}
                     </div>
 
-                    {/* Quick Range + Download */}
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
-                            {['7d', '30d', '90d'].map((r) => (
-                                <button
-                                    key={r}
-                                    onClick={() => {
-                                        setRange(r);
-                                        setStartDate('');
-                                        setEndDate('');
-                                    }}
-                                    className={`px-4 py-2 rounded-md text-xs font-bold uppercase transition-all ${range === r
-                                        ? 'bg-white text-slate-900 shadow-sm'
-                                        : 'text-slate-500 hover:text-slate-700'
-                                        }`}
-                                >
-                                    {r}
-                                </button>
-                            ))}
-                        </div>
-
-                        <button
-                            onClick={handleExport}
-                            disabled={isExporting}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-lg text-xs font-bold uppercase hover:bg-emerald-700 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <Download className="w-4 h-4" />
-                            {isExporting ? 'Processing...' : 'Download Report'}
-                        </button>
+                    {/* Quick Range */}
+                    <div className="flex items-center gap-0.5 bg-gray-50 dark:bg-gray-900 p-0.5 rounded-lg border border-gray-100 dark:border-gray-800 shrink-0">
+                        {['7d', '30d', '90d'].map((r) => (
+                            <button
+                                key={r}
+                                onClick={() => {
+                                    setRange(r);
+                                    setStartDate('');
+                                    setEndDate('');
+                                }}
+                                className={`px-2 py-1 rounded-md text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-all ${range === r
+                                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-200 dark:ring-gray-600'
+                                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                    }`}
+                            >
+                                {r}
+                            </button>
+                        ))}
                     </div>
+
+                    <button
+                        onClick={handleExport}
+                        disabled={isExporting}
+                        className="flex items-center justify-center gap-1.5 px-3 py-1.5 md:py-2 bg-emerald-600 dark:bg-emerald-500 text-white rounded-lg text-[10px] md:text-[11px] font-bold uppercase tracking-wider hover:bg-emerald-700 dark:hover:bg-emerald-600 transition-all shadow-sm shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <Download className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                        <span>{isExporting ? 'Processing' : 'Export'}</span>
+                    </button>
                 </div>
             </div>
 

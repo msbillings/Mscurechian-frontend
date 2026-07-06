@@ -9,6 +9,7 @@ import {
     ChevronRight,
     RefreshCcw
 } from 'lucide-react';
+import { clearApiCache } from '@/lib/integrations/api/apiClient';
 import { pharmacyService } from '@/lib/integrations/services/pharmacy.service';
 // import { toast } from 'react-hot-toast';
 import { PharmacyTableSkeleton } from '@/components/ui/skeletons';
@@ -181,7 +182,7 @@ const AuditLogsPage = () => {
                     </div>
                     <h1 className="text-lg md:text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Audit Logs</h1>
                     <button
-                        onClick={() => fetchLogs(page)}
+                        onClick={() => { clearApiCache(); fetchLogs(page); }}
                         className="ml-auto p-2 text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-all active:scale-95"
                         title="Refresh Logs"
                     >

@@ -21,6 +21,8 @@ import { getStaffProfileAction } from '@/lib/integrations/actions/staff.actions'
 import { staffService } from '@/lib/integrations/services/staff.service';
 import { helpdeskService } from '@/lib/integrations/services/helpdesk.service';
 import { HelpdeskDashboardSkeleton } from "@/components/ui/skeletons";
+import ProfileHeroCard from '@/components/shared/ProfileHeroCard';
+import toast from 'react-hot-toast';
 
 export default function HelpdeskProfilePage() {
     const router = useRouter();
@@ -90,49 +92,26 @@ export default function HelpdeskProfilePage() {
         <div className="max-w-7xl mx-auto space-y-5 pb-20 pt-6 animate-in fade-in duration-500 px-0 md:px-4 lg:px-4">
 
             {/* PROFILE HEADER */}
-            <div className="relative group overflow-hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-7 transition-all hover:shadow-lg">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/5 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-teal-500/10 transition-colors duration-700"></div>
-
-                <div className="relative flex flex-col md:flex-row items-center gap-4 sm:gap-6">
-                    <div className="relative">
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-slate-900 flex items-center justify-center text-white font-black text-2xl sm:text-3xl shadow-xl relative z-10 overflow-hidden">
-                            {(user as any)?.image ? <img src={(user as any).image} alt={name} className="w-full h-full object-cover" /> : name?.charAt(0)}
-                        </div>
-                        <div className="absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-teal-500 rounded-lg flex items-center justify-center border-2 border-white z-20 shadow">
-                            <ShieldCheck size={12} className="text-white" />
-                        </div>
-                    </div>
-
-                    <div className="text-center md:text-left space-y-2 flex-1">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div className="space-y-1">
-                                <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight uppercase leading-tight">{name}</h1>
-                                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
-                                    <span className="px-2.5 py-0.5 bg-teal-50 text-teal-600 text-[9px] font-black rounded-full border border-teal-100 uppercase tracking-widest">{designation || "Frontdesk Specialist"}</span>
-                                    <span className="px-2.5 py-0.5 bg-slate-50 text-slate-400 text-[9px] font-black rounded-full border border-slate-100 uppercase tracking-widest">Verified Account</span>
-                                </div>
-                            </div>
-                            <button
-                                onClick={handleEdit}
-                                className="flex items-center justify-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow active:scale-95"
-                            >
-                                <Edit3 size={12} /> Edit Profile
-                            </button>
-                        </div>
-
-                        <div className="flex flex-wrap justify-center md:justify-start gap-4 pt-1">
-                            <div className="flex items-center gap-1.5 text-slate-400">
-                                <Hospital size={12} className="text-teal-500" />
-                                <span className="text-[10px] font-bold uppercase tracking-widest leading-none">{hospital?.name || "Main Hospital"}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-slate-400">
-                                <MapPin size={12} className="text-teal-500" />
-                                <span className="text-[10px] font-bold uppercase tracking-widest leading-none truncate max-w-[200px]">{hospital?.address || "Global HQ Facility"}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <ProfileHeroCard
+                name={name}
+                role={designation || "Frontdesk Specialist"}
+                roleBadge="Verified Account"
+                roleColor="bg-teal-50 text-teal-600 border border-teal-100"
+                imageUrl={(user as any)?.image}
+                bio={raw.bio || (user as any)?.bio}
+                onBioSave={async (newBio: string) => {
+                    try {
+                        await staffService.updateProfile({ bio: newBio });
+                        toast.success("Bio updated successfully");
+                        refetch();
+                    } catch (error: any) {
+                        toast.error(error.message || "Failed to update bio");
+                        throw error;
+                    }
+                }}
+                onEditClick={handleEdit}
+                editLabel="Edit Profile"
+            />
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
                 {/* LEFT COLUMN */}

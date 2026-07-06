@@ -139,7 +139,7 @@ const SharedSidebar: React.FC<SharedSidebarProps> = ({
                     transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]
                     ${isOpen
                         ? "translate-x-0 w-72"                            // mobile drawer
-                        : "-translate-x-full md:translate-x-0 md:w-16 lg:w-[260px]" // default
+                        : "-translate-x-full w-72 md:translate-x-0 md:w-16 lg:w-[260px]" // default
                     }
                 `}
             >

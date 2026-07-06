@@ -13,6 +13,13 @@ export default function GeneralReturnPage() {
     const [refundMode, setRefundMode] = useState<string>('CASH');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const handleClear = () => {
+        setSearchQuery('');
+        setInvoice(null);
+        setReturnQuantities({});
+        setRefundMode('CASH');
+    };
+
     const searchInvoice = async () => {
         if (!searchQuery.trim()) {
             toast.error("Please enter an invoice number to search");
@@ -99,46 +106,55 @@ export default function GeneralReturnPage() {
     };
 
     return (
-        <div className="flex flex-col h-full space-y-6 max-w-5xl mx-auto">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <div>
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center">
-                            <Undo2 size={20} />
-                        </div>
-                        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">General Medicine Return</h1>
-                    </div>
-                    <p className="text-sm text-gray-500 mt-1 ml-13">Process returns and deduct from past invoices</p>
+        <div className="flex flex-col h-full space-y-6 max-w-7xl mx-auto">
+            {/* Unified Top Action Bar */}
+            <div className="bg-white dark:bg-gray-800 p-3 md:p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-4">
+                
+                {/* Heading */}
+                <div className="shrink-0 flex flex-col justify-center px-1">
+                    <h1 className="text-sm md:text-base font-bold text-gray-900 dark:text-white tracking-tight leading-none uppercase">General Medicine Return</h1>
+                    <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-wider mt-1.5 md:mt-1">
+                        Process returns and deduct from past invoices
+                    </p>
                 </div>
-            </div>
 
-            {/* Search Box */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                    Search Invoice
-                </label>
-                <div className="flex gap-4">
-                    <div className="relative flex-1">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Search className="h-5 w-5 text-gray-400" />
-                        </div>
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && searchInvoice()}
-                            placeholder="Enter Invoice Number (e.g., INV-1234)"
-                            className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl leading-5 bg-gray-50 placeholder-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 sm:text-sm transition-all"
-                        />
-                    </div>
+                {/* Actions Row */}
+                <div className="w-full md:w-auto flex flex-1 items-center gap-3 md:gap-4 justify-between md:justify-end">
+                    
+                    <div className="hidden md:block h-7 w-px bg-gray-200 dark:bg-gray-700 shrink-0" />
+
+                    {/* Clear Button */}
                     <button 
-                        onClick={searchInvoice} 
-                        disabled={isSearching || !searchQuery.trim()}
-                        className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        onClick={handleClear}
+                        className="px-3 py-1.5 md:py-2 bg-rose-50 rounded-lg border border-rose-100 flex items-center gap-1.5 md:gap-2 text-[9px] md:text-[10px] font-bold text-rose-600 hover:bg-rose-100 uppercase tracking-wider transition-colors shrink-0 whitespace-nowrap"
                     >
-                        {isSearching ? 'Searching...' : 'Find Invoice'}
+                        <Undo2 className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                        Clear Form
                     </button>
+
+                    <div className="hidden md:block h-7 w-px bg-gray-200 dark:bg-gray-700 shrink-0" />
+
+                    {/* Search Bar & Find Button */}
+                    <div className="flex items-center gap-2 flex-1 w-full min-w-[180px] md:min-w-[250px] max-w-lg group">
+                        <div className="relative flex-1">
+                            <Search className="w-3.5 h-3.5 md:w-4 md:h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-teal-500 transition-colors" />
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && searchInvoice()}
+                                placeholder="Invoice Number..."
+                                className="w-full pl-8 pr-4 py-1.5 md:py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg text-[10px] md:text-xs font-bold focus:ring-2 focus:ring-teal-500 outline-none dark:text-white transition-all shadow-sm placeholder:text-gray-400"
+                            />
+                        </div>
+                        <button 
+                            onClick={searchInvoice} 
+                            disabled={isSearching || !searchQuery.trim()}
+                            className="bg-teal-600 hover:bg-teal-700 text-white rounded-lg px-4 py-1.5 md:py-2 text-[10px] md:text-xs font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed transition-all shrink-0"
+                        >
+                            {isSearching ? '...' : 'Find'}
+                        </button>
+                    </div>
                 </div>
             </div>
 

@@ -272,7 +272,7 @@ export default function StaffProfileClient() {
                                 <div className="flex justify-between items-center py-1 sm:py-1.5 border-b border-gray-50 dark:border-gray-800">
                                     <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">Induction Date</span>
                                     <span className="text-[10px] font-black text-gray-900 dark:text-white tracking-tighter">
-                                        {profile.joiningDate ? format(new Date(profile.joiningDate), 'dd, MM, yyyy') : 'N/A'}
+                                        {profile.joiningDate ? format(new Date(profile.joiningDate), 'dd/MM/yyyy') : 'N/A'}
                                     </span>
                                 </div>
                                 <div className="flex justify-between items-center py-1 sm:py-1.5 leading-none pt-0.5">

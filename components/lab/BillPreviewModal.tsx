@@ -19,7 +19,7 @@ interface BillPreviewModalProps {
         balance: number;
         paymentMode: BillPayload['paymentMode'];
     };
-    patientType?: 'walkin' | 'inpatient' | 'lab';
+    patientType?: 'opd' | 'ipd' | 'lab';
     invoiceId?: string;
     onPrint: () => void;   // Called when user clicks Print — saves + prints
     onClose: () => void;   // Called when user dismisses without printing
@@ -48,14 +48,12 @@ const BillPreviewModal: React.FC<BillPreviewModalProps> = ({
 
     if (!isOpen) return null;
 
-    const typeLabel =
-        patientType === 'inpatient' ? 'Inpatient' :
-        patientType === 'lab' ? 'Lab-to-Lab' : 'Walk-in';
+    const modeLabel = patientType === 'ipd' ? 'IPD' :
+        patientType === 'lab' ? 'Lab-to-Lab' : 'OPD';
 
-    const typeBadgeClass =
-        patientType === 'inpatient'
-            ? 'bg-blue-100 text-blue-700 border-blue-200'
-            : patientType === 'lab'
+    const modeColors = patientType === 'ipd'
+        ? 'bg-blue-50 text-blue-700 border-blue-200'
+        : patientType === 'lab'
                 ? 'bg-purple-100 text-purple-700 border-purple-200'
                 : 'bg-emerald-100 text-emerald-700 border-emerald-200';
 
@@ -83,8 +81,8 @@ const BillPreviewModal: React.FC<BillPreviewModalProps> = ({
                     <div className="flex items-center gap-2 flex-1 justify-center">
                         <Eye size={15} className="text-gray-500 dark:text-gray-400" />
                         <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">Invoice Preview</span>
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${typeBadgeClass}`}>
-                            {typeLabel}
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${modeColors}`}>
+                            {modeLabel}
                         </span>
                         <div className="w-px h-4 bg-gray-200 dark:bg-gray-600 mx-1" />
                         {/* Header / Footer Toggle */}

@@ -13,6 +13,7 @@ import toast from "react-hot-toast";
 import { TagInput } from "@/components/common/TagInput";
 import { COMMON_SPECIALTIES, COMMON_QUALIFICATIONS, COMMON_LANGUAGES } from "@/lib/constants/medicalData";
 import { InfrastructureCheck } from "../../../../hospital-admin/components/InfrastructureCheck";
+import { formatDoctorName } from "@/lib/utils/name-utils";
 
 // ─── Color-only palette: blue, green, yellow, white ───────────────────────────
 const cls = {
@@ -218,13 +219,14 @@ export default function HRCreateDoctorPage() {
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         if (!touchAll()) { toast.error("Please fix errors before submitting"); return; }
         setLoading(true);
         try {
+            const sanitizedName = formatDoctorName(f.name);
             await hospitalAdminService.createDoctor({
                 honorific: f.honorific,
-                name: f.name.trim(), email: f.email.trim(), mobile: f.mobile,
+                name: sanitizedName, email: f.email.trim(), mobile: f.mobile,
                 password: f.password, gender: f.gender, dateOfBirth: f.dob || undefined,
                 address: f.street || f.city ? { street: f.street, city: f.city, state: f.state, pincode: f.pincode, country: "India" } : undefined,
                 specialties, qualifications,

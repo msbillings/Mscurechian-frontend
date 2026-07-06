@@ -14,11 +14,12 @@ import {
     Loader2,
     Eye,
     Clock as ClockIcon,
-    ChevronLeft,
     ChevronRight,
+    ChevronDown,
     FileEdit,
     ClipboardList,
-    Trash2
+    Trash2,
+    ChevronLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
@@ -56,7 +57,7 @@ export default function SOPManagementPage() {
     const [activeCategory, setActiveCategory] = useState("all");
     const [showFilters, setShowFilters] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 7;
+    const itemsPerPage = 10;
 
     // Queries
     const { data: sops = [], isLoading } = useQuery({
@@ -229,11 +230,15 @@ export default function SOPManagementPage() {
     });
 
     // Pagination Logic
-    const totalPages = Math.ceil(filteredSops.length / itemsPerPage);
+    const totalPages = Math.max(1, Math.ceil(filteredSops.length / itemsPerPage));
     const paginatedSops = filteredSops.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
     );
+
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, activeCategory]);
 
     // const handleDownload = async (sop: SOP) => {
     //     try {
@@ -410,103 +415,113 @@ export default function SOPManagementPage() {
     };
 
     return (
-        <div className="space-y-10 max-w-7xl mx-auto min-h-screen">
-            {/* Header Tier */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-                <div className="space-y-4">
-
-                    <div>
-                        <h1 className="text-lg font-bold text-gray-900 dark:text-white uppercase tracking-tight">SOP & Policies</h1>
-                        <p className="text-gray-500 dark:text-gray-400 font-bold mt-2 uppercase tracking-[0.2em] text-[10px] ml-1 flex items-center gap-2">
-                            <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                            Manage hospital policies and procedures
-                        </p>
+        <div className="min-h-screen bg-slate-50/50 space-y-6">
+            {/* Dynamic Header with Advanced Filters */}
+            <div className="flex flex-col gap-4 bg-white py-3 px-4 md:py-4 md:px-5 rounded-2xl border border-gray-100 shadow-sm shrink-0 mb-6">
+                
+                {/* Top Row: Identification, Process Button, and Stats */}
+                <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 md:gap-4 pb-4 border-b border-gray-50">
+                    
+                    <div className="shrink-0 flex items-center gap-2 px-1">
+                        <div className="p-1.5 md:p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                            <ShieldCheck className="w-5 h-5 md:w-6 md:h-6" />
+                        </div>
+                        <div className="flex flex-col justify-center">
+                            <h1 className="text-sm md:text-base font-bold text-gray-900 tracking-tight leading-none uppercase">
+                                SOP & Policies
+                            </h1>
+                            <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1">
+                                Manage hospital policies and procedures
+                            </p>
+                        </div>
                     </div>
-                </div>
 
-                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                    <div className="relative w-full sm:w-auto">
+                    <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1 xl:pb-0 w-full xl:w-auto">
+                        <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 rounded-lg border border-gray-100 shrink-0">
+                            <div className="p-1.5 bg-white rounded-md shadow-sm"><FilePlus className="w-4 h-4 text-gray-500" /></div>
+                            <div className="flex flex-col">
+                                <span className="text-[8px] font-black uppercase tracking-widest text-gray-400">Total Versions</span>
+                                <span className="text-sm font-bold text-gray-700 leading-none">{sops.length}</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 px-4 py-2 bg-emerald-50/50 rounded-lg border border-emerald-100 shrink-0">
+                            <div className="p-1.5 bg-white rounded-md shadow-sm"><ShieldCheck className="w-4 h-4 text-emerald-500" /></div>
+                            <div className="flex flex-col">
+                                <span className="text-[8px] font-black uppercase tracking-widest text-emerald-600/70">Active Policies</span>
+                                <span className="text-sm font-bold text-emerald-700 leading-none">
+                                    {sops.filter((s: SOP) => s.status === 'Active').length}
+                                </span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 px-4 py-2 bg-amber-50/50 rounded-lg border border-amber-100 shrink-0">
+                            <div className="p-1.5 bg-white rounded-md shadow-sm"><History className="w-4 h-4 text-amber-500" /></div>
+                            <div className="flex flex-col">
+                                <span className="text-[8px] font-black uppercase tracking-widest text-amber-600/70">Departments</span>
+                                <span className="text-sm font-bold text-amber-700 leading-none">
+                                    {categories.length - 1}
+                                </span>
+                            </div>
+                        </div>
                         <button
-                            onClick={() => setShowFilters(!showFilters)}
-                            className={`flex items-center justify-center gap-3 w-full sm:px-6 py-3.5 md:py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all active:scale-95 ${showFilters
-                                ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white'
-                                : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-500 hover:border-emerald-500/50 hover:text-emerald-600'
-                                }`}
+                            onClick={() => setIsUploadModalOpen(true)}
+                            className="flex items-center gap-2 px-3 md:px-6 py-2 bg-indigo-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shrink-0 h-[34px]"
                         >
-                            {activeCategory === 'all' ? 'Filters' : activeCategory}
+                            <FilePlus size={14} className="shrink-0" /> Upload Policy
                         </button>
+                    </div>
+                </div>
+
+                {/* Bottom Row: Control Center (Search & Pagination) */}
+                <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:flex-1">
                         
-                        <AnimatePresence>
-                            {showFilters && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: 10 }}
-                                    className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-2xl z-[50] overflow-hidden p-2"
-                                >
-                                    <div className="relative mb-2">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-                                        <input
-                                            type="text"
-                                            placeholder="Search Categories..."
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-[10px] font-bold outline-none"
-                                        />
-                                    </div>
-                                    <div className="max-h-60 overflow-y-auto custom-scrollbar">
-                                        {categories.map(cat => (
-                                            <button
-                                                key={cat}
-                                                onClick={() => {
-                                                    setActiveCategory(cat);
-                                                    setShowFilters(false);
-                                                    setCurrentPage(1);
-                                                }}
-                                                className={`w-full text-left px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all mb-1 ${activeCategory === cat
-                                                    ? 'bg-primary-theme text-white shadow-lg'
-                                                    : 'bg-transparent text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-white'
-                                                    }`}
-                                            >
-                                                {cat}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
+                        {/* Search Bar - Takes remaining width */}
+                        <div className="relative flex-1">
+                            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                                type="text"
+                                placeholder="Search Categories or Protocols..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                            />
+                        </div>
 
-                    <button
-                        onClick={() => setIsUploadModalOpen(true)}
-                        className="flex items-center justify-center gap-3 w-full sm:px-8 py-3.5 md:py-4 bg-primary-theme text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all active:scale-95"
-                    >
-                        <FilePlus size={16} />
-                        Upload Policy
-                    </button>
-                </div>
-            </div>
+                        {/* Category Filter */}
+                        <div className="relative shrink-0 sm:w-44">
+                           <select
+                              value={activeCategory}
+                              onChange={(e) => setActiveCategory(e.target.value)}
+                              className="w-full pl-3 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-indigo-500 outline-none appearance-none cursor-pointer"
+                           >
+                              {categories.map(cat => (
+                                 <option key={cat} value={cat}>{cat === 'all' ? 'All Departments' : cat}</option>
+                              ))}
+                           </select>
+                           <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
 
-            {/* Stats Overview */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Active Policies</p>
-                    <div className="flex items-end justify-between">
-                        <h2 className="text-3xl font-black">{sops.filter((s: SOP) => s.status === 'Active').length}</h2>
-                        <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded-lg">Active</span>
+                        {/* Header Pagination */}
+                        <div className="flex items-center justify-between sm:justify-center gap-2 shrink-0 bg-gray-50 p-1 rounded-lg border border-gray-200">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="p-1 text-gray-500 hover:text-indigo-600 hover:bg-white disabled:opacity-30 transition-all rounded shadow-sm"
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                            </button>
+                            <span className="text-[10px] font-black tracking-widest text-gray-400 px-2 flex items-center gap-1">
+                                <span className="text-indigo-600">{currentPage}</span> / {totalPages || 1}
+                            </span>
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage >= totalPages}
+                                className="p-1 text-gray-500 hover:text-indigo-600 hover:bg-white disabled:opacity-30 transition-all rounded shadow-sm"
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                            </button>
+                        </div>
                     </div>
-                </div>
-                <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Total Versions</p>
-                    <h2 className="text-3xl font-black">{sops.length}</h2>
-                </div>
-                <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Last Updated</p>
-                    <p className="text-sm font-black uppercase">{sops.length > 0 ? 'Today' : 'Pending'}</p>
-                </div>
-                <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Departments</p>
-                    <h2 className="text-3xl font-black">{categories.length - 1}</h2>
                 </div>
             </div>
 

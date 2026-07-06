@@ -8,11 +8,15 @@ import {
     Download,
     FileSpreadsheet,
     ChevronDown,
+    ChevronLeft,
+    ChevronRight,
     RefreshCcw,
-    Trash2
+    Trash2,
+    Package
 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { clearApiCache } from '@/lib/integrations/api/apiClient';
 import { ProductService } from '@/lib/integrations/services/product.service';
 import { PharmacyProduct, PharmacyProductPayload } from '@/lib/integrations/types/product';
 import ProductTable from '@/components/pharmacy/products/ProductTable';
@@ -343,90 +347,111 @@ const ProductsPage = () => {
 
     return (
         <div className="space-y-4 md:space-y-6 pb-20 w-full max-w-7xl mx-auto overflow-x-hidden pt-2 md:pt-4">
-            {/* Header Area from Model */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3 md:gap-4 w-full lg:w-auto">
-                    <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white shrink-0">Products</h1>
+            {/* Unified Top Action Bar */}
+            <div className="bg-white dark:bg-gray-800 p-3 md:p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 md:gap-4 mb-2">
+                
+                {/* Heading */}
+                <div className="shrink-0 flex items-center gap-2 px-1">
+                    <div className="p-1.5 md:p-2 bg-teal-50 dark:bg-teal-900/20 rounded-lg text-teal-600">
+                        <Package className="w-5 h-5 md:w-6 md:h-6" />
+                    </div>
+                    <div className="flex flex-col justify-center">
+                        <h1 className="text-sm md:text-base font-bold text-gray-900 dark:text-white tracking-tight leading-none uppercase">
+                            Products
+                        </h1>
+                        <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1.5 md:mt-1">
+                            Inventory & Catalog
+                        </p>
+                    </div>
+                </div>
 
-                    {/* Search Bar - Integrated in Header */}
-                    <div className="relative w-full sm:min-w-[200px] xl:min-w-[400px]">
-                        <Search className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400 absolute left-3 md:left-4 top-1/2 -translate-y-1/2" />
+                {/* Actions Row */}
+                <div className="w-full flex flex-1 flex-col sm:flex-row items-stretch sm:items-center gap-3 justify-between xl:justify-end">
+                    
+                    {/* Search Bar */}
+                    <div className="relative flex-1 w-full min-w-[180px] group">
+                        <Search className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 group-focus-within:text-teal-500 transition-colors" />
                         <input
                             type="text"
                             placeholder="Search by name, brand, SKU..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-9 md:pl-11 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs md:text-sm focus:ring-2 focus:ring-blue-500 outline-none dark:text-white shadow-sm"
+                            className="w-full pl-8 pr-4 py-1.5 md:py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg text-[10px] md:text-xs font-bold uppercase tracking-widest focus:ring-2 focus:ring-teal-500 outline-none dark:text-white shadow-sm placeholder:text-gray-400 transition-all"
                         />
                     </div>
-                </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                    <Link
-                        href="/pharmacy/products/add"
-                        className="flex items-center gap-1.5 px-3 py-2 bg-teal-600 text-white rounded-lg text-xs font-semibold hover:bg-teal-700 transition-colors shadow-sm"
-                    >
-                        <Plus size={16} />
-                        <span className="hidden sm:inline">Add Product</span>
-                    </Link>
-
-                    <button
-                        onClick={() => setIsFilterOpen(!isFilterOpen)}
-                        className={`flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-semibold transition-colors shadow-sm ${isFilterOpen ? 'text-blue-600 border-blue-200 bg-blue-50' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50'}`}
-                    >
-                        <Filter size={14} />
-                        <span className="hidden sm:inline">Filters</span>
-                    </button>
-
-                    <button
-                        onClick={() => fetchProducts(currentPage)}
-                        className="p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 transition-colors shadow-sm"
-                    >
-                        <RefreshCcw size={16} className={isLoading ? 'animate-spin' : ''} />
-                    </button>
-
-                    <button
-                        onClick={handleExportExcel}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700 transition-colors shadow-sm"
-                    >
-                        <Download size={16} />
-                        <span className="hidden sm:inline">Export</span>
-                    </button>
-
-                    <button
-                        onClick={() => setIsBulkModalOpen(true)}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 transition-colors shadow-sm"
-                    >
-                        <FileSpreadsheet size={16} />
-                        <span className="hidden sm:inline">Import</span>
-                    </button>
-
-                    <button
-                        onClick={handleDeleteAllProducts}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 rounded-lg text-xs font-semibold hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors shadow-sm ml-1"
-                    >
-                        <Trash2 size={16} />
-                        <span className="hidden sm:inline">Delete All</span>
-                    </button>
-
-                    {/* Pagination Box */}
-                    <div className="flex items-center gap-1 ml-auto lg:ml-2">
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                            disabled={currentPage === 1 || isLoading}
-                            className="p-1 px-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 border border-gray-200 dark:border-gray-700"
+                    {/* Filter & Actions Wrapper */}
+                    <div className="flex flex-row items-center justify-between sm:justify-start gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 hide-scrollbar shrink-0">
+                        
+                        <Link
+                            href="/pharmacy/products/add"
+                            className="flex items-center justify-center gap-1.5 px-3 py-1.5 md:py-2 bg-teal-600 text-white rounded-lg text-[10px] md:text-xs font-bold uppercase tracking-widest hover:bg-teal-700 transition-colors shadow-sm shrink-0"
                         >
-                            <ChevronDown className="rotate-90" size={16} />
+                            <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                            <span className="hidden sm:inline">Add Product</span>
+                        </Link>
+
+                        <button
+                            onClick={() => setIsFilterOpen(!isFilterOpen)}
+                            className={`flex items-center justify-center p-1.5 md:p-2 rounded-lg transition-colors shadow-sm shrink-0 ${isFilterOpen ? 'text-blue-600 border border-blue-200 bg-blue-50' : 'bg-gray-50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-700'}`}
+                            title="Filters"
+                        >
+                            <Filter className="w-4 h-4 md:w-4.5 md:h-4.5" />
                         </button>
-                        <div className="bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">
-                            {currentPage} / {totalPages}
-                        </div>
+
                         <button
-                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                            disabled={currentPage === totalPages || isLoading}
-                            className="p-1 px-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 border border-gray-200 dark:border-gray-700"
+                            onClick={handleExportExcel}
+                            className="flex items-center justify-center p-1.5 md:p-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm shrink-0"
+                            title="Export to Excel"
                         >
-                            <ChevronDown className="-rotate-90" size={16} />
+                            <Download className="w-4 h-4 md:w-4.5 md:h-4.5" />
+                        </button>
+
+                        <button
+                            onClick={() => setIsBulkModalOpen(true)}
+                            className="flex items-center justify-center p-1.5 md:p-2 bg-gray-50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-white dark:hover:bg-gray-700 transition-colors shadow-sm shrink-0"
+                            title="Import Data"
+                        >
+                            <FileSpreadsheet className="w-4 h-4 md:w-4.5 md:h-4.5" />
+                        </button>
+
+                        <button
+                            onClick={handleDeleteAllProducts}
+                            className="flex items-center justify-center p-1.5 md:p-2 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg hover:bg-rose-100 transition-colors shadow-sm shrink-0"
+                            title="Delete All Products"
+                        >
+                            <Trash2 className="w-4 h-4 md:w-4.5 md:h-4.5" />
+                        </button>
+                        
+                        <div className="hidden sm:block h-7 w-px bg-gray-200 dark:bg-gray-700 shrink-0 mx-1" />
+
+                        {/* Pagination Box */}
+                        <div className="flex items-center gap-1 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm px-1 py-1 shrink-0">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1 || isLoading}
+                                className="p-1 rounded-md text-gray-500 hover:text-teal-600 hover:bg-white dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-90"
+                            >
+                                <ChevronLeft className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                            </button>
+                            <div className="bg-teal-500 text-white px-2 py-0.5 rounded text-[10px] md:text-[11px] font-bold min-w-[40px] text-center">
+                                {currentPage} / {totalPages}
+                            </div>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages || isLoading}
+                                className="p-1 rounded-md text-gray-500 hover:text-teal-600 hover:bg-white dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-90"
+                            >
+                                <ChevronRight className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                            </button>
+                        </div>
+                        
+                        <button
+                            onClick={() => { clearApiCache(); fetchProducts(currentPage); }}
+                            className="p-1.5 md:py-2 md:px-2.5 bg-gray-50 dark:bg-gray-800/50 text-gray-500 hover:text-teal-600 rounded-lg border border-gray-200 dark:border-gray-700 transition-all shadow-sm shrink-0"
+                            title="Refresh List"
+                        >
+                            <RefreshCcw className={`w-3.5 h-3.5 md:w-4 md:h-4 ${isLoading ? 'animate-spin' : ''}`} />
                         </button>
                     </div>
                 </div>

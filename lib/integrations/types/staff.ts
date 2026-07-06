@@ -1,4 +1,4 @@
-﻿// Staff Dashboard Types
+// Staff Dashboard Types
 export interface StaffDashboard {
   staff: StaffProfile;
   stats: StaffStats;
@@ -14,6 +14,7 @@ export interface StaffProfile {
     email: string;
     mobile?: string;
   };
+  bio?: string;
   hospital: {
     _id: string;
     name: string;

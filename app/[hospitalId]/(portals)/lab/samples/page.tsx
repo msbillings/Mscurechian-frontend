@@ -4,7 +4,7 @@ import React, { useEffect, useState, useTransition, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { LabSample } from '@/lib/integrations/types/labSample';
 import { LabSampleService } from '@/lib/integrations/services/labSample.service';
-import { FlaskConical, RefreshCw, CheckCircle2, AlertCircle, PlayCircle, ChevronLeft, ChevronRight, Receipt, Printer } from 'lucide-react';
+import { FlaskConical, RefreshCw, CheckCircle2, AlertCircle, PlayCircle, ChevronLeft, ChevronRight, Receipt, Printer, Filter } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { invalidateCachePattern, clearApiCache } from '@/lib/integrations/api/apiClient';
 import { getSocket } from '@/lib/integrations/api/socket';
@@ -37,23 +37,27 @@ export default function SampleCollectionPage() {
     const [activeTab, setActiveTab] = useState<TabType>('pending');
     const [currentPage, setCurrentPage] = useState(1);
     const [isNavigating, startNavigation] = useTransition();
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
     const itemsPerPage = 15;
 
     // Billing Type Filter state
-    const [typeFilter, setTypeFilter] = useState<'all' | 'walkin' | 'inpatient' | 'lab'>('all');
+    const [typeFilter, setTypeFilter] = useState<'all' | 'opd' | 'ipd' | 'lab'>('all');
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
 
     // Helper to identify a sample's patient type
-    const getSamplePatientType = (sample: LabSample): 'walkin' | 'inpatient' | 'lab' => {
-        if (sample.patientDetails.patientType) return sample.patientDetails.patientType;
-        if (sample.patientDetails.bedInfo) return 'inpatient';
-        if (sample.patientDetails.originalPatientName) return 'lab';
-        if (sample.isWalkIn) return 'walkin';
+    const getSamplePatientType = (sample: LabSample): 'opd' | 'ipd' | 'lab' => {
+        if (sample.patientDetails?.patientType) return sample.patientDetails.patientType.toLowerCase() as 'opd' | 'ipd' | 'lab';
+        if (sample.patientDetails?.bedInfo) return 'ipd';
+        if (sample.patientDetails?.originalPatientName) return 'lab';
         
-        const nameLower = (sample.patientDetails.name || '').toLowerCase();
+        const nameLower = (sample.patientDetails?.name || '').toLowerCase();
         if (nameLower.includes('lab') || nameLower.includes('diagnostic') || nameLower.includes('center') || nameLower.includes('hospital')) {
             return 'lab';
         }
-        return 'walkin';
+
+        if (sample.isWalkIn) return 'opd';
+        return 'opd';
     };
 
 
@@ -190,7 +194,25 @@ export default function SampleCollectionPage() {
             case 'ready': baseList = readySamples; break;
         }
         if (typeFilter !== 'all') {
-            return baseList.filter(s => getSamplePatientType(s) === typeFilter);
+            baseList = baseList.filter(s => getSamplePatientType(s) === typeFilter);
+        }
+        if (startDate) {
+            const filterStart = new Date(startDate);
+            filterStart.setHours(0, 0, 0, 0);
+            baseList = baseList.filter(s => {
+                const sampleDate = new Date(s.collectionDate || s.createdAt);
+                sampleDate.setHours(0, 0, 0, 0);
+                return sampleDate >= filterStart;
+            });
+        }
+        if (endDate) {
+            const filterEnd = new Date(endDate);
+            filterEnd.setHours(23, 59, 59, 999);
+            baseList = baseList.filter(s => {
+                const sampleDate = new Date(s.collectionDate || s.createdAt);
+                sampleDate.setHours(23, 59, 59, 999);
+                return sampleDate <= filterEnd;
+            });
         }
         return baseList;
     };
@@ -219,130 +241,134 @@ export default function SampleCollectionPage() {
 
     return (
         <div className="space-y-4 lg:space-y-6">
-            <div className="bg-linear-to-br from-slate-50 to-blue-50/30 dark:from-gray-900 dark:to-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 p-4 sm:p-6 lg:p-8">
-                <div className="flex items-start sm:items-center justify-between gap-4 mb-4 lg:mb-6">
-                    <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2.5 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700">
-                                <FlaskConical className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <h1 className="text-lg md:text-xl lg:text-xl font-semibold text-gray-900 dark:text-white">Lab Samples</h1>
-                                {pendingSamples.length > 0 && (
-                                    <span className="px-2 py-1 bg-red-500 text-white text-xs font-bold rounded-full shadow-sm">
-                                        {pendingSamples.length}
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                        <p className="text-xs md:text-sm lg:text-base text-gray-600 dark:text-gray-400">Manage sample collection and result entry</p>
+            {/* Unified Top Action Bar */}
+            <div className="bg-white dark:bg-gray-800 p-3 md:p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 md:gap-4 mb-2">
+                
+                {/* Heading */}
+                <div className="shrink-0 flex items-center gap-2 px-1">
+                    <div className="p-1.5 md:p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-600">
+                        <FlaskConical className="w-5 h-5 md:w-6 md:h-6" />
                     </div>
-                    <button
-                        onClick={() => fetchSamples()}
-                        disabled={loading}
-                        className="p-2.5 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all border border-slate-200 dark:border-gray-700 shadow-sm"
-                    >
-                        <RefreshCw className={`w-5 h-5 text-gray-600 dark:text-gray-400 ${loading ? 'animate-spin' : ''}`} />
-                    </button>
-                </div>
-
-                {/* Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-slate-200 dark:border-gray-700 shadow-sm">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                                <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Pending Collection</p>
-                                <p className="text-2xl font-semibold text-gray-900 dark:text-white">{pendingSamples.length}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-slate-200 dark:border-gray-700 shadow-sm">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-                                <PlayCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Processing</p>
-                                <p className="text-2xl font-semibold text-gray-900 dark:text-white">{readySamples.length}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-slate-200 dark:border-gray-700 shadow-sm">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                                <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Completed</p>
-                                <p className="text-2xl font-semibold text-gray-900 dark:text-white">{collectedSamples.length}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Filters */}
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between bg-white dark:bg-gray-800 p-4 rounded-xl border border-slate-200 dark:border-gray-700 shadow-sm">
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-center">
-                    <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">View Tab:</span>
-                    <div className="inline-flex bg-slate-100 dark:bg-gray-700 rounded-lg p-1 overflow-x-auto no-scrollbar max-w-full">
-                        <button
-                            onClick={() => setActiveTab('pending')}
-                            className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${activeTab === 'pending'
-                                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                                }`}
-                        >
-                            Pending ({pendingSamples.length})
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('ready')}
-                            className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${activeTab === 'ready'
-                                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                                }`}
-                        >
-                            Processing ({readySamples.length})
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('collected')}
-                            className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${activeTab === 'collected'
-                                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                                }`}
-                        >
-                            Completed ({collectedSamples.length})
-                        </button>
+                    <div className="flex flex-col justify-center">
+                        <h1 className="text-sm md:text-base font-bold text-gray-900 dark:text-white tracking-tight leading-none uppercase">
+                            Lab Samples
+                        </h1>
+                        <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1.5 md:mt-1">
+                            Manage sample collection
+                        </p>
                     </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-center w-full sm:w-auto">
-                    <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Billing Type:</span>
-                    <div className="inline-flex bg-slate-100 dark:bg-gray-700 rounded-lg p-1 overflow-x-auto no-scrollbar max-w-full">
-                        {(['all', 'walkin', 'inpatient', 'lab'] as const).map(t => (
+                {/* Actions Row */}
+                <div className="w-full flex flex-1 flex-col sm:flex-row items-stretch sm:items-center gap-3 justify-between xl:justify-end">
+                    
+                    {/* View Tabs */}
+                    <div className="flex flex-1 items-center justify-start xl:justify-end overflow-x-auto no-scrollbar shrink-0">
+                        <div className="inline-flex bg-slate-100 dark:bg-gray-700/50 p-1 rounded-lg">
                             <button
-                                key={t}
-                                onClick={() => setTypeFilter(t)}
-                                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${typeFilter === t
-                                    ? t === 'walkin'
-                                        ? 'bg-emerald-500 text-white shadow-sm font-bold'
-                                        : t === 'inpatient'
-                                        ? 'bg-blue-500 text-white shadow-sm font-bold'
-                                        : t === 'lab'
-                                        ? 'bg-purple-500 text-white shadow-sm font-bold'
-                                        : 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm font-bold'
-                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                                }`}
+                                onClick={() => setActiveTab('pending')}
+                                className={`px-3 py-1.5 rounded-md text-[10px] md:text-xs font-bold uppercase tracking-wider transition-all ${activeTab === 'pending'
+                                    ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                                    : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                                    }`}
                             >
-                                {t === 'all' ? 'All' : t === 'walkin' ? 'Walk-in' : t === 'inpatient' ? 'Inpatient' : 'Lab-to-Lab'}
+                                Pending ({pendingSamples.length})
                             </button>
-                        ))}
+                            <button
+                                onClick={() => setActiveTab('ready')}
+                                className={`px-3 py-1.5 rounded-md text-[10px] md:text-xs font-bold uppercase tracking-wider transition-all ${activeTab === 'ready'
+                                    ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                                    : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                                    }`}
+                            >
+                                Processing ({readySamples.length})
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('collected')}
+                                className={`px-3 py-1.5 rounded-md text-[10px] md:text-xs font-bold uppercase tracking-wider transition-all ${activeTab === 'collected'
+                                    ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                                    : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                                    }`}
+                            >
+                                Completed ({collectedSamples.length})
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                        <button
+                            onClick={() => setIsFilterOpen(!isFilterOpen)}
+                            className={`flex items-center justify-center p-1.5 md:p-2 rounded-lg transition-colors shadow-sm shrink-0 ${isFilterOpen ? 'text-blue-600 border border-blue-200 bg-blue-50' : 'bg-gray-50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-700'}`}
+                            title="Filters"
+                        >
+                            <Filter className="w-4 h-4 md:w-4.5 md:h-4.5" />
+                        </button>
+                        
+                        <button
+                            onClick={() => { clearApiCache(); fetchSamples(false, true); }}
+                            disabled={loading}
+                            className="p-1.5 md:py-2 md:px-2.5 bg-gray-50 dark:bg-gray-800/50 text-gray-500 hover:text-blue-600 rounded-lg border border-gray-200 dark:border-gray-700 transition-all shadow-sm shrink-0"
+                            title="Refresh List"
+                        >
+                            <RefreshCw className={`w-3.5 h-3.5 md:w-4 md:h-4 ${loading ? 'animate-spin' : ''}`} />
+                        </button>
                     </div>
                 </div>
             </div>
+
+            {/* Collapsible Filters */}
+            {isFilterOpen && (
+                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between bg-white dark:bg-gray-800 p-3 md:p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm mx-1 md:mx-2 mb-4">
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-center w-full sm:w-auto">
+                        <span className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest block mb-1 sm:mb-0 sm:mr-2">Patient Type</span>
+                        <div className="inline-flex bg-gray-50 dark:bg-gray-700/50 rounded-lg p-1 overflow-x-auto no-scrollbar max-w-full">
+                            {(['all', 'opd', 'ipd', 'lab'] as const).map(t => (
+                                <button
+                                    key={t}
+                                    onClick={() => setTypeFilter(t)}
+                                    className={`px-3 py-1.5 rounded-md text-[10px] md:text-xs font-bold uppercase tracking-wider transition-all ${typeFilter === t
+                                        ? t === 'opd'
+                                            ? 'bg-emerald-500 text-white shadow-sm'
+                                            : t === 'ipd'
+                                                ? 'bg-blue-500 text-white shadow-sm'
+                                                : t === 'lab'
+                                                    ? 'bg-purple-500 text-white shadow-sm'
+                                                    : 'bg-gray-800 dark:bg-gray-600 text-white shadow-sm'
+                                        : 'text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-gray-700'
+                                    }`}
+                                >
+                                    {t === 'all' ? 'All' : t === 'opd' ? 'OPD' : t === 'ipd' ? 'IPD' : 'Lab-to-Lab'}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-1.5 text-xs shadow-sm">
+                        <span className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 mr-1">Date</span>
+                        <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }}
+                            className="bg-transparent border-none text-[10px] md:text-xs font-bold outline-none text-gray-700 dark:text-gray-300 py-0.5 focus:ring-0 uppercase tracking-widest"
+                        />
+                        <span className="text-gray-400 font-bold">-</span>
+                        <input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }}
+                            className="bg-transparent border-none text-[10px] md:text-xs font-bold outline-none text-gray-700 dark:text-gray-300 py-0.5 focus:ring-0 uppercase tracking-widest"
+                        />
+                        {(startDate || endDate) && (
+                            <button
+                                onClick={() => { setStartDate(""); setEndDate(""); setCurrentPage(1); }}
+                                className="text-xs font-bold text-rose-500 hover:text-rose-700 ml-1 px-1"
+                            >
+                                ✕
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Samples List */}
             {displaySamples.length === 0 ? (
@@ -360,11 +386,41 @@ export default function SampleCollectionPage() {
             ) : activeTab === 'collected' ? (
                 // Table View for Completed Samples
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 shadow-sm overflow-hidden">
+                    {/* Pagination for Completed Tab */}
+                    {totalPages > 1 && (
+                        <div className="px-4 md:px-6 py-3 md:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 border-b border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-900/30">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium">{Math.min(currentPage * itemsPerPage, displaySamples.length)}</span> of <span className="font-medium">{displaySamples.length}</span> completed samples
+                            </p>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                    className="p-2 border border-slate-200 dark:border-gray-700 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
+                                    title="Previous page"
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
+                                </button>
+                                <span className="text-sm text-gray-600 dark:text-gray-400">
+                                    Page {currentPage} of {totalPages}
+                                </span>
+                                <button
+                                    onClick={() => setCurrentPage(p => (p < totalPages ? p + 1 : p))}
+                                    disabled={currentPage === totalPages}
+                                    className="p-2 border border-slate-200 dark:border-gray-700 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
+                                    title="Next page"
+                                >
+                                    <ChevronRight className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
                     <div className="overflow-x-auto no-scrollbar">
                         <table className="w-full text-left text-xs md:text-sm min-w-[700px]">
                             <thead className="bg-slate-50 dark:bg-gray-900/50 border-b border-slate-200 dark:border-gray-700">
                                 <tr>
                                     <th className="px-4 md:px-6 py-3 md:py-4 font-semibold text-gray-900 dark:text-white">Patient Details</th>
+                                    <th className="px-4 md:px-6 py-3 md:py-4 font-semibold text-gray-900 dark:text-white">Patient Type</th>
                                     <th className="px-4 md:px-6 py-3 md:py-4 font-semibold text-gray-900 dark:text-white">Sample ID</th>
                                     <th className="px-4 md:px-6 py-3 md:py-4 font-semibold text-gray-900 dark:text-white">Tests</th>
                                     <th className="px-4 md:px-6 py-3 md:py-4 font-semibold text-gray-900 dark:text-white">Dates</th>
@@ -409,6 +465,15 @@ export default function SampleCollectionPage() {
                                                     </div>
                                                 </div>
                                             </div>
+                                        </td>
+                                        <td className="px-4 md:px-6 py-3 md:py-4">
+                                            {getSamplePatientType(sample) === 'opd' ? (
+                                                <span className="px-2 py-1 rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold border border-emerald-200 dark:border-emerald-800">OPD</span>
+                                            ) : getSamplePatientType(sample) === 'ipd' ? (
+                                                <span className="px-2 py-1 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-xs font-bold border border-blue-200 dark:border-blue-800">IPD</span>
+                                            ) : (
+                                                <span className="px-2 py-1 rounded bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 text-xs font-bold border border-purple-200 dark:border-emerald-800">Lab</span>
+                                            )}
                                         </td>
                                         <td className="px-4 md:px-6 py-3 md:py-4">
                                             <span className="px-2 md:px-2.5 py-0.5 md:py-1 bg-slate-100 dark:bg-gray-800 rounded-md text-[10px] md:text-xs font-medium text-gray-700 dark:text-gray-300 border border-slate-200 dark:border-gray-700">
@@ -470,12 +535,15 @@ export default function SampleCollectionPage() {
                             </tbody>
                         </table>
                     </div>
-
-                    {/* Pagination for Completed Tab */}
+                </div>
+            ) : (
+                // Table View for Pending and Processing
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 shadow-sm overflow-hidden">
+                    {/* Generic Pagination for Pending/Processing Tabs */}
                     {totalPages > 1 && (
-                        <div className="px-4 md:px-6 py-3 md:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 border-t border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-900/30">
+                        <div className="px-4 md:px-6 py-3 md:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 border-b border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-900/30">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium">{Math.min(currentPage * itemsPerPage, displaySamples.length)}</span> of <span className="font-medium">{displaySamples.length}</span> completed samples
+                                Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium">{Math.min(currentPage * itemsPerPage, displaySamples.length)}</span> of <span className="font-medium">{displaySamples.length}</span> {activeTab} samples
                             </p>
                             <div className="flex items-center gap-2">
                                 <button
@@ -500,15 +568,12 @@ export default function SampleCollectionPage() {
                             </div>
                         </div>
                     )}
-                </div>
-            ) : (
-                // Table View for Pending and Processing
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 shadow-sm overflow-hidden">
                     <div className="overflow-x-auto no-scrollbar">
                         <table className="w-full text-left text-xs md:text-sm min-w-[750px]">
                             <thead className="bg-slate-50 dark:bg-gray-900/50 border-b border-slate-200 dark:border-gray-700">
                                 <tr>
                                     <th className="px-4 md:px-6 py-3 md:py-4 font-semibold text-gray-900 dark:text-white">Patient Details</th>
+                                    <th className="px-4 md:px-6 py-3 md:py-4 font-semibold text-gray-900 dark:text-white">Patient Type</th>
                                     <th className="px-4 md:px-6 py-3 md:py-4 font-semibold text-gray-900 dark:text-white">Sample ID</th>
                                     <th className="px-4 md:px-6 py-3 md:py-4 font-semibold text-gray-900 dark:text-white">Tests</th>
                                     <th className="px-4 md:px-6 py-3 md:py-4 font-semibold text-gray-900 dark:text-white">Info</th>
@@ -567,6 +632,15 @@ export default function SampleCollectionPage() {
                                                     </div>
                                                 </div>
                                             </div>
+                                        </td>
+                                        <td className="px-4 md:px-6 py-3 md:py-4">
+                                            {getSamplePatientType(sample) === 'opd' ? (
+                                                <span className="px-2 py-1 rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold border border-emerald-200 dark:border-emerald-800">OPD</span>
+                                            ) : getSamplePatientType(sample) === 'ipd' ? (
+                                                <span className="px-2 py-1 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-xs font-bold border border-blue-200 dark:border-blue-800">IPD</span>
+                                            ) : (
+                                                <span className="px-2 py-1 rounded bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 text-xs font-bold border border-purple-200 dark:border-purple-800">Lab</span>
+                                            )}
                                         </td>
                                         <td className="px-4 md:px-6 py-3 md:py-4">
                                             <div className="flex flex-col">
@@ -681,36 +755,6 @@ export default function SampleCollectionPage() {
                             </tbody>
                         </table>
                     </div>
-
-                    {/* Generic Pagination for Pending/Processing Tabs */}
-                    {totalPages > 1 && (
-                        <div className="px-4 md:px-6 py-3 md:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 border-t border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-900/30">
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium">{Math.min(currentPage * itemsPerPage, displaySamples.length)}</span> of <span className="font-medium">{displaySamples.length}</span> {activeTab} samples
-                            </p>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                    disabled={currentPage === 1}
-                                    className="p-2 border border-slate-200 dark:border-gray-700 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
-                                    title="Previous page"
-                                >
-                                    <ChevronLeft className="w-4 h-4" />
-                                </button>
-                                <span className="text-sm text-gray-600 dark:text-gray-400">
-                                    Page {currentPage} of {totalPages}
-                                </span>
-                                <button
-                                    onClick={() => setCurrentPage(p => (p < totalPages ? p + 1 : p))}
-                                    disabled={currentPage === totalPages}
-                                    className="p-2 border border-slate-200 dark:border-gray-700 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
-                                    title="Next page"
-                                >
-                                    <ChevronRight className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-                    )}
                 </div>
             )}
         </div>

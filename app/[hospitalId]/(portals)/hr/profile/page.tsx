@@ -29,6 +29,7 @@ import ImageCropper from '@/components/ui/ImageCropper';
 import { updateUserPhotoAction } from '@/lib/integrations/actions/user.actions';
 import PrinterSettingsCard from '@/components/printers/PrinterSettingsCard';
 import SupportBadgeToggle from "@/components/common/SupportBadgeToggle";
+import ProfileHeroCard from '@/components/shared/ProfileHeroCard';
 
 function HRProfile() {
     const router = useRouter();
@@ -237,57 +238,27 @@ function HRProfile() {
                                 <Shield className="text-indigo-600" size={18} />
                                 <h2 className="text-[10px] font-black text-gray-900 uppercase tracking-widest">Employee Credentials</h2>
                             </div>
-
                             <form onSubmit={handleUpdateProfile} className="p-6 sm:p-8 space-y-6">
-                                <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 items-center">
-                                    <div className="relative group">
-                                        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-indigo-600 overflow-hidden flex items-center justify-center text-white shadow-lg shadow-indigo-100 group-hover:shadow-indigo-200 transition-all">
-                                            {profile?.image ? (
-                                                <img 
-                                                  src={profile.image.includes('t=') ? profile.image : `${profile.image}${profile.image.includes('?') ? '&' : '?'}t=${Date.now()}`} 
-                                                  alt="Profile" 
-                                                  className="w-full h-full object-cover" 
-                                                />
-                                            ) : (
-                                                <div className="text-3xl sm:text-4xl font-black uppercase tracking-tighter">
-                                                    {profile?.name?.charAt(0) || "H"}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <label className="absolute -bottom-1 -right-1 p-2 bg-white border border-gray-200 rounded-xl shadow-md text-gray-600 hover:text-indigo-600 hover:scale-110 active:scale-95 transition-all cursor-pointer">
-                                            <Camera size={14} />
-                                            <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
-                                        </label>
-                                    </div>
-                                    <div className="flex-1 text-center sm:text-left space-y-4">
-                                        <div className="space-y-1">
-                                            <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight">{profile?.name}</h3>
-                                            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                                                <span className="px-3 py-1 bg-indigo-100 text-indigo-700 text-[9px] font-black uppercase tracking-widest rounded-full">
-                                                    HR Manager
-                                                </span>
-                                                <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-[9px] font-black uppercase tracking-widest rounded-full">
-                                                    Authorized Access
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <label className={`inline-flex items-center justify-center gap-2 px-6 py-2.5 ${isPhotoUploading ? 'bg-indigo-100 cursor-not-allowed opacity-70' : 'bg-indigo-50 hover:bg-indigo-100 cursor-pointer'} text-indigo-600 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all border border-indigo-100`}>
-                                            {isPhotoUploading ? (
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-3 h-3 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                                                    <span>Processing...</span>
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    <Upload size={14} />
-                                                    <span>Update New Photo</span>
-                                                    <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" disabled={isPhotoUploading} />
-                                                </>
-                                            )}
-                                        </label>
-                                    </div>
-                                </div>
-
+                                <ProfileHeroCard
+                                    name={profile?.name || ""}
+                                    role="HR Manager"
+                                    roleBadge="Authorized Access"
+                                    roleColor="bg-indigo-100 text-indigo-700"
+                                    imageUrl={profile?.image || profile?.avatar}
+                                    bio={profile?.bio || profile?.user?.bio}
+                                    isPhotoUploading={isPhotoUploading}
+                                    onPhotoUpload={handlePhotoUpload}
+                                    onBioSave={async (newBio: string) => {
+                                        try {
+                                            await userService.updateProfile({ bio: newBio });
+                                            setProfile((prev: any) => prev ? { ...prev, bio: newBio } : null);
+                                            toast.success("Bio updated successfully");
+                                        } catch (error: any) {
+                                            toast.error(error.message || "Failed to update bio");
+                                            throw error;
+                                        }
+                                    }}
+                                />
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 pt-4">
                                     <div className="space-y-2">
                                         <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest px-1">Full Legal Name</label>
@@ -324,9 +295,16 @@ function HRProfile() {
                                             <input
                                                 type="text"
                                                 value={formData.mobile}
-                                                onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                                                onChange={(e) => {
+                                                    const val = e.target.value.replace(/\D/g, "");
+                                                    if (val.length <= 10) setFormData({ ...formData, mobile: val });
+                                                }}
+                                                pattern="[0-9]{10}"
+                                                maxLength={10}
+                                                required
+                                                title="Please enter a valid 10-digit mobile number"
                                                 className="w-full pl-12 pr-4 py-4 sm:py-3 bg-gray-50 border border-gray-100 rounded-2xl text-[11px] font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all text-gray-900"
-                                                placeholder="Contact number"
+                                                placeholder="Contact number (10 digits)"
                                             />
                                         </div>
                                     </div>
@@ -341,9 +319,9 @@ function HRProfile() {
                                                 className="w-full px-4 sm:px-5 py-4 sm:py-3 bg-gray-50 border border-gray-100 rounded-2xl text-[11px] font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 appearance-none cursor-pointer transition-all text-gray-900 pl-12 lg:pl-5"
                                             >
                                                 <option value="">Select Gender</option>
-                                                <option value="male">Male</option>
-                                                <option value="female">Female</option>
-                                                <option value="other">Other</option>
+                                                <option value="Male">Male</option>
+                                                <option value="Female">Female</option>
+                                                <option value="Other">Other</option>
                                             </select>
                                         </div>
                                     </div>

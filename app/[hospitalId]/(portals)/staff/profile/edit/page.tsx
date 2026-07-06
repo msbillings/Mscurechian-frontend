@@ -11,7 +11,8 @@ import {
     Shield
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { getStaffProfileAction, updateStaffProfileAction } from '@/lib/integrations/actions/staff.actions';
+import { getStaffProfileAction } from '@/lib/integrations/actions/staff.actions';
+import { staffService } from '@/lib/integrations/services/staff.service';
 import { useAuthStore } from '@/stores/authStore';
 import { clearApiCache } from '@/lib/integrations/api';
 
@@ -392,7 +393,7 @@ export default function EditStaffProfilePage() {
             photoData.append("profilePic", file);
 
             const uploadToast = toast.loading("Uploading cropped photo...");
-            const res = await updateStaffProfileAction(photoData);
+            const res = await staffService.updateStaffProfile(photoData);
 
             if (res.success && res.data) {
                 // Staff data is nested: res.data.staff.user.image
@@ -434,7 +435,7 @@ export default function EditStaffProfilePage() {
         try {
             const fd = new FormData();
             fd.append('delete_document', docId); // Backend should handle deletion logic
-            const res = await updateStaffProfileAction(fd);
+            const res = await staffService.updateStaffProfile(fd);
 
             if (res.success) {
                 toast.success(`${label} removed successfully`);
@@ -528,7 +529,7 @@ export default function EditStaffProfilePage() {
                 console.log(`- ${key}: ${typeof value === 'string' ? (value.length > 50 ? value.substring(0, 50) + '...' : value) : '[FILE: ' + (value as File).name + ']'}`);
             }
 
-            const res = await updateStaffProfileAction(formDataToSubmit);
+            const res = await staffService.updateStaffProfile(formDataToSubmit);
             if (res.success) {
                 toast.success('Profile updated successfully');
 
@@ -954,7 +955,7 @@ export default function EditStaffProfilePage() {
                                                             try {
                                                                 setFiles(prev => ({ ...prev, [`uploading_${docType.id}`]: true as any }));
                                                                 const fd = new FormData(); fd.append(docType.id, file);
-                                                                const res = await updateStaffProfileAction(fd);
+                                                                const res = await staffService.updateStaffProfile(fd);
                                                                 if (res.success) {
                                                                     toast.success(`${docType.label} uploaded`);
                                                                     setFormData((prev: any) => ({ ...prev, documents: { ...prev.documents, [docType.id]: res.data?.staff?.documents?.[docType.id] } }));

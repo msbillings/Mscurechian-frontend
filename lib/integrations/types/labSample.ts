@@ -44,7 +44,7 @@ export interface LabSample {
         refDoctor: string;
         patientId?: string;
         originalPatientName?: string; // Optional field for lab-to-lab original patient name
-        patientType?: 'walkin' | 'inpatient' | 'lab'; // Explicit billing type
+        patientType?: 'opd' | 'ipd' | 'lab'; // Explicit billing type
         bedInfo?: {
             bedId: string;
             room: string;

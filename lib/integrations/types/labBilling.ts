@@ -13,13 +13,13 @@ export interface PatientDetails {
     mobile: string;
     refDoctor: string; // ✅ REQUIRED
     originalPatientName?: string; // Optional field for lab-to-lab original patient name
-    patientType?: 'walkin' | 'inpatient' | 'lab'; // Explicit billing type
+    patientType?: 'opd' | 'ipd' | 'lab'; // Explicit billing type
 }
 
 
 export interface BillPayload {
     patientDetails: PatientDetails;
-    patientType?: 'walkin' | 'inpatient' | 'lab'; // Billing tier
+    patientType?: 'opd' | 'ipd' | 'lab'; // Billing tier
     items: BillItem[];
     totalAmount: number;
     discount: number;

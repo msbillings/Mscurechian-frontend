@@ -218,16 +218,28 @@ export default function ResultParametersManager({ parameters = [], onChange }: R
                                                 <input
                                                     type="number"
                                                     placeholder="Min"
+                                                    min="0"
                                                     value={range.min ?? ''}
-                                                    onChange={(e) => handleMinMaxChange('min', e.target.value)}
+                                                    onChange={(e) => {
+                                                        const val = parseFloat(e.target.value);
+                                                        if (val < 0) return;
+                                                        handleMinMaxChange('min', e.target.value);
+                                                    }}
+                                                    onWheel={e => (e.target as HTMLElement).blur()}
                                                     className="w-full text-center text-xs py-1 px-1 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded focus:ring-1 focus:ring-indigo-500 outline-none font-semibold text-gray-900 dark:text-white"
                                                 />
                                                 <span className="text-[10px] text-gray-400 font-bold">-</span>
                                                 <input
                                                     type="number"
                                                     placeholder="Max"
+                                                    min="0"
                                                     value={range.max ?? ''}
-                                                    onChange={(e) => handleMinMaxChange('max', e.target.value)}
+                                                    onChange={(e) => {
+                                                        const val = parseFloat(e.target.value);
+                                                        if (val < 0) return;
+                                                        handleMinMaxChange('max', e.target.value);
+                                                    }}
+                                                    onWheel={e => (e.target as HTMLElement).blur()}
                                                     className="w-full text-center text-xs py-1 px-1 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded focus:ring-1 focus:ring-indigo-500 outline-none font-semibold text-gray-900 dark:text-white"
                                                 />
                                             </div>

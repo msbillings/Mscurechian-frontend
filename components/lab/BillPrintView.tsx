@@ -10,7 +10,7 @@ interface BillPrintViewProps {
     billData: BillPayload;
     invoiceId?: string; // Optional because previews might not have it yet
     date?: string;
-    patientType?: 'walkin' | 'inpatient' | 'lab';
+    patientType?: 'opd' | 'ipd' | 'lab';
 }
 
 // This component is designed to look like the reference image when printed
@@ -19,15 +19,15 @@ interface BillPrintViewProps {
 
 const BillPrintView: React.FC<BillPrintViewProps> = ({ billData, invoiceId, date, patientType }) => {
     const currentDate = date || new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-    const effectiveType = patientType || billData.patientType || 'walkin';
+    const effectiveType = patientType || billData.patientType || 'opd';
 
-    const invoiceLabel = effectiveType === 'inpatient'
-        ? 'INPATIENT INVOICE'
+    const invoiceLabel = effectiveType === 'ipd'
+        ? 'IPD INVOICE'
         : effectiveType === 'lab'
             ? 'LAB-TO-LAB INVOICE'
-            : 'INVOICE';
+            : 'OPD INVOICE';
 
-    const invoiceLabelColor = effectiveType === 'inpatient'
+    const invoiceLabelColor = effectiveType === 'ipd'
         ? '#1e3a8a'    // blue for inpatient
         : effectiveType === 'lab'
             ? '#6b21a8' // purple for lab-to-lab

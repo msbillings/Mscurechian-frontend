@@ -201,19 +201,35 @@ export default function TVDisplaysAdminPage() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">TV Displays</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Manage wireless OPD queue screens across the hospital.</p>
+    <div className="max-w-7xl mx-auto min-h-screen bg-slate-50/50">
+      {/* Dynamic Header */}
+      <div className="flex flex-col gap-4 bg-white py-3 px-4 md:py-4 md:px-5 rounded-2xl border border-gray-100 shadow-sm shrink-0 mb-6">
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 md:gap-4">
+          
+          <div className="shrink-0 flex items-center gap-2 px-1">
+            <div className="p-1.5 md:p-2 bg-blue-50 rounded-lg text-blue-600">
+              <Monitor className="w-5 h-5 md:w-6 md:h-6" />
+            </div>
+            <div className="flex flex-col justify-center">
+              <h1 className="text-sm md:text-base font-bold text-gray-900 tracking-tight leading-none uppercase">
+                TV Displays
+              </h1>
+              <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1">
+                Manage wireless OPD queue screens
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full xl:w-auto">
+            <button
+              onClick={() => { resetForm(); setIsPairing(true); setEditingDisplay(null); }}
+              className="flex items-center justify-center gap-2 w-full xl:w-auto px-3 md:px-6 py-2 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shrink-0 h-[34px] shadow-sm"
+            >
+              <Plus size={14} className="shrink-0" /> Pair New TV
+            </button>
+          </div>
+          
         </div>
-        <button
-          onClick={() => { resetForm(); setIsPairing(true); setEditingDisplay(null); }}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          Pair New TV
-        </button>
       </div>
 
       {/* Pair / Edit Form */}

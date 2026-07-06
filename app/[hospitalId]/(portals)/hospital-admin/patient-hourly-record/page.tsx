@@ -8,16 +8,7 @@ export const metadata = {
 
 export default function PatientHourlyRecordPage() {
     return (
-        <div className="space-y-6 bg-slate-50/50 min-h-screen">
-            <div className="flex flex-col gap-1 sm:gap-1.5 ml-1">
-                <h1 className="text-lg md:text-xl lg:text-xl font-black text-slate-900 uppercase tracking-tight">
-                    Patient Hourly Monitoring
-                </h1>
-                <p className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase tracking-widest leading-relaxed">
-                    Consolidated record of vitals, medications, diet, and lab tests.
-                </p>
-            </div>
-
+        <div className="space-y-4 md:space-y-5 bg-slate-50/50 min-h-screen flex flex-col pb-12">
             <HourlyRecordClient />
         </div>
     );

@@ -219,14 +219,38 @@ function LeavesPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] sm:text-xs font-black text-gray-500 uppercase tracking-widest">Temporal Selection</label>
-                  <div className="w-full">
-                    <CalendarPicker
-                      startDate={formData.startDate}
-                      endDate={formData.endDate}
-                      onChange={(dates) => setFormData({ ...formData, ...dates })}
-                    />
+                  <label className="text-[10px] sm:text-xs font-black text-gray-500 uppercase tracking-widest">Leave Duration</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Start Date</label>
+                      <input
+                        type="date"
+                        value={formData.startDate}
+                        onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest">End Date</label>
+                      <input
+                        type="date"
+                        value={formData.endDate}
+                        onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                      />
+                    </div>
                   </div>
+                  {(formData.startDate || formData.endDate) && (
+                    <div className="flex justify-end pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, startDate: '', endDate: '' })}
+                        className="text-[8px] font-black text-rose-500 hover:text-rose-700 uppercase tracking-widest flex items-center gap-1 transition-colors"
+                      >
+                        ✕ Clear Dates
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">

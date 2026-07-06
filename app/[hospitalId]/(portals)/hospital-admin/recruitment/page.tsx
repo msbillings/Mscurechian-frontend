@@ -20,6 +20,7 @@ export default function AdminRecruitmentPage() {
   const { hospitalId } = useParams();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
 
   const authUser = useAuthStore((state) => state.user) as any;
 
@@ -96,6 +97,18 @@ export default function AdminRecruitmentPage() {
     r.department.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const ITEMS_PER_PAGE = 10;
+  const totalPages = Math.max(1, Math.ceil(filteredRecruitments.length / ITEMS_PER_PAGE));
+  
+  const paginatedRecruitments = React.useMemo(() => {
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return filteredRecruitments.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredRecruitments, page]);
+
+  React.useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
+
   const handleReview = (id: string, status: "approved" | "rejected") => {
     let rejectionReason = "";
     if (status === "rejected") {
@@ -115,65 +128,100 @@ export default function AdminRecruitmentPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white p-6 sm:p-8 md:p-10 rounded-2xl border border-slate-100 shadow-sm">
-        <div>
-          <h1 className="text-xl font-black text-slate-900 tracking-tight">Recruitment Registry</h1>
-          <p className="text-slate-500 text-xs font-medium">Review and approve recruitment notices from HR.</p>
+    <div className="min-h-screen bg-slate-50/50 space-y-6">
+      {/* Dynamic Header with Advanced Filters */}
+      <div className="flex flex-col gap-4 bg-white py-3 px-4 md:py-4 md:px-5 rounded-2xl border border-gray-100 shadow-sm shrink-0 mb-6">
+        
+        {/* Top Row: Identification, Process Button, and Stats */}
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 md:gap-4 pb-4 border-b border-gray-50">
+          
+          <div className="shrink-0 flex items-center gap-2 px-1">
+            <div className="p-1.5 md:p-2 bg-indigo-50 rounded-lg text-indigo-600">
+              <Users className="w-5 h-5 md:w-6 md:h-6" />
+            </div>
+            <div className="flex flex-col justify-center">
+              <h1 className="text-sm md:text-base font-bold text-gray-900 tracking-tight leading-none uppercase">
+                Recruitment Registry
+              </h1>
+              <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1">
+                Review and approve recruitment notices
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1 xl:pb-0 w-full xl:w-auto">
+            <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 rounded-lg border border-gray-100 shrink-0">
+              <div className="p-1.5 bg-white rounded-md shadow-sm"><Users className="w-4 h-4 text-gray-500" /></div>
+              <div className="flex flex-col">
+                <span className="text-[8px] font-black uppercase tracking-widest text-gray-400">Total Positions</span>
+                <span className="text-sm font-bold text-gray-700 leading-none">
+                  {recruitments.reduce((acc: number, r: any) => acc + (r.numberOfPositions || 0), 0)}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 px-4 py-2 bg-amber-50/50 rounded-lg border border-amber-100 shrink-0">
+              <div className="p-1.5 bg-white rounded-md shadow-sm"><Clock className="w-4 h-4 text-amber-500" /></div>
+              <div className="flex flex-col">
+                <span className="text-[8px] font-black uppercase tracking-widest text-amber-600/70">Pending</span>
+                <span className="text-sm font-bold text-amber-700 leading-none">
+                  {recruitments.filter((r: any) => r.status === 'pending_approval').length}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 px-4 py-2 bg-emerald-50/50 rounded-lg border border-emerald-100 shrink-0">
+              <div className="p-1.5 bg-white rounded-md shadow-sm"><CheckCircle className="w-4 h-4 text-emerald-500" /></div>
+              <div className="flex flex-col">
+                <span className="text-[8px] font-black uppercase tracking-widest text-emerald-600/70">Active</span>
+                <span className="text-sm font-bold text-emerald-700 leading-none">
+                  {recruitments.filter((r: any) => r.status === 'open').length}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-6 px-3 md:px-6 py-2 bg-slate-50/50 rounded-xl border border-slate-100">
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5 text-amber-600 mb-0.5">
-                <Clock size={12} />
-                <span className="text-[8px] font-black uppercase tracking-widest">Pending</span>
-              </div>
-              <p className="text-sm md:text-lg font-black text-slate-900 leading-none">
-                {recruitments.filter((r: any) => r.status === 'pending_approval').length}
-              </p>
+        {/* Bottom Row: Control Center (Search & Pagination) */}
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:flex-1">
+            
+            {/* Search Bar - Takes remaining width */}
+            <div className="relative flex-1">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search by title or department..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+              />
             </div>
 
-            <div className="w-px h-8 bg-slate-200" />
-
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5 text-emerald-600 mb-0.5">
-                <CheckCircle size={12} />
-                <span className="text-[8px] font-black uppercase tracking-widest">Active</span>
-              </div>
-              <p className="text-sm md:text-lg font-black text-slate-900 leading-none">
-                {recruitments.filter((r: any) => r.status === 'open').length}
-              </p>
+            {/* Header Pagination */}
+            <div className="flex items-center justify-between sm:justify-center gap-2 shrink-0 bg-gray-50 p-1 rounded-lg border border-gray-200">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="p-1 text-gray-500 hover:text-indigo-600 hover:bg-white disabled:opacity-30 transition-all rounded shadow-sm"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              </button>
+              <span className="text-[10px] font-black tracking-widest text-gray-400 px-2 flex items-center gap-1">
+                <span className="text-indigo-600">{page}</span> / {totalPages}
+              </span>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                className="p-1 text-gray-500 hover:text-indigo-600 hover:bg-white disabled:opacity-30 transition-all rounded shadow-sm"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </button>
             </div>
 
-            <div className="w-px h-8 bg-slate-200" />
-
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5 text-indigo-600 mb-0.5">
-                <Users size={12} />
-                <span className="text-[8px] font-black uppercase tracking-widest">Total</span>
-              </div>
-              <p className="text-sm md:text-lg font-black text-slate-900 leading-none">
-                {recruitments.reduce((acc: number, r: any) => acc + (r.numberOfPositions || 0), 0)}
-              </p>
-            </div>
           </div>
         </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="p-2 md:p-6 border-b border-slate-50">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input
-              type="text"
-              placeholder="Search by title or department..."
-              className="w-full pl-12 pr-4 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </div>
 
         <div className="overflow-x-auto">
           <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full">
@@ -187,8 +235,8 @@ export default function AdminRecruitmentPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filteredRecruitments.length > 0 ? (
-                filteredRecruitments.map((r: any) => (
+              {paginatedRecruitments.length > 0 ? (
+                paginatedRecruitments.map((r: any) => (
                   <tr key={r._id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-2 md:px-6 py-4">
                       <div className="font-bold text-slate-900">{r.title}</div>

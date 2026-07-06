@@ -127,7 +127,8 @@ const DischargeProfile = () => {
                         url: (user as any).documents?.internshipCertificate?.url || '',
                         publicId: (user as any).documents?.internshipCertificate?.publicId || ''
                     }
-                }
+                },
+                bio: user.bio || ''
             });
             setProfileImage(user.image || null);
             setIsLoading(false);
@@ -399,6 +400,30 @@ const DischargeProfile = () => {
                         </div>
                         <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight truncate w-full">{formData.name || 'Discharge Personnel'}</h3>
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Profile Visual</p>
+                        
+                        {/* Bio Field inline edit */}
+                        <div className="w-full mt-6 pt-6 border-t border-gray-100 dark:border-gray-700/50 text-left">
+                            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-2xl p-4 border border-gray-100 dark:border-gray-800">
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Bio (Max 150 Chars)</label>
+                                        <span className={`text-[9px] font-bold ${(formData as any).bio?.length >= 150 ? 'text-rose-500' : 'text-gray-400'}`}>
+                                            {(formData as any).bio?.length || 0}/150
+                                        </span>
+                                    </div>
+                                    <textarea
+                                        value={(formData as any).bio || ''}
+                                        onChange={(e) => {
+                                            setFormData(prev => ({ ...prev, bio: e.target.value.slice(0, 150) }));
+                                            setHasChanges(true);
+                                        }}
+                                        rows={3}
+                                        placeholder="Write a short professional or personal bio..."
+                                        className="w-full px-3 py-2 text-xs text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 resize-none leading-relaxed"
+                                    />
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <PrinterSettingsCard />

@@ -684,154 +684,96 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
 
   return (
     <div className="max-w-7xl mx-auto pb-12">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <PageHeader
-          icon={<div className="p-3 bg-indigo-100 dark:bg-indigo-900/40 rounded-2xl"><Users className="text-indigo-600" size={32} /></div>}
-          title={title}
-          subtitle="View and manage daily staff presence and reports"
-        />
-
-        <div className="flex items-center gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-          <button
-            onClick={() => setViewMode('summary')}
-            className={`flex items-center gap-2 px-3 md:px-6 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'summary'
-              ? 'bg-white dark:bg-gray-700 text-indigo-600 shadow-sm'
-              : 'text-gray-500 hover:text-gray-700'
-              }`}
-          >
-            <LayoutGrid size={16} /> Summary Report
-          </button>
-          <button
-            onClick={() => setViewMode('logs')}
-            className={`flex items-center gap-2 px-3 md:px-6 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'logs'
-              ? 'bg-white dark:bg-gray-700 text-indigo-600 shadow-sm'
-              : 'text-gray-500 hover:text-gray-700'
-              }`}
-          >
-            <List size={16} /> History Logs
-          </button>
-        </div>
-      </div>
-
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Card padding="p-5" className="bg-white dark:bg-gray-900 border-none shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-gray-400 mb-1">Total Staff</p>
-              <h3 className="text-2xl font-bold">{stats.totalStaff}</h3>
-            </div>
-            <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-400">
-              <Users size={20} />
-            </div>
-          </div>
-        </Card>
-
-        {/* Present Today — only 'present' status, NOT late */}
-        <Card padding="p-5" className="bg-white dark:bg-gray-900 border-none shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-gray-400 mb-1">Present Today</p>
-              <h3 className="text-2xl font-bold text-emerald-600">{stats.today?.present || 0}</h3>
-              <p className="text-[10px] text-gray-400 mt-0.5">On-time arrivals only</p>
-            </div>
-            <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600">
-              <CheckCircle size={20} />
-            </div>
-          </div>
-        </Card>
-
-        {/* Late Today — shown separately from Present */}
-        <Card padding="p-5" className="bg-white dark:bg-gray-900 border-none shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-gray-400 mb-1">Late Today</p>
-              <h3 className="text-2xl font-bold text-amber-500">{stats.today?.late || 0}</h3>
-              <p className="text-[10px] text-gray-400 mt-0.5">Arrived after cutoff</p>
-            </div>
-            <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-500">
-              <Clock size={20} />
-            </div>
-          </div>
-        </Card>
-
-        <Card padding="p-5" className="bg-white dark:bg-gray-900 border-none shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-gray-400 mb-1">Avg Attendance</p>
-              <h3 className="text-2xl font-bold text-indigo-600">{stats.averageAttendance}%</h3>
-            </div>
-            <div className="p-3 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600">
-              <TrendingUp size={20} />
-            </div>
-          </div>
-        </Card>
-      </div>
-
-       {/* Filters */}
-      <Card padding="p-3 md:p-4" className="mb-6 border-none shadow-sm bg-white dark:bg-gray-900">
-        <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
-          <div className="flex flex-wrap items-center gap-3 md:gap-4 w-full md:w-auto">
-            {viewMode === 'logs' && (
-              <div className="flex-1 min-w-[140px] md:flex-none">
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Select Date</label>
-                <input
-                  type="date"
-                  value={filterDate}
-                  onChange={(e) => setFilterDate(e.target.value)}
-                  className="w-full px-3 py-2 md:py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 text-xs font-bold font-mono outline-none"
-                />
-              </div>
-            )}
-
-            <div className="flex-1 min-w-[140px] md:flex-none">
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Status Filter</label>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full px-3 py-2 md:py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 text-xs font-bold outline-none appearance-none cursor-pointer"
-              >
-                <option value="">All Statuses</option>
-                <option value="present">Present</option>
-                <option value="absent">Absent</option>
-                <option value="late">Late</option>
-                <option value="half-day">Half Day</option>
-                <option value="on-leave">On Leave</option>
-              </select>
+      {/* Dynamic Header with Advanced Filters */}
+      <div className="flex flex-col gap-4 bg-white py-3 px-4 md:py-4 md:px-5 rounded-2xl border border-gray-100 shadow-sm shrink-0 mb-6">
+         {/* Top Row: Identification & Stats */}
+         <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 md:gap-4 pb-4 border-b border-gray-50">
+            {/* Heading */}
+            <div className="shrink-0 flex items-center gap-2 px-1">
+               <div className="p-1.5 md:p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                  <Users className="w-5 h-5 md:w-6 md:h-6" />
+               </div>
+               <div className="flex flex-col justify-center">
+                  <h1 className="text-sm md:text-base font-bold text-gray-900 tracking-tight leading-none uppercase">
+                     {title || "Staff Attendance"}
+                  </h1>
+                  <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 flex items-center gap-1.5">
+                     <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-pulse" />
+                     {stats.totalStaff} Personnel
+                  </p>
+               </div>
             </div>
 
-            <div className="flex-1 min-w-[140px] md:flex-none">
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Staff Member</label>
-              <select
-                value={filterStaff}
-                onChange={(e) => setFilterStaff(e.target.value)}
-                className="w-full px-3 py-2 md:py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 text-xs font-bold outline-none appearance-none cursor-pointer"
-              >
-                <option value="">All Personnel</option>
-                {staffList.map((s: any) => (
-                  <option key={s.user?._id || s._id} value={s.user?._id || s._id}>
-                    {s.user?.name || s.name}
-                  </option>
-                ))}
-              </select>
+            {/* Miniature Stats Row */}
+            <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1 xl:pb-0 w-full xl:w-auto">
+               <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-100 shrink-0">
+                  <div className="p-1 bg-white rounded-md shadow-sm"><Users className="w-3.5 h-3.5 text-gray-500" /></div>
+                  <div className="flex flex-col">
+                     <span className="text-[8px] font-black uppercase tracking-widest text-gray-400">Total</span>
+                     <span className="text-xs font-bold text-gray-700 leading-none">{stats.totalStaff}</span>
+                  </div>
+               </div>
+               <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50/50 rounded-lg border border-emerald-100 shrink-0">
+                  <div className="p-1 bg-white rounded-md shadow-sm"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /></div>
+                  <div className="flex flex-col">
+                     <span className="text-[8px] font-black uppercase tracking-widest text-emerald-600/70">Present</span>
+                     <span className="text-xs font-bold text-emerald-700 leading-none">{stats.today?.present || 0}</span>
+                  </div>
+               </div>
+               <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50/50 rounded-lg border border-amber-100 shrink-0">
+                  <div className="p-1 bg-white rounded-md shadow-sm"><Clock className="w-3.5 h-3.5 text-amber-500" /></div>
+                  <div className="flex flex-col">
+                     <span className="text-[8px] font-black uppercase tracking-widest text-amber-600/70">Late</span>
+                     <span className="text-xs font-bold text-amber-700 leading-none">{stats.today?.late || 0}</span>
+                  </div>
+               </div>
+               <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50/50 rounded-lg border border-indigo-100 shrink-0">
+                  <div className="p-1 bg-white rounded-md shadow-sm"><TrendingUp className="w-3.5 h-3.5 text-indigo-500" /></div>
+                  <div className="flex flex-col">
+                     <span className="text-[8px] font-black uppercase tracking-widest text-indigo-600/70">Avg</span>
+                     <span className="text-xs font-bold text-indigo-700 leading-none">{stats.averageAttendance}%</span>
+                  </div>
+               </div>
             </div>
-          </div>
+         </div>
 
-          <div className="relative w-full md:w-auto mt-2 md:mt-0">
-            <Button
-              variant="primary"
-              onClick={() => { setShowExportMenu(!showExportMenu); setShowDateRangePicker(false); }}
-              className="w-full flex items-center justify-center gap-2 px-5 py-2 md:py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100 active:scale-95 transition-all"
-            >
-              <FileSpreadsheet size={16} />
-              Generate Report
-              <ChevronDown size={14} className={`transition-transform duration-200 ${showExportMenu ? 'rotate-180' : ''}`} />
-            </Button>
+         {/* Bottom Row: Control Center (Tabs & Filters) */}
+         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+            {/* Navigation Tabs */}
+            <div className="flex flex-wrap items-center gap-1 p-1 bg-gray-50 rounded-xl border border-gray-200 shrink-0">
+               <button
+                  onClick={() => setViewMode('summary')}
+                  className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 md:px-6 py-2 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'summary' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+               >
+                  <LayoutGrid size={14} className="shrink-0" /> <span className="truncate">Summary Report</span>
+               </button>
+               <button
+                  onClick={() => setViewMode('logs')}
+                  className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 md:px-6 py-2 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'logs' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+               >
+                  <List size={14} className="shrink-0" /> <span className="truncate">History Logs</span>
+               </button>
+            </div>
 
-            {showExportMenu && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => { setShowExportMenu(false); setShowDateRangePicker(false); }} />
-                <div className="absolute right-0 mt-3 w-80 max-w-[calc(100vw-2.5rem)] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 z-20 overflow-hidden origin-top-right">
+            {/* Filters & Pagination */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:flex-1">
+               
+               {/* Export Button inside header */}
+               <div className="relative shrink-0 sm:w-44">
+                  <Button
+                    variant="primary"
+                    onClick={() => { setShowExportMenu(!showExportMenu); setShowDateRangePicker(false); }}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-black text-[9px] uppercase tracking-widest bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all h-[34px]"
+                  >
+                    <FileSpreadsheet size={14} />
+                    Report
+                    <ChevronDown size={14} className={`transition-transform duration-200 ${showExportMenu ? 'rotate-180' : ''}`} />
+                  </Button>
+
+               {showExportMenu && (
+                  <>
+                     <div className="fixed inset-0 z-10" onClick={() => { setShowExportMenu(false); setShowDateRangePicker(false); }} />
+                     <div className="absolute left-0 mt-2 w-72 max-w-[calc(100vw-2.5rem)] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 z-20 overflow-hidden origin-top-left">
 
                   {/* Header */}
                   <div className="px-4 py-3 bg-gradient-to-r from-indigo-600 to-violet-600">
@@ -914,9 +856,80 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
                 </div>
               </>
             )}
-          </div>
-        </div>
-      </Card>
+            </div>
+
+            {/* Optional Date Filter */}
+            {viewMode === 'logs' && (
+               <div className="relative shrink-0 sm:w-36">
+                  <CalendarRange className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                     type="date"
+                     value={filterDate}
+                     onChange={(e) => setFilterDate(e.target.value)}
+                     className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all h-[34px]"
+                  />
+               </div>
+            )}
+
+            {/* Status Filter */}
+            <div className="relative shrink-0 sm:w-32">
+               <AlertCircle className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+               <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-indigo-500 outline-none appearance-none cursor-pointer h-[34px]"
+               >
+                  <option value="">All Statuses</option>
+                  <option value="present">Present</option>
+                  <option value="absent">Absent</option>
+                  <option value="late">Late</option>
+                  <option value="half-day">Half Day</option>
+                  <option value="on-leave">On Leave</option>
+               </select>
+            </div>
+
+            {/* Staff Member Search/Dropdown - Takes remaining width */}
+            <div className="relative flex-1">
+               <Users className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+               <select
+                  value={filterStaff}
+                  onChange={(e) => setFilterStaff(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-indigo-500 outline-none appearance-none cursor-pointer h-[34px]"
+               >
+                  <option value="">All Personnel</option>
+                  {staffList.map((s: any) => (
+                     <option key={s.user?._id || s._id} value={s.user?._id || s._id}>
+                        {s.user?.name || s.name}
+                     </option>
+                  ))}
+               </select>
+            </div>
+
+            {/* Header Pagination */}
+            {totalPages > 1 && viewMode === 'logs' && (
+               <div className="flex items-center gap-2 shrink-0 bg-gray-50 p-1 rounded-lg border border-gray-200 h-[34px]">
+                  <button
+                     onClick={() => setPage(p => Math.max(1, p - 1))}
+                     disabled={page === 1}
+                     className="p-1 text-gray-500 hover:text-indigo-600 hover:bg-white disabled:opacity-30 transition-all rounded shadow-sm h-full flex items-center"
+                  >
+                     <ChevronLeft size={16} />
+                  </button>
+                  <span className="text-[10px] font-black tracking-widest text-gray-400 px-1">
+                     {page} / {totalPages || 1}
+                  </span>
+                  <button
+                     onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                     disabled={page >= totalPages}
+                     className="p-1 text-gray-500 hover:text-indigo-600 hover:bg-white disabled:opacity-30 transition-all rounded shadow-sm h-full flex items-center"
+                  >
+                     <ChevronRight size={16} />
+                  </button>
+               </div>
+            )}
+         </div>
+      </div>
+   </div>
 
       {loading && (
         <div className="fixed inset-0 bg-white/60 dark:bg-gray-950/60 flex items-center justify-center z-50 backdrop-blur-sm">
@@ -995,30 +1008,6 @@ function AttendanceClient({ initialAttendance, initialStats, title = "Staff Atte
                 </tbody>
               </table></div>
 
-              {/* Pagination */}
-              {totalPages > 1 && viewMode === 'logs' && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 md:p-8 bg-gray-50/30 dark:bg-gray-800/20 border-t border-gray-100 dark:border-gray-800">
-                  <button
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    className="w-full sm:w-auto flex items-center justify-center gap-3 px-6 md:px-8 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 hover:text-blue-600 hover:border-blue-200 transition-all disabled:opacity-30 active:scale-95 shadow-sm order-2 sm:order-1"
-                  >
-                    <ChevronLeft size={16} /> Previous Quadrant
-                  </button>
-                  <div className="flex items-center gap-4 order-1 sm:order-2">
-                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400">
-                      Sector {page} <span className="mx-2 opacity-20">/</span> {totalPages}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                    disabled={page === totalPages}
-                    className="w-full sm:w-auto flex items-center justify-center gap-3 px-6 md:px-8 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 hover:text-blue-600 hover:border-blue-200 transition-all disabled:opacity-30 active:scale-95 shadow-sm order-3"
-                  >
-                    Next Quadrant <ChevronRight size={16} />
-                  </button>
-                </div>
-              )}
             </div>
           )}
         </div>

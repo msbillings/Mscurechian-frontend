@@ -420,213 +420,145 @@ export default function HospitalAdminIncidentPage() {
     };
 
     return (
-        <div className="space-y-10 max-w-7xl mx-auto">
-            {/* Header Tier */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-                <div>
-                    <h1 className="text-lg md:text-xl lg:text-xl font-black text-gray-900 dark:text-white  uppercase">Incident Management</h1>
-                    <p className="text-gray-500 dark:text-gray-400 font-bold mt-2 uppercase tracking-[0.2em] text-[8px] md:text-[10px] ml-1 flex items-center gap-2">
-                        <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                        Track and manage hospital incidents
-                    </p>
-                </div>
-
-
-                <div className="relative">
-                    <button
-                        onClick={() => setShowExportMenu(!showExportMenu)}
-                        disabled={isExporting}
-                        className="flex items-center gap-2 px-3 md:px-6 py-3 bg-primary-theme text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all active:scale-95 disabled:opacity-50 min-w-[160px] justify-between"
-                    >
-                        <span className="flex items-center gap-2">
-                            <Download size={16} /> Export
-                        </span>
-                        <ChevronDown size={14} className={`transition-transform duration-300 ${showExportMenu ? 'rotate-180' : ''}`} />
-                    </button>
-
-                    <AnimatePresence>
-                        {showExportMenu && (
-                            <>
-                                <div
-                                    className="fixed inset-0 z-10"
-                                    onClick={() => setShowExportMenu(false)}
-                                />
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    animate={{ opacity: 1, y: 5, scale: 1 }}
-                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    className="absolute left-0 md:left-auto md:right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden z-20"
-                                >
-                                    <div className="p-2 space-y-1">
-                                        <button
-                                            onClick={() => {
-                                                exportToExcel();
-                                                setShowExportMenu(false);
-                                            }}
-                                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-gray-700 dark:text-gray-300 rounded-xl transition-colors group"
-                                        >
-                                            <div className="p-2 shrink-0 bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 rounded-lg group-hover:scale-110 transition-transform">
-                                                <FileSpreadsheet size={16} />
-                                            </div>
-                                            <div className="text-left">
-                                                <p className="text-[10px] font-black uppercase tracking-wider">Excel Format</p>
-                                                <p className="text-[8px] font-bold opacity-50">Download .xlsx file</p>
-                                            </div>
-                                        </button>
-
-                                        <button
-                                            onClick={() => {
-                                                exportToPDF();
-                                                setShowExportMenu(false);
-                                            }}
-                                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-300 rounded-xl transition-colors group"
-                                        >
-                                            <div className="p-2 shrink-0 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg group-hover:scale-110 transition-transform">
-                                                <Download size={16} />
-                                            </div>
-                                            <div className="text-left">
-                                                <p className="text-[10px] font-black uppercase tracking-wider">PDF Report</p>
-                                                <p className="text-[8px] font-bold opacity-50">Download .pdf audit</p>
-                                            </div>
-                                        </button>
-                                    </div>
-                                </motion.div>
-                            </>
-                        )}
-                    </AnimatePresence>
-                </div>
-            </div>
-
-            {/* Advanced Filters Section */}
-            <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 ml-1">
-                        <Calendar size={12} /> Date Range
-                    </label>
-                    <div className="flex gap-2">
-                        <input
-                            type="date"
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                            className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-xs font-bold outline-none ring-2 ring-transparent focus:ring-emerald-500/20"
-                        />
-                        <input
-                            type="date"
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                            className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-xs font-bold outline-none ring-2 ring-transparent focus:ring-emerald-500/20"
-                        />
-                    </div>
-                </div>
-
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 ml-1">
-                        <Building size={12} /> Department
-                    </label>
-                    <select
-                        value={deptFilter}
-                        onChange={(e) => setDeptFilter(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-xs font-bold outline-none ring-2 ring-transparent focus:ring-emerald-500/20 appearance-none"
-                    >
-                        <option value="all">All Departments</option>
-                        {hospitalDepartments.map((dept: any) => (
-                            <option key={dept._id} value={dept.name}>{dept.name}</option>
-                        ))}
-                    </select>
-                </div>
-
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 ml-1">
-                        <ShieldCheck size={12} /> Status
-                    </label>
-                    <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-xs font-bold outline-none ring-2 ring-transparent focus:ring-emerald-500/20 appearance-none"
-                    >
-                        <option value="all">Status</option>
-                        <option value="OPEN">Open Cases</option>
-                        <option value="IN REVIEW">In Review</option>
-                        <option value="CLOSED">Closed Cases</option>
-                    </select>
-                </div>
-
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 ml-1">
-                        <Search size={12} /> Search
-                    </label>
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-                        <input
-                            type="text"
-                            placeholder="Search incidents..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-9 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border-none rounded-xl text-xs font-bold outline-none ring-2 ring-transparent focus:ring-emerald-500/20"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* Insights / Metrics View */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 group">
-                    <div className="flex items-center gap-3 mb-3">
-                        <div className="p-2 bg-gray-900 text-white rounded-lg">
-                            <TrendingUp size={16} />
+        <div className="max-w-7xl mx-auto min-h-screen bg-slate-50/50">
+            {/* Dynamic Header */}
+            <div className="flex flex-col gap-4 bg-white py-3 px-4 md:py-4 md:px-5 rounded-2xl border border-gray-100 shadow-sm shrink-0 mb-6">
+                
+                {/* Top Row: Title, Minibadges, Action Button */}
+                <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
+                
+                    <div className="flex flex-wrap items-center gap-2 xl:gap-4 shrink-0">
+                        <div className="shrink-0 flex items-center gap-2 px-1">
+                            <div className="p-1.5 md:p-2 bg-emerald-50 rounded-lg text-emerald-600">
+                                <ShieldCheck className="w-5 h-5 md:w-6 md:h-6" />
+                            </div>
+                            <div className="flex flex-col justify-center">
+                                <h1 className="text-sm md:text-base font-bold text-gray-900 tracking-tight leading-none uppercase">
+                                    Incident Management
+                                </h1>
+                                <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 line-clamp-1">
+                                    Track and manage hospital incidents
+                                </p>
+                            </div>
                         </div>
-                        <span className="text-[10px] font-black uppercase font-semibold text-gray-400">Total Incidents</span>
+
+                        <div className="hidden lg:flex items-center gap-2 ml-4 pl-4 border-l border-slate-100">
+                            {[
+                                { label: "Total Incidents", value: Object.values(summaryMetrics.monthlyStats)[0] || 0, color: "text-gray-900", bg: "bg-gray-100" },
+                                { label: "Open Cases", value: summaryMetrics.openCount, color: "text-rose-600", bg: "bg-rose-50" },
+                                { label: "Closed Cases", value: summaryMetrics.closedCount, color: "text-emerald-600", bg: "bg-emerald-50" },
+                                { label: "High-Risk Dept", value: summaryMetrics.topDept[0], color: "text-indigo-600", bg: "bg-indigo-50" }
+                            ].map((stat, i) => (
+                                <div key={i} className={`flex items-center gap-1.5 px-2 py-1 rounded-md ${stat.bg} ${stat.color} border border-slate-100/50`}>
+                                    <span className="text-[8px] font-bold uppercase tracking-widest">{stat.label}</span>
+                                    <span className="text-xs font-black">{stat.value}</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                    <div className="text-3xl font-black  ">
-                        {Object.values(summaryMetrics.monthlyStats)[0] || 0}
-                        <span className="text-[10px] block font-bold text-gray-400 uppercase  mt-1">
-                            This Month
-                        </span>
+
+                    <div className="flex items-center justify-end w-full xl:w-auto shrink-0 relative">
+                        <button
+                            onClick={() => setShowExportMenu(!showExportMenu)}
+                            disabled={isExporting}
+                            className="flex-1 xl:flex-none flex items-center justify-center gap-2 px-3 md:px-6 py-2 bg-primary-theme text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all h-[34px] shadow-sm whitespace-nowrap"
+                        >
+                            <Download size={14} className="shrink-0" /> Export
+                            <ChevronDown size={14} className={`ml-1 transition-transform duration-300 ${showExportMenu ? 'rotate-180' : ''}`} />
+                        </button>
+                        
+                        <AnimatePresence>
+                            {showExportMenu && (
+                                <>
+                                    <div
+                                        className="fixed inset-0 z-10"
+                                        onClick={() => setShowExportMenu(false)}
+                                    />
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        animate={{ opacity: 1, y: 5, scale: 1 }}
+                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden z-20"
+                                    >
+                                        <div className="p-2 space-y-1">
+                                            <button
+                                                onClick={() => {
+                                                    exportToExcel();
+                                                    setShowExportMenu(false);
+                                                }}
+                                                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-gray-700 dark:text-gray-300 rounded-xl transition-colors group"
+                                            >
+                                                <div className="p-2 shrink-0 bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 rounded-lg group-hover:scale-110 transition-transform">
+                                                    <FileSpreadsheet size={16} />
+                                                </div>
+                                                <div className="text-left">
+                                                    <p className="text-[10px] font-black uppercase tracking-wider">Excel Format</p>
+                                                    <p className="text-[8px] font-bold opacity-50">Download .xlsx file</p>
+                                                </div>
+                                            </button>
+
+                                            <button
+                                                onClick={() => {
+                                                    exportToPDF();
+                                                    setShowExportMenu(false);
+                                                }}
+                                                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-300 rounded-xl transition-colors group"
+                                            >
+                                                <div className="p-2 shrink-0 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg group-hover:scale-110 transition-transform">
+                                                    <Download size={16} />
+                                                </div>
+                                                <div className="text-left">
+                                                    <p className="text-[10px] font-black uppercase tracking-wider">PDF Report</p>
+                                                    <p className="text-[8px] font-bold opacity-50">Download .pdf audit</p>
+                                                </div>
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                </>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700  group">
-                    <div className="flex items-center gap-3 mb-3">
-                        <div className="p-2 bg-red-600 text-white rounded-lg">
-                            <AlertCircle size={16} />
+                {/* Bottom Row: Control Center (Search, Filters, View Toggles) */}
+                <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 border-t border-gray-50 pt-4">
+                    <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 w-full lg:flex-1">
+                        
+                        {/* Search Bar - Takes remaining width */}
+                        <div className="relative flex-1 w-full lg:w-auto">
+                            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input 
+                                type="text" 
+                                placeholder="Search incidents..." 
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                            />
                         </div>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Open Cases</span>
-                    </div>
-                    <div className="text-3xl font-black ">
-                        {summaryMetrics.openCount}
-                        <span className="text-[10px] block font-bold text-gray-400 uppercase mt-1">
-                            Pending Action
-                        </span>
-                    </div>
-                </div>
 
-                <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 group">
-                    <div className="flex items-center gap-3 mb-3">
-                        <div className="p-2 bg-emerald-600 text-white rounded-lg">
-                            <CheckCircle2 size={16} />
-                        </div>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Closed Cases</span>
-                    </div>
-                    <div className="text-3xl font-black ">
-                        {summaryMetrics.closedCount}
-                        <span className="text-[10px] block font-bold text-gray-400 uppercase mt-1">
-                            Resolved
-                        </span>
-                    </div>
-                </div>
+                        {/* Filters */}
+                        <div className="flex items-center gap-2 shrink-0 overflow-x-auto pb-1 lg:pb-0 custom-scrollbar">
+                            <div className="flex items-center bg-gray-50 border border-gray-200 rounded-lg p-0.5 h-[34px]">
+                                <Calendar size={14} className="text-gray-400 mx-2" />
+                                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="bg-transparent border-none text-[10px] font-bold text-gray-700 outline-none w-[90px] px-1 cursor-pointer" />
+                                <span className="text-gray-300">-</span>
+                                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="bg-transparent border-none text-[10px] font-bold text-gray-700 outline-none w-[90px] px-1 cursor-pointer" />
+                            </div>
+                            
+                            <select value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} className="bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-bold text-gray-700 outline-none px-2 h-[34px] min-w-[120px] cursor-pointer appearance-none">
+                                <option value="all">All Departments</option>
+                                {hospitalDepartments.map((dept: any) => (
+                                    <option key={dept._id} value={dept.name}>{dept.name}</option>
+                                ))}
+                            </select>
 
-                <div className="bg-white dark:bg-gray-800 p-3 md:p-6 rounded-[0.5rem] border border-gray-100 dark:border-gray-700 group">
-                    <div className="flex items-center gap-3 mb-3">
-                        <div className="p-2 bg-indigo-600 text-white rounded-lg">
-                            <Building size={16} />
+                            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-bold text-gray-700 outline-none px-2 h-[34px] min-w-[100px] cursor-pointer appearance-none">
+                                <option value="all">All Statuses</option>
+                                <option value="OPEN">Open Cases</option>
+                                <option value="IN REVIEW">In Review</option>
+                                <option value="CLOSED">Closed Cases</option>
+                            </select>
                         </div>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">High-Risk Department</span>
-                    </div>
-                    <div className="text-2xl font-black  uppercase">
-                        {summaryMetrics.topDept[0]}
-                        <span className="text-[10px] block font-bold text-gray-400 uppercase  mt-1">
-                            {summaryMetrics.topDept[1] as number} Incident Records
-                        </span>
                     </div>
                 </div>
             </div>

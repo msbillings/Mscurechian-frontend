@@ -108,6 +108,7 @@ interface User {
   image?: string;
   avatar?: string;
   profilePic?: string;
+  bio?: string;
   shopName?: string;
   gstin?: string;  licenseNo?: string;
   address?: string;

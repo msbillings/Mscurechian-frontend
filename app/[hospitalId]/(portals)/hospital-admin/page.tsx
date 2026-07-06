@@ -374,73 +374,91 @@ function HospitalAdminDashboard() {
 
   return (
     <div className="space-y-4 md:space-y-5 bg-slate-50/50 min-h-screen flex flex-col pb-12">
-      {/* Dynamic Header with Advanced Filters */}
-      <div className="flex flex-col gap-4 bg-white py-3 px-4 md:py-4 md:px-8 rounded-3xl border border-slate-100 shadow-sm shrink-0">
-        {/* Top Row: Identification */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-50 pb-4">
-          <div className="flex items-center gap-3">
-            <h1 className="text-lg md:text-xl lg:text-xl font-bold text-slate-900 tracking-tight whitespace-nowrap">
-              Dashboard Overview
-            </h1>
-            <span className="px-2.5 py-1 bg-blue-50 text-blue-600 rounded-lg text-[8px] md:text-[10px] font-black uppercase tracking-widest border border-blue-100 shrink-0">
-              Live Control
-            </span>
+      {/* Unified Top Action Bar */}
+      <div className="bg-white dark:bg-gray-800 p-3 md:p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 md:gap-4 shrink-0">
+        
+        {/* Heading */}
+        <div className="shrink-0 flex items-center gap-2 px-1">
+          <div className="p-1.5 md:p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-600">
+             <Monitor className="w-5 h-5 md:w-6 md:h-6" />
           </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50/80 rounded-xl border border-slate-100/50">
-            <Building2 className="w-3.5 md:w-4 h-3.5 md:h-4 text-blue-600" />
-            <span className="text-[7px] sm:text-[10px] font-medium text-slate-500 uppercase tracking-widest">
-              {hospital?.name || "Hospital Node"}
-            </span>
+          <div className="flex flex-col justify-center">
+             <div className="flex items-center gap-2">
+                <h1 className="text-sm md:text-base font-bold text-gray-900 dark:text-white tracking-tight leading-none uppercase">
+                   Dashboard Overview
+                </h1>
+                <span className="px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-md text-[8px] font-black uppercase tracking-widest border border-blue-100 dark:border-blue-800 shrink-0">
+                   Live Control
+                </span>
+             </div>
+             <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1.5 md:mt-1 flex items-center gap-1.5">
+                <Building2 className="w-3 h-3 text-blue-500" />
+                {hospital?.name || "Hospital Node"}
+             </p>
           </div>
         </div>
 
-        {/* Bottom Row: Control Center */}
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Group 1: Time Perspective */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="flex p-0.5 md:p-1 bg-slate-50 border border-slate-200 rounded-xl shrink-0">
-                {[
-                  { key: 'today', label: 'Today' },
-                  { key: '7days', label: '7D' },
-                  { key: 'month', label: 'Month' },
-                  { key: 'year', label: 'Year' },
-                  { key: 'custom', label: 'Custom' },
-                ].map((r) => (
-                  <button
-                    key={r.key}
-                    onClick={() => setRange(r.key)}
-                    className={`px-2.5 md:px-4 py-1.5 md:py-2 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${range === r.key
-                      ? 'bg-blue-600 text-white shadow-lg'
-                      : 'text-slate-400 hover:text-slate-600'
-                      }`}
-                  >
-                    {r.label}
-                  </button>
-                ))}
-              </div>
-
-              {range === 'custom' && (
-                <div className="flex items-center gap-2 animate-in fade-in zoom-in-95 duration-300">
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-[9px] font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-100 shadow-sm"
-                  />
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-[9px] font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-100 shadow-sm"
-                  />
+        {/* Actions Row */}
+        <div className="w-full flex flex-1 flex-col sm:flex-row items-stretch sm:items-center gap-3 justify-between xl:justify-end">
+            
+            {/* Date Filters & Range */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                {/* Date Input */}
+                <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-1 text-xs shadow-sm w-full sm:w-auto">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1 mr-1">Date</span>
+                    <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => {
+                            setStartDate(e.target.value);
+                            setRange('custom');
+                        }}
+                        className="bg-transparent border-none text-[9px] md:text-[10px] font-bold outline-none text-gray-700 dark:text-gray-300 py-0.5 focus:ring-0 uppercase tracking-widest min-w-[100px]"
+                    />
+                    <span className="text-gray-400 font-bold">-</span>
+                    <input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => {
+                            setEndDate(e.target.value);
+                            setRange('custom');
+                        }}
+                        className="bg-transparent border-none text-[9px] md:text-[10px] font-bold outline-none text-gray-700 dark:text-gray-300 py-0.5 focus:ring-0 uppercase tracking-widest min-w-[100px]"
+                    />
+                    {(startDate || endDate) && (
+                        <button
+                            onClick={() => { setStartDate(""); setEndDate(""); setRange('today'); }}
+                            className="text-xs font-bold text-rose-500 hover:text-rose-700 ml-1 px-1"
+                        >
+                            ✕
+                        </button>
+                    )}
                 </div>
-              )}
+
+                {/* Quick Range */}
+                <div className="flex items-center gap-0.5 bg-gray-50 dark:bg-gray-900 p-0.5 rounded-lg border border-gray-100 dark:border-gray-800 shrink-0">
+                    {[
+                      { key: 'today', label: 'Today' },
+                      { key: '7days', label: '7D' },
+                      { key: 'month', label: 'Month' },
+                      { key: 'year', label: 'Year' },
+                    ].map((r) => (
+                        <button
+                            key={r.key}
+                            onClick={() => setRange(r.key)}
+                            className={`px-2 py-1 rounded-md text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-all ${range === r.key
+                                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-200 dark:ring-gray-600'
+                                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                }`}
+                        >
+                            {r.label}
+                        </button>
+                    ))}
+                </div>
             </div>
 
-            {/* Group 2: Operational Filters & Quick Actions */}
-            <div className="flex items-center gap-2 md:gap-3 flex-wrap">
-              <div className="flex p-0.5 md:p-1 bg-slate-50 border border-slate-200 rounded-xl shrink-0">
+            {/* Visit Type */}
+            <div className="flex items-center gap-0.5 bg-gray-50 dark:bg-gray-900 p-0.5 rounded-lg border border-gray-100 dark:border-gray-800 shrink-0">
                 {[
                   { key: 'all', label: 'All' },
                   { key: 'opd', label: 'OPD' },
@@ -449,50 +467,44 @@ function HospitalAdminDashboard() {
                   <button
                     key={v.key}
                     onClick={() => setVisitType(v.key as any)}
-                    className={`px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${visitType === v.key
-                      ? 'bg-emerald-600 text-white shadow-lg'
-                      : 'text-slate-400 hover:text-slate-600'
+                    className={`px-2 py-1 rounded-md text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-all ${visitType === v.key
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                       }`}
                   >
                     {v.label}
                   </button>
                 ))}
-              </div>
+            </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+            {/* Actions */}
+            <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   onClick={() => refetch()}
-                  className="p-2 md:px-4 md:py-2 bg-white border border-slate-200 text-slate-400 hover:text-blue-600 hover:border-blue-200 rounded-xl md:rounded-2xl shadow-sm transition-all group shrink-0"
+                  className="p-1.5 md:p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg shadow-sm transition-all group"
                   title="Refresh Dashboard"
                 >
-                  <RefreshCw size={14} className={`group-hover:rotate-180 transition-transform duration-500 ${isFetching ? 'animate-spin text-blue-600' : ''}`} />
-
+                  <RefreshCw size={14} className={`group-hover:rotate-180 transition-transform duration-500 ${isFetching ? 'animate-spin text-blue-600 dark:text-blue-400' : ''}`} />
                 </button>
 
                 <button
                   onClick={() => setIsBrandingModalOpen(true)}
-                  className="flex items-center gap-2 px-3 md:px-4 py-2 bg-white border border-slate-200 text-slate-600 hover:text-blue-600 hover:border-blue-200 rounded-xl md:rounded-2xl shadow-sm transition-all group shrink-0"
+                  className="p-1.5 md:p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg shadow-sm transition-all"
+                  title="Receipt Meta"
                 >
-                  <Settings size={14} className="text-slate-400 group-hover:text-blue-600" />
-                  <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Receipt Meta</span>
+                  <Settings size={14} />
                 </button>
-              </div>
+
+                <button
+                  onClick={() => setIsReminderModalOpen(true)}
+                  className="p-1.5 md:p-2 bg-slate-900 dark:bg-gray-100 border border-slate-900 dark:border-gray-100 text-white dark:text-gray-900 hover:bg-slate-800 dark:hover:bg-white rounded-lg shadow-sm transition-all"
+                  title="Reminder Settings"
+                >
+                  <BellRing size={14} />
+                </button>
             </div>
-          </div>
-
-          <div className="flex items-center shrink-0">
-            <button
-              onClick={() => setIsReminderModalOpen(true)}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 border border-slate-900 text-white hover:bg-slate-800 rounded-xl md:rounded-2xl shadow-lg transition-all group"
-            >
-              <BellRing size={14} className="text-white/70 group-hover:text-white" />
-              <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Reminder Settings</span>
-            </button>
-          </div>
         </div>
-
       </div>
-
 
       {/* Primary Personnel Cards (Static Context) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3 shrink-0">
@@ -777,10 +789,8 @@ function HospitalAdminDashboard() {
             </div>
           </Card>
         </div>
-
       </div>
-
-
+      
       <ReminderConfigModal
         isOpen={isReminderModalOpen}
         onClose={() => setIsReminderModalOpen(false)}

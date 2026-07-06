@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import {
     BookOpen, Plus, Search, Filter, Calendar,
     Briefcase, Users, MoreVertical, Edit, Trash2,
-    CheckCircle2, Clock, XCircle, FileCheck, ChevronDown
+    CheckCircle2, Clock, XCircle, FileCheck, ChevronDown, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { getAllTrainingsAction, deleteTrainingAction } from '@/lib/integrations';
 import AddTrainingModal from '@/components/admin/training/AddTrainingModal';
@@ -100,73 +100,121 @@ export default function TrainingManagementPage() {
 
     return (
         <div className="space-y-8 bg-slate-50/50 min-h-screen">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-lg font-bold text-slate-900 tracking-tight">Staff Training Records</h1>
-                    <p className="text-sm text-slate-500 font-medium flex items-center gap-2 mt-1">
-                        <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-pulse" />
-                        Manage professional development & compliance
-                    </p>
-                </div>
-                <button
-                    onClick={handleAdd}
-                    className="flex items-center gap-2 px-3 md:px-6 py-2.5 bg-indigo-600 text-white rounded-[0.5rem] text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all"
-                >
-                    <Plus className="w-4 h-4" strokeWidth={3} /> Log New Training
-                </button>
-            </div>
+            {/* Dynamic Header with Advanced Filters */}
+            <div className="flex flex-col gap-4 bg-white py-3 px-4 md:py-4 md:px-5 rounded-2xl border border-gray-100 shadow-sm shrink-0 mb-6">
+                {/* Top Row: Identification & Action */}
+                <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 md:gap-4 pb-4 border-b border-gray-50">
+                    <div className="shrink-0 flex items-center gap-2 px-1">
+                        <div className="p-1.5 md:p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                            <BookOpen className="w-5 h-5 md:w-6 md:h-6" />
+                        </div>
+                        <div className="flex flex-col justify-center">
+                            <h1 className="text-sm md:text-base font-bold text-gray-900 tracking-tight leading-none uppercase">
+                                Staff Training Records
+                            </h1>
+                            <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-pulse" />
+                                Manage professional development & compliance
+                            </p>
+                        </div>
+                    </div>
 
-            {/* Filters */}
-            <div className="bg-white p-2 md:p-4 rounded-[0.5rem] border border-slate-200  flex flex-col md:flex-row items-center gap-4">
-                <div className="relative flex-1 w-full">
-                    <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                    <input
-                        type="text"
-                        placeholder="Search training name or department..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
-                    />
-                </div>
-                <div className="flex items-center gap-3 w-full lg:w-auto">
-                    <div className="relative flex-1 lg:w-48">
-                        <Filter className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 z-10" />
-                        <div
-                            onClick={() => setIsStatusFilterOpen(!isStatusFilterOpen)}
-                            className="w-full pl-11 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer flex justify-between items-center group hover:border-indigo-200 transition-colors"
+                    <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1 xl:pb-0 w-full xl:w-auto">
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-100 shrink-0">
+                            <div className="p-1 bg-white rounded-md shadow-sm"><BookOpen className="w-3.5 h-3.5 text-gray-500" /></div>
+                            <div className="flex flex-col">
+                                <span className="text-[8px] font-black uppercase tracking-widest text-gray-400">Total Records</span>
+                                <span className="text-xs font-bold text-gray-700 leading-none">{trainings.length}</span>
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleAdd}
+                            className="flex items-center gap-2 px-3 md:px-6 py-2 bg-indigo-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shrink-0 h-[34px]"
                         >
-                            <span className={filterStatus ? 'text-slate-900' : 'text-slate-400'}>
-                                {filterStatus ? `Status: ${filterStatus}` : 'Status: All'}
-                            </span>
-                            <ChevronDown size={14} className={`text-slate-400 transition-transform duration-300 ${isStatusFilterOpen ? 'rotate-180' : ''}`} />
+                            <Plus className="w-4 h-4" strokeWidth={3} /> Log New Training
+                        </button>
+                    </div>
+                </div>
+
+                {/* Bottom Row: Control Center (Filters & Pagination) */}
+                <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:flex-1">
+                        
+                        {/* Search Bar - Takes remaining width */}
+                        <div className="relative flex-1">
+                            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                                type="text"
+                                placeholder="Search training name or department..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all h-[34px]"
+                            />
                         </div>
 
-                        {isStatusFilterOpen && (
-                            <>
-                                <div
-                                    className="fixed inset-0 z-[60]"
-                                    onClick={() => setIsStatusFilterOpen(false)}
-                                />
-                                <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-white border border-slate-100 rounded-2xl shadow-xl z-[70] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                                    <div className="p-1">
-                                        <div
-                                            onClick={() => { setFilterStatus(''); setIsStatusFilterOpen(false); }}
-                                            className="px-4 py-2.5 hover:bg-slate-50 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-300 cursor-pointer"
-                                        >
-                                            Status: All
-                                        </div>
-                                        {['Scheduled', 'Completed', 'Cancelled'].map(s => (
+                        {/* Status Filter */}
+                        <div className="relative shrink-0 sm:w-44">
+                            <Filter className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 z-10" />
+                            <div
+                                onClick={() => setIsStatusFilterOpen(!isStatusFilterOpen)}
+                                className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest cursor-pointer flex justify-between items-center h-[34px]"
+                            >
+                                <span className={filterStatus ? 'text-slate-900' : 'text-slate-400'}>
+                                    {filterStatus ? `Status: ${filterStatus}` : 'Status: All'}
+                                </span>
+                                <ChevronDown size={14} className={`text-slate-400 transition-transform duration-300 ${isStatusFilterOpen ? 'rotate-180' : ''}`} />
+                            </div>
+
+                            {isStatusFilterOpen && (
+                                <>
+                                    <div
+                                        className="fixed inset-0 z-[60]"
+                                        onClick={() => setIsStatusFilterOpen(false)}
+                                    />
+                                    <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-white border border-slate-100 rounded-2xl shadow-xl z-[70] overflow-hidden">
+                                        <div className="p-1">
                                             <div
-                                                key={s}
-                                                onClick={() => { setFilterStatus(s); setIsStatusFilterOpen(false); }}
-                                                className={`px-4 py-2.5 hover:bg-indigo-50/50 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-colors ${filterStatus === s ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:text-indigo-600'}`}
+                                                onClick={() => { setFilterStatus(''); setIsStatusFilterOpen(false); }}
+                                                className="px-4 py-2.5 hover:bg-slate-50 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 cursor-pointer"
                                             >
-                                                {s}
+                                                Status: All
                                             </div>
-                                        ))}
+                                            {['Scheduled', 'Completed', 'Cancelled'].map(s => (
+                                                <div
+                                                    key={s}
+                                                    onClick={() => { setFilterStatus(s); setIsStatusFilterOpen(false); }}
+                                                    className={`px-4 py-2.5 hover:bg-indigo-50/50 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer transition-colors ${filterStatus === s ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:text-indigo-600'}`}
+                                                >
+                                                    {s}
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            </>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Pagination inside header */}
+                        {!isLoading && totalPages > 1 && (
+                            <div className="flex items-center gap-2 shrink-0 bg-slate-50 p-1 rounded-lg border border-slate-200 h-[34px]">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                    className="p-1 text-slate-500 hover:text-indigo-600 hover:bg-white disabled:opacity-30 transition-all rounded shadow-sm h-full flex items-center"
+                                >
+                                    <ChevronLeft size={16} />
+                                </button>
+                                <span className="text-[10px] font-black tracking-widest text-slate-400 px-1">
+                                    {currentPage} / {totalPages || 1}
+                                </span>
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages}
+                                    className="p-1 text-slate-500 hover:text-indigo-600 hover:bg-white disabled:opacity-30 transition-all rounded shadow-sm h-full flex items-center"
+                                >
+                                    <ChevronRight size={16} />
+                                </button>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -292,33 +340,6 @@ export default function TrainingManagementPage() {
                     </table></div>
                 </div>
 
-                {/* Pagination Controls */}
-                {!isLoading && filteredTrainings.length > itemsPerPage && (
-                    <div className="px-2 md:px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
-                            Showing <span className="text-slate-900">{((currentPage - 1) * itemsPerPage) + 1}</span> - <span className="text-slate-900">{Math.min(currentPage * itemsPerPage, filteredTrainings.length)}</span> of <span className="text-slate-900">{filteredTrainings.length}</span>
-                        </p>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                disabled={currentPage === 1}
-                                className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                                Previous
-                            </button>
-                            <div className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-black text-slate-900">
-                                {currentPage}
-                            </div>
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                disabled={currentPage === totalPages}
-                                className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                                Next
-                            </button>
-                        </div>
-                    </div>
-                )}
             </div>
 
             {isModalOpen && (

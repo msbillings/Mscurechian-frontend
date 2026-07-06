@@ -5,6 +5,7 @@ import { X, Printer } from "lucide-react";
 import { renderToStaticMarkup } from "react-dom/server";
 import MainHeader from "@/components/printers/MainHeader";
 import MainFooter from "@/components/printers/MainFooter";
+import { usePrintStore } from "@/stores/printStore";
 
 export interface AttendancePDFRow {
   name: string;
@@ -305,6 +306,7 @@ export function AttendancePDFPreview({
   onClose,
 }: AttendancePDFPreviewProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const { printWithHeader } = usePrintStore();
 
   useEffect(() => {
     const headerHtml = renderToStaticMarkup(
@@ -340,7 +342,7 @@ export function AttendancePDFPreview({
       doc.write(safe);
       doc.close();
     }
-  }, [hospital, reportLabel, reportType, period, rows, isSummary]);
+  }, [hospital, reportLabel, reportType, period, rows, isSummary, printWithHeader]);
 
   const handlePrint = () => {
     iframeRef.current?.contentWindow?.print();

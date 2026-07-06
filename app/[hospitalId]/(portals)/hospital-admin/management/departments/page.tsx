@@ -128,91 +128,114 @@ const DepartmentsManagement = () => {
 
     return (
         <div className="max-w-7xl mx-auto min-h-screen bg-slate-50/50">
-            {/* Header Area */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 md:mb-10">
-                <div>
-                    <h1 className="text-sm md:text-lg md:text-xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                        <Building2 className="text-teal-600" size={24} />
-                        DEPARTMENTS
-                    </h1>
-                    <p className="text-slate-500 font-bold text-[10px] md:text-sm tracking-widest mt-1 uppercase opacity-70">
-                        IPD Infrastructure & Resource Mapping
-                    </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 md:gap-3">
-                    <button
-                        onClick={() => setShowImportModal(true)}
-                        className="flex-1 sm:flex-none px-4 md:px-6 py-2.5 md:py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center gap-2 shadow-sm"
-                    >
-                        <Upload size={14} />
-                        Bulk Import
-                    </button>
-                    <button
-                        onClick={() => setShowAddModal(true)}
-                        className="flex-1 sm:flex-none px-4 md:px-6 py-2.5 md:py-3 bg-primary-theme text-white rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-primary-theme/80 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary-theme/20"
-                    >
-                        <Plus size={14} />
-                        New Dept
-                    </button>
-                </div>
-            </div>
-
-            {/* Stats Overview */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-10">
-                {[
-                    { label: 'Active Units', value: departments.length, icon: Building2, color: 'text-teal-600', bg: 'bg-teal-50' },
-                    { label: 'Strategic Codes', value: departments.filter(d => d.code).length, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-                    { label: 'System Health', value: '100%', icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                ].map((stat, i) => (
-                    <div key={i} className={`bg-white p-2 md:p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 ${i === 2 ? 'col-span-2 md:col-span-1' : ''}`}>
-                        <div className={`w-10 h-10 ${stat.bg} ${stat.color} rounded-xl flex items-center justify-center shadow-inner`}>
-                            <stat.icon size={18} />
+            {/* Dynamic Header with Advanced Filters */}
+            <div className="flex flex-col gap-4 bg-white py-3 px-4 md:py-4 md:px-5 rounded-2xl border border-gray-100 shadow-sm shrink-0 mb-6">
+                
+                {/* Top Row: Identification, Process Button, and Stats */}
+                <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 md:gap-4 pb-4 border-b border-gray-50">
+                    
+                    <div className="shrink-0 flex items-center gap-2 px-1">
+                        <div className="p-1.5 md:p-2 bg-teal-50 rounded-lg text-teal-600">
+                            <Building2 className="w-5 h-5 md:w-6 md:h-6" />
                         </div>
-                        <div>
-                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
-                            <p className="text-xl font-black text-slate-900 mt-0.5">{stat.value}</p>
+                        <div className="flex flex-col justify-center">
+                            <h1 className="text-sm md:text-base font-bold text-gray-900 tracking-tight leading-none uppercase">
+                                Departments
+                            </h1>
+                            <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1">
+                                IPD Infrastructure & Resource Mapping
+                            </p>
                         </div>
                     </div>
-                ))}
-            </div>
 
-            {/* Search & Actions */}
-            <div className="bg-white p-2 rounded-2xl border border-slate-100 shadow-sm mb-8 flex items-center gap-3">
-                <div className="relative flex-1">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                    <input
-                        type="text"
-                        placeholder="Search departments..."
-                        value={searchTerm}
-                        onChange={(e) => {
-                            setSearchTerm(e.target.value);
-                            setCurrentPage(1);
-                        }}
-                        className="w-full pl-11 pr-4 py-2 bg-slate-50 border-none rounded-xl text-xs font-bold uppercase tracking-widest focus:ring-2 focus:ring-teal-500/20 outline-none transition-all placeholder:text-slate-300"
-                    />
+                    <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1 xl:pb-0 w-full xl:w-auto">
+                        <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 rounded-lg border border-gray-100 shrink-0">
+                            <div className="p-1.5 bg-white rounded-md shadow-sm"><Building2 className="w-4 h-4 text-teal-500" /></div>
+                            <div className="flex flex-col">
+                                <span className="text-[8px] font-black uppercase tracking-widest text-gray-400">Active Units</span>
+                                <span className="text-sm font-bold text-gray-700 leading-none">{departments.length}</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 px-4 py-2 bg-blue-50/50 rounded-lg border border-blue-100 shrink-0">
+                            <div className="p-1.5 bg-white rounded-md shadow-sm"><Users className="w-4 h-4 text-blue-500" /></div>
+                            <div className="flex flex-col">
+                                <span className="text-[8px] font-black uppercase tracking-widest text-blue-600/70">Strategic Codes</span>
+                                <span className="text-sm font-bold text-blue-700 leading-none">
+                                    {departments.filter(d => d.code).length}
+                                </span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 px-4 py-2 bg-emerald-50/50 rounded-lg border border-emerald-100 shrink-0">
+                            <div className="p-1.5 bg-white rounded-md shadow-sm"><CheckCircle2 className="w-4 h-4 text-emerald-500" /></div>
+                            <div className="flex flex-col">
+                                <span className="text-[8px] font-black uppercase tracking-widest text-emerald-600/70">System Health</span>
+                                <span className="text-sm font-bold text-emerald-700 leading-none">
+                                    100%
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 border-l border-gray-100 pl-2 ml-1">
+                            <button
+                                onClick={() => setShowImportModal(true)}
+                                className="flex items-center gap-2 px-3 md:px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all shrink-0 h-[34px]"
+                            >
+                                <Upload size={14} className="shrink-0" /> Bulk Import
+                            </button>
+                            <button
+                                onClick={() => setShowAddModal(true)}
+                                className="flex items-center gap-2 px-3 md:px-6 py-2 bg-primary-theme text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all shrink-0 h-[34px]"
+                            >
+                                <Plus size={14} className="shrink-0" /> New Dept
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
-                {/* COMPACT PAGINATION */}
-                {!loading && totalPages > 1 && (
-                    <div className="flex items-center gap-1 border-l border-slate-100 pl-3 py-1">
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                            disabled={currentPage === 1}
-                            className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-teal-600 disabled:opacity-20 transition-all"
-                        >
-                            <ChevronLeft size={16} strokeWidth={3} />
-                        </button>
-                        <span className="text-[10px] font-black w-6 text-center text-slate-900">{currentPage}</span>
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                            disabled={currentPage === totalPages}
-                            className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-teal-600 disabled:opacity-20 transition-all"
-                        >
-                            <ChevronRight size={16} strokeWidth={3} />
-                        </button>
+                {/* Bottom Row: Control Center (Search, Filters, View Toggles) */}
+                <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:flex-1">
+                        
+                        {/* Search Bar - Takes remaining width */}
+                        <div className="relative flex-1">
+                            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input 
+                                type="text" 
+                                placeholder="Search departments..." 
+                                value={searchTerm}
+                                onChange={(e) => {
+                                    setSearchTerm(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold focus:ring-2 focus:ring-teal-500 outline-none transition-all"
+                            />
+                        </div>
+
+                        {/* COMPACT PAGINATION */}
+                        {!loading && totalPages > 1 && (
+                            <div className="flex items-center gap-1 shrink-0 bg-gray-50 border border-gray-200 rounded-lg px-2 h-[34px]">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                    disabled={currentPage === 1}
+                                    className="p-1.5 hover:bg-white rounded-md text-gray-400 hover:text-teal-600 disabled:opacity-30 transition-all shadow-sm"
+                                >
+                                    <ChevronLeft size={14} strokeWidth={3} />
+                                </button>
+                                <span className="text-[10px] font-black w-8 text-center text-gray-700">
+                                    {currentPage} / {totalPages}
+                                </span>
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="p-1.5 hover:bg-white rounded-md text-gray-400 hover:text-teal-600 disabled:opacity-30 transition-all shadow-sm"
+                                >
+                                    <ChevronRight size={14} strokeWidth={3} />
+                                </button>
+                            </div>
+                        )}
+
                     </div>
-                )}
+                </div>
             </div>
 
             {/* Content Area */}

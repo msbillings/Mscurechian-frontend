@@ -1,4 +1,4 @@
-﻿import { apiClient } from '../api/apiClient';
+import { apiClient } from '../api/apiClient';
 
 export interface LabSettings {
     _id?: string;
@@ -11,6 +11,7 @@ export interface LabSettings {
     gstin?: string;
     website?: string;
     footerText?: string;
+    labTerms?: string[];
 }
 
 export const LabSettingsService = {

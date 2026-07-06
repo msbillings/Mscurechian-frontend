@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useRouter } from "next/navigation";
+import { useRouter, useParams, usePathname } from 'next/navigation';
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { hospitalAdminService } from "@/lib/integrations";
 import {
@@ -15,6 +15,7 @@ import type { CreateDoctorRequest } from "@/lib/integrations/types";
 import { TagInput } from "@/components/common/TagInput";
 import { COMMON_SPECIALTIES, COMMON_QUALIFICATIONS, COMMON_LANGUAGES } from "@/lib/constants/medicalData";
 import { InfrastructureCheck } from "../../components/InfrastructureCheck";
+import { formatDoctorName } from "@/lib/utils/name-utils";
 
 type Errors = Partial<Record<string, string>>;
 const docValidators: Record<string, (v: string) => string> = {
@@ -142,6 +143,10 @@ const formatAMPM = (time: string) => {
 
 function CreateDoctor() {
   const router = useRouter();
+  const params = useParams();
+  const pathname = usePathname();
+  const basePath = pathname.includes('/hr') ? '/hr' : '/hospital-admin';
+  const hospitalId = params.hospitalId as string;
   const queryClient = useQueryClient();
   
   const { data: metadata } = useQuery({
@@ -270,9 +275,10 @@ function CreateDoctor() {
     setLoading(true);
 
     try {
+      const sanitizedName = formatDoctorName(formData.name);
       const doctorData: any = {
         honorific: formData.honorific,
-        name: formData.name.trim(),
+        name: sanitizedName,
         email: formData.email.trim(),
         mobile: formData.mobile,
         password: formData.password,
@@ -330,7 +336,7 @@ function CreateDoctor() {
       queryClient.invalidateQueries({ queryKey: ['hospital-admin', 'dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['hospital-admin', 'doctors-list'] });
 
-      router.push("/hospital-admin/doctors");
+      router.push(`/${hospitalId}${basePath}/doctors`);
     } catch (err: any) {
       toast.error(err.message || "Failed to create doctor", { duration: 5000 });
     } finally {
@@ -340,12 +346,27 @@ function CreateDoctor() {
 
   return (
     <InfrastructureCheck>
-      <div className="max-w-7xl mx-auto pb-12 space-y-6">
-        <PageHeader
-          icon={<UserPlus className="text-blue-500" />}
-          title="Create New Doctor"
-          subtitle="Complete doctor profile with medical registration and professional details"
-        />
+      <div className="max-w-7xl mx-auto min-h-screen bg-slate-50/50 space-y-6">
+        {/* Dynamic Header */}
+        <div className="flex flex-col gap-4 bg-white py-3 px-4 md:py-4 md:px-5 rounded-2xl border border-gray-100 shadow-sm shrink-0 mb-6">
+          <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-2 xl:gap-4 shrink-0">
+              <div className="shrink-0 flex items-center gap-2 px-1">
+                <div className="p-1.5 md:p-2 bg-blue-50 rounded-lg text-blue-600">
+                  <UserPlus className="w-5 h-5 md:w-6 md:h-6" />
+                </div>
+                <div className="flex flex-col justify-center">
+                  <h1 className="text-sm md:text-base font-bold text-gray-900 tracking-tight leading-none uppercase">
+                    Create New Doctor
+                  </h1>
+                  <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 line-clamp-1">
+                    Complete doctor profile with medical registration and professional details
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <form onSubmit={handleSubmit} noValidate className="space-y-6">
           {/* 1. Personal Information */}
@@ -656,7 +677,7 @@ function CreateDoctor() {
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-4 pt-4">
-            <Button type="button" variant="secondary" onClick={() => router.push("/hospital-admin/doctors")}
+            <Button type="button" variant="secondary" onClick={() => router.push(`/${hospitalId}${basePath}/doctors`)}
               disabled={loading} className="px-2 md:px-8">Cancel</Button>
             <Button type="submit" variant="primary" loading={loading} icon={<UserPlus size={18} />}
               className="px-12 py-4 text-xs md:text-base md:text-lg shadow-lg hover:shadow-xl">

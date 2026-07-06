@@ -375,10 +375,24 @@ function ManageTestPage() {
 
                     {/* Test Parameters */}
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm">
-                        <h2 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                            <Database className="w-4 h-4 text-emerald-600" />
-                            Test Parameters
-                        </h2>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                <Database className="w-4 h-4 text-emerald-600" />
+                                Test Parameters
+                            </h2>
+                            <button
+                                type="button"
+                                onClick={() => setFormData(prev => ({
+                                    ...prev,
+                                    sampleType: 'Blood',
+                                    unit: 'g/dL',
+                                    turnaroundTime: '24 Hours'
+                                }))}
+                                className="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-200 bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-900/40 px-2.5 py-1 rounded-lg border border-rose-200 dark:border-rose-800 transition-all shadow-sm"
+                            >
+                                Reset to Defaults
+                            </button>
+                        </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
@@ -435,17 +449,14 @@ function ManageTestPage() {
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                                     Unit
                                 </label>
-                                <input
-                                    type="text"
-                                    list="unit-options"
-                                    placeholder="Select or type unit..."
-                                    className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                                <select
+                                    className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none cursor-pointer text-gray-700 dark:text-gray-300"
                                     value={formData.unit || ''}
                                     onChange={e => setFormData({ ...formData, unit: e.target.value })}
-                                />
-                                <datalist id="unit-options">
-                                    {metaOptions.units?.map((u: string) => <option key={u} value={u} />)}
-                                </datalist>
+                                >
+                                    <option value="">Select unit...</option>
+                                    {metaOptions.units?.map((u: string) => <option key={u} value={u}>{u}</option>)}
+                                </select>
                             </div>
                         </div>
 
@@ -491,17 +502,29 @@ function ManageTestPage() {
                                         <input
                                             type="number"
                                             placeholder="Min"
+                                            min="0"
                                             className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none"
                                             value={formData.normalRanges[category].min}
-                                            onChange={e => handleRangeChange(category, 'min', e.target.value)}
+                                            onChange={e => {
+                                                const val = parseFloat(e.target.value);
+                                                if (val < 0) return;
+                                                handleRangeChange(category, 'min', e.target.value);
+                                            }}
+                                            onWheel={e => (e.target as HTMLElement).blur()}
                                         />
                                         <span className="text-gray-400">-</span>
                                         <input
                                             type="number"
                                             placeholder="Max"
+                                            min="0"
                                             className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none"
                                             value={formData.normalRanges[category].max}
-                                            onChange={e => handleRangeChange(category, 'max', e.target.value)}
+                                            onChange={e => {
+                                                const val = parseFloat(e.target.value);
+                                                if (val < 0) return;
+                                                handleRangeChange(category, 'max', e.target.value);
+                                            }}
+                                            onWheel={e => (e.target as HTMLElement).blur()}
                                         />
                                     </div>
                                 </div>
@@ -520,10 +543,16 @@ function ManageTestPage() {
                                 <input
                                     type="number"
                                     required
+                                    min="0"
                                     className="w-full pl-10 pr-4 py-4 bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-2xl font-bold text-gray-900 dark:text-white"
                                     placeholder="0"
                                     value={formData.price}
-                                    onChange={e => setFormData({ ...formData, price: e.target.value })}
+                                    onChange={e => {
+                                        const val = parseFloat(e.target.value);
+                                        if (val < 0) return;
+                                        setFormData({ ...formData, price: e.target.value });
+                                    }}
+                                    onWheel={e => (e.target as HTMLElement).blur()}
                                 />
                             </div>
                             <p className="text-xs text-gray-500 mt-2">Charged to walk-in and inpatient billing</p>
@@ -538,10 +567,16 @@ function ManageTestPage() {
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-purple-300">₹</span>
                                 <input
                                     type="number"
+                                    min="0"
                                     className="w-full pl-10 pr-4 py-4 bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-xl outline-none focus:ring-2 focus:ring-purple-500/20 text-2xl font-bold text-purple-900 dark:text-purple-100"
                                     placeholder="—"
                                     value={formData.labPrice}
-                                    onChange={e => setFormData({ ...formData, labPrice: e.target.value })}
+                                    onChange={e => {
+                                        const val = parseFloat(e.target.value);
+                                        if (val < 0) return;
+                                        setFormData({ ...formData, labPrice: e.target.value });
+                                    }}
+                                    onWheel={e => (e.target as HTMLElement).blur()}
                                 />
                             </div>
                             <p className="text-xs text-purple-500 mt-2">Discounted rate for referring labs. If empty, standard price applies.</p>

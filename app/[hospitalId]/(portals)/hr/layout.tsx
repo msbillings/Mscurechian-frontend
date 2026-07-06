@@ -33,12 +33,14 @@ import SharedSidebar from "@/components/navbar/SharedSidebar";
 const hrMenuLinks = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/hr" },
   { icon: Users, label: "Staff Directory", path: "/hr/staff" },
+  { icon: Stethoscope, label: "Doctors", path: "/hr/doctors" },
+  { icon: Users, label: "Nursing Registry", path: "/hr/nurses" },
+  { icon: Headphones, label: "Helpdesk", path: "/hr/helpdesks" },
   { icon: Briefcase, label: "Recruitment", path: "/hr/recruitment" },
+  { icon: Building2, label: "Departments", path: "/hr/departments" },
+  { icon: Building2, label: "Rooms", path: "/hr/rooms" },
+  { icon: BedDouble, label: "Beds", path: "/hr/beds" },
   { icon: FileText, label: "Document Vault", path: "/hr/documents" },
-  { icon: Building2, label: "Departments", path: "/hr/hospital/departments" },
-  { icon: Stethoscope, label: "Doctors", path: "/hr/hospital/doctors" },
-  { icon: Users, label: "Nursing Registry", path: "/hr/hospital/nurses" },
-  { icon: Headphones, label: "Helpdesk", path: "/hr/hospital/helpdesk" },
   { icon: BedDouble, label: "Inpatients", path: "/hr/inpatients" },
   { icon: Bell, label: "Announcements", path: "/hr/announcements" },
 ];

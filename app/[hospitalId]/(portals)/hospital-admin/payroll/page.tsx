@@ -97,7 +97,6 @@ export default function PayrollPage() {
     const [processing, setProcessing] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [page, setPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
     const [editingPayroll, setEditingPayroll] = useState<any>(null);
     const [previewPayroll, setPreviewPayroll] = useState<any>(null);
 
@@ -133,7 +132,7 @@ export default function PayrollPage() {
     // ── Fetch Payroll List ───────────────────────────────────────────────────
     useEffect(() => {
         fetchPayroll();
-    }, [fromDate, toDate, page]);
+    }, [fromDate, toDate]);
 
     const fetchPayroll = async () => {
         try {
@@ -141,7 +140,6 @@ export default function PayrollPage() {
             const res = await hospitalAdminService.getPayroll(fromDate, toDate);
             setPayrolls(res.payrolls || []);
             if (res.hospital) setHospital(res.hospital);
-            setTotalPages(res.pagination?.pages || 1);
         } catch (error: any) {
             toast.error(error.message || "Failed to load payroll data");
         } finally {
@@ -268,6 +266,19 @@ export default function PayrollPage() {
         return list;
     }, [payrolls, searchTerm]);
 
+    const ITEMS_PER_PAGE = 10;
+    const totalPages = Math.max(1, Math.ceil(filteredPayrolls.length / ITEMS_PER_PAGE));
+    
+    const paginatedPayrolls = useMemo(() => {
+        const start = (page - 1) * ITEMS_PER_PAGE;
+        return filteredPayrolls.slice(start, start + ITEMS_PER_PAGE);
+    }, [filteredPayrolls, page]);
+
+    // Reset page to 1 when filters change
+    useEffect(() => {
+        setPage(1);
+    }, [searchTerm, fromDate, toDate]);
+
     const globalStats = useMemo(() => {
         const total = payrolls.reduce((acc, p) => acc + (p.netSalary || 0), 0);
         const paid = payrolls.filter(p => p.status === 'paid').reduce((acc, p) => acc + (p.netSalary || 0), 0);
@@ -312,81 +323,167 @@ export default function PayrollPage() {
     return (
         <div className="min-h-screen bg-slate-50/50 space-y-6">
 
-            {/* ── Header ─────────────────────────────────────────────────── */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3 md:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-lg font-bold text-slate-900 tracking-tight">Payroll Management</h1>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mt-1">HR & Salary Disbursement System</p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                    <button
-                        onClick={handleGeneratePayroll}
-                        disabled={processing}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-primary-theme text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-theme/80 transition-all shadow-sm active:scale-95 disabled:opacity-50"
-                    >
-                        {processing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} strokeWidth={3} />}
-                        Process All Staff
-                    </button>
-                </div>
-            </div>
+            {/* Dynamic Header with Advanced Filters */}
+            <div className="flex flex-col gap-4 bg-white py-3 px-4 md:py-4 md:px-5 rounded-2xl border border-gray-100 shadow-sm shrink-0 mb-6">
+                
+                {/* Top Row: Identification, Process Button, and Date Range */}
+                <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 md:gap-4 pb-4 border-b border-gray-50">
+                    
+                    <div className="shrink-0 flex items-center gap-2 px-1">
+                        <div className="p-1.5 md:p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                            <Banknote className="w-5 h-5 md:w-6 md:h-6" />
+                        </div>
+                        <div className="flex flex-col justify-center">
+                            <h1 className="text-sm md:text-base font-bold text-gray-900 tracking-tight leading-none uppercase">
+                                Payroll Management
+                            </h1>
+                            <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-pulse" />
+                                HR & Salary Disbursement System
+                            </p>
+                        </div>
+                    </div>
 
-            {/* ── Period Selector ─────────────────────────────────────────── */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-                <div className="flex flex-col md:flex-row items-start md:items-center gap-5">
-                    <div className="flex items-center gap-2">
-                        <CalendarDays size={16} className="text-slate-400" />
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Pay Period</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        {[-2, -1, 0].map(offset => (
-                            <button
-                                key={offset}
-                                onClick={() => setMonthPreset(offset)}
-                                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border transition-all ${new Date(fromDate).getMonth() === new Date(new Date().getFullYear(), new Date().getMonth() + offset, 1).getMonth()
-                                    ? 'bg-primary-theme text-white border-primary-theme'
-                                    : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-slate-400'
-                                    }`}
-                            >
-                                {monthLabel(offset)}
-                            </button>
-                        ))}
-                    </div>
-                    <div className="flex items-center flex-wrap gap-2 w-full xl:w-auto xl:ml-auto">
-                        <input
-                            type="date"
-                            value={fromDate}
-                            onChange={e => setFromDate(e.target.value)}
-                            className="flex-1 min-w-[110px] px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-primary-theme/20"
-                        />
-                        <span className="text-slate-300 font-bold text-xs">→</span>
-                        <input
-                            type="date"
-                            value={toDate}
-                            onChange={e => setToDate(e.target.value)}
-                            className="flex-1 min-w-[110px] px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-primary-theme/20"
-                        />
+                    <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1 xl:pb-0 w-full xl:w-auto">
+                        
+                        {/* Month presets */}
+                        <div className="flex flex-wrap gap-1 p-1 bg-gray-50 border border-gray-200 rounded-lg shrink-0 h-[34px]">
+                            {[-2, -1, 0].map(offset => (
+                                <button
+                                    key={offset}
+                                    onClick={() => setMonthPreset(offset)}
+                                    className={`px-3 py-1 rounded-[6px] text-[9px] font-black uppercase tracking-wider transition-all h-full ${new Date(fromDate).getMonth() === new Date(new Date().getFullYear(), new Date().getMonth() + offset, 1).getMonth()
+                                        ? 'bg-white text-indigo-600 shadow-sm'
+                                        : 'text-gray-500 hover:text-gray-700'
+                                        }`}
+                                >
+                                    {monthLabel(offset)}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Date Picker */}
+                        <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg p-1 shrink-0 h-[34px]">
+                            <input
+                                type="date"
+                                value={fromDate}
+                                onChange={e => setFromDate(e.target.value)}
+                                className="min-w-[90px] px-2 py-1 bg-transparent text-[9px] font-black uppercase text-gray-600 outline-none"
+                            />
+                            <span className="text-gray-300 font-bold text-[9px]">—</span>
+                            <input
+                                type="date"
+                                value={toDate}
+                                onChange={e => setToDate(e.target.value)}
+                                className="min-w-[90px] px-2 py-1 bg-transparent text-[9px] font-black uppercase text-gray-600 outline-none"
+                            />
+                        </div>
+
+                        <button
+                            onClick={handleGeneratePayroll}
+                            disabled={processing}
+                            className="flex items-center gap-2 px-3 md:px-5 py-2 bg-indigo-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shrink-0 h-[34px] shadow-sm disabled:opacity-50"
+                        >
+                            {processing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} strokeWidth={3} />}
+                            Process All Staff
+                        </button>
                     </div>
                 </div>
-            </div>
 
-            {/* ── Tab Bar ─────────────────────────────────────────────────── */}
-            <div className="flex flex-col sm:flex-row gap-1 bg-white p-1 rounded-2xl border border-slate-200 shadow-sm w-full sm:w-fit">
-                {[
-                    { key: 'overview', label: 'All Staff Overview', icon: Users },
-                    { key: 'employee', label: 'Employee Payroll', icon: UserCheck },
-                ].map(tab => (
-                    <button
-                        key={tab.key}
-                        onClick={() => setActiveTab(tab.key as any)}
-                        className={`flex justify-center items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab.key
-                            ? 'bg-primary-theme text-white shadow-sm'
-                            : 'text-slate-500 hover:bg-slate-50'
-                            }`}
-                    >
-                        <tab.icon size={13} />
-                        {tab.label}
-                    </button>
-                ))}
+                {/* Middle Row: Stats (only on overview tab) */}
+                {activeTab === 'overview' && (
+                    <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1 xl:pb-0 w-full">
+                        <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 rounded-lg border border-gray-100 shrink-0 min-w-[150px]">
+                            <div className="p-1.5 bg-white rounded-md shadow-sm"><Users className="w-4 h-4 text-gray-500" /></div>
+                            <div className="flex flex-col">
+                                <span className="text-[8px] font-black uppercase tracking-widest text-gray-400">Total Staff</span>
+                                <span className="text-sm font-bold text-gray-700 leading-none">{globalStats.count}</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 px-4 py-2 bg-slate-50/50 rounded-lg border border-slate-100 shrink-0 min-w-[180px]">
+                            <div className="p-1.5 bg-white rounded-md shadow-sm"><IndianRupee className="w-4 h-4 text-slate-500" /></div>
+                            <div className="flex flex-col">
+                                <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Total Liability</span>
+                                <span className="text-sm font-bold text-slate-700 leading-none">₹{globalStats.total.toLocaleString()}</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 px-4 py-2 bg-emerald-50/50 rounded-lg border border-emerald-100 shrink-0 min-w-[180px]">
+                            <div className="p-1.5 bg-white rounded-md shadow-sm"><CheckCircle className="w-4 h-4 text-emerald-500" /></div>
+                            <div className="flex flex-col">
+                                <span className="text-[8px] font-black uppercase tracking-widest text-emerald-600/70">Settled Amount</span>
+                                <span className="text-sm font-bold text-emerald-700 leading-none">₹{globalStats.paid.toLocaleString()}</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 px-4 py-2 bg-rose-50/50 rounded-lg border border-rose-100 shrink-0 min-w-[180px]">
+                            <div className="p-1.5 bg-white rounded-md shadow-sm"><Clock className="w-4 h-4 text-rose-500" /></div>
+                            <div className="flex flex-col">
+                                <span className="text-[8px] font-black uppercase tracking-widest text-rose-600/70">Pending Payout</span>
+                                <span className="text-sm font-bold text-rose-700 leading-none">₹{globalStats.pending.toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Bottom Row: Control Center (Tabs & Search & Pagination) */}
+                <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 pt-1 border-t border-gray-50">
+                    
+                    {/* Navigation Tabs */}
+                    <div className="flex flex-wrap items-center gap-1 p-1 bg-gray-50 rounded-xl border border-gray-200 shrink-0">
+                        <button
+                            onClick={() => setActiveTab('overview')}
+                            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 md:px-6 py-2 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'overview' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                        >
+                            <Users size={14} className="shrink-0" /> <span className="truncate">All Staff Overview</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('employee')}
+                            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 md:px-6 py-2 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'employee' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                        >
+                            <UserCheck size={14} className="shrink-0" /> <span className="truncate">Employee Payroll</span>
+                        </button>
+                    </div>
+
+                    {/* Search & Pagination (only in overview tab) */}
+                    {activeTab === 'overview' && (
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:flex-1">
+                            
+                            {/* Search Bar - Takes remaining width */}
+                            <div className="relative flex-1">
+                                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                                <input
+                                    type="text"
+                                    placeholder="Search staff, employee ID or role..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all h-[34px]"
+                                />
+                            </div>
+
+                            {/* Header Pagination */}
+                            {totalPages > 1 && (
+                                <div className="flex items-center gap-2 shrink-0 bg-slate-50 p-1 rounded-lg border border-slate-200 h-[34px]">
+                                    <button
+                                        onClick={() => setPage(page - 1)}
+                                        disabled={page === 1}
+                                        className="p-1 text-slate-500 hover:text-indigo-600 hover:bg-white disabled:opacity-30 transition-all rounded shadow-sm h-full flex items-center"
+                                    >
+                                        <ChevronLeft size={16} />
+                                    </button>
+                                    <span className="text-[10px] font-black tracking-widest text-slate-400 px-1">
+                                        {page} / {totalPages || 1}
+                                    </span>
+                                    <button
+                                        onClick={() => setPage(page + 1)}
+                                        disabled={page === totalPages}
+                                        className="p-1 text-slate-500 hover:text-indigo-600 hover:bg-white disabled:opacity-30 transition-all rounded shadow-sm h-full flex items-center"
+                                    >
+                                        <ChevronRight size={16} />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* ════════════════════════════════════════════════════════════════
@@ -395,31 +492,9 @@ export default function PayrollPage() {
             {activeTab === 'overview' && (
                 <div className="space-y-6">
 
-                    {/* Global Stats */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-                        <StatCard label="Total Staff" value={globalStats.count} sub="Payroll Records" color={{ bg: 'bg-blue-50', text: 'text-blue-600' }} icon={Users} />
-                        <StatCard label="Total Liability" value={`₹${globalStats.total.toLocaleString()}`} sub="Gross Net Payable" color={{ bg: 'bg-slate-100', text: 'text-slate-700' }} icon={IndianRupee} />
-                        <StatCard label="Settled Amount" value={`₹${globalStats.paid.toLocaleString()}`} sub="Disbursed" color={{ bg: 'bg-emerald-50', text: 'text-emerald-600' }} icon={CheckCircle} />
-                        <StatCard label="Pending Payout" value={`₹${globalStats.pending.toLocaleString()}`} sub="Unpaid" color={{ bg: 'bg-rose-50', text: 'text-rose-600' }} icon={Clock} />
-                    </div>
-
-                    {/* Search & Table Header */}
+                    {/* Table View */}
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div className="p-2 md:p-4 border-b border-slate-100 flex items-center gap-4">
-                            <div className="relative flex-1">
-                                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                                <input
-                                    type="text"
-                                    placeholder="Search staff, employee ID or role..."
-                                    value={searchTerm}
-                                    onChange={e => setSearchTerm(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-slate-500/10 outline-none"
-                                />
-                            </div>
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">
-                                {filteredPayrolls.length} records
-                            </span>
-                        </div>
+
 
                         <div className="overflow-x-auto">
                             <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none"><table className="w-full text-left">
@@ -459,7 +534,7 @@ export default function PayrollPage() {
                                             </td>
                                         </tr>
                                     ) : (
-                                        filteredPayrolls.map(p => (
+                                        paginatedPayrolls.map(p => (
                                             <tr key={p._id} className="hover:bg-slate-50/70 transition-all group">
                                                 {/* Employee */}
                                                 <td className="py-4 px-3 md:px-6">
@@ -567,20 +642,6 @@ export default function PayrollPage() {
                             </table></div>
                         </div>
 
-                        {/* Pagination */}
-                        {totalPages > 1 && (
-                            <div className="p-2 md:p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Page {page} of {totalPages}</span>
-                                <div className="flex gap-2">
-                                    <button onClick={() => setPage(page - 1)} disabled={page === 1} className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-[10px] font-black uppercase disabled:opacity-30 hover:bg-slate-50 transition-all">
-                                        <ChevronLeft size={14} />
-                                    </button>
-                                    <button onClick={() => setPage(page + 1)} disabled={page === totalPages} className="px-4 py-2 bg-slate-900 text-white rounded-lg text-[10px] font-black uppercase active:scale-95 disabled:opacity-30 hover:bg-slate-800 transition-all">
-                                        <ChevronRight size={14} />
-                                    </button>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
             )}

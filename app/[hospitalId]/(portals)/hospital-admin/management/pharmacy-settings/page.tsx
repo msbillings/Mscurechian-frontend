@@ -79,30 +79,37 @@ const PharmacySettingsPage = () => {
 
     return (
         <div className="max-w-7xl mx-auto min-h-screen bg-slate-50/50">
-            {/* Header Area */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8 md:mb-10">
-                <div>
-                    <h1 className="text-xl md:text-xl lg:text-xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                        <div className="p-2 bg-primary-theme rounded-xl text-white shadow-lg shadow-teal-200">
-                            <Pill size={24} />
-                        </div>
-                        IPD PHARMACY SETTINGS
-                    </h1>
-                    <p className="text-slate-500 font-bold text-[7px] md:text-[10px] tracking-widest mt-1 uppercase opacity-70">
-                        Enable or disable pharmacy billing for specific wards and rooms
-                    </p>
+            {/* Ultra-Compact Dynamic Header */}
+            <div className="flex flex-wrap items-center gap-2 md:gap-4 bg-white p-2 md:p-3 rounded-2xl border border-gray-100 shadow-sm shrink-0 mt-4 md:mt-6 mb-4 md:mb-6">
+                
+                {/* 1. Icon + Title */}
+                <div className="flex items-center gap-2 pr-2 md:pr-4 border-r border-slate-100 shrink-0">
+                    <div className="p-1 md:p-1.5 bg-blue-50 rounded-lg text-blue-600">
+                        <Pill className="w-4 h-4 md:w-5 md:h-5" />
+                    </div>
+                    <div className="flex flex-col">
+                        <h1 className="text-[11px] md:text-sm font-bold text-gray-900 leading-none uppercase">
+                            IPD Settings
+                        </h1>
+                    </div>
                 </div>
 
-                <div className="flex items-center gap-3 w-full lg:w-auto">
+                {/* 2. Subtitle */}
+                <div className="hidden md:block text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">
+                    Enable or disable pharmacy billing for specific wards
+                </div>
+
+                {/* 3. Actions */}
+                <div className="flex items-center gap-2 ml-auto shrink-0">
                     <button
                         onClick={handleSave}
                         disabled={submitting}
-                        className="w-full lg:w-auto px-4 md:px-8 py-3 bg-slate-900 text-white rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-200 disabled:opacity-50"
+                        className="flex items-center gap-1.5 px-3 md:px-4 py-1.5 md:py-2 bg-slate-900 text-white rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-sm disabled:opacity-50"
                     >
                         {submitting ? (
-                            <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                            <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                         ) : (
-                            <Save size={16} />
+                            <Save size={14} />
                         )}
                         Authorize Changes
                     </button>

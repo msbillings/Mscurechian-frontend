@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Plus, Search, Edit2, Trash2 } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, Package } from "lucide-react";
 import { apiClient } from "@/lib/integrations/api/apiClient";
 import { HOSPITAL_ADMIN_ENDPOINTS } from "@/lib/integrations/config/endpoints";
 import toast from "react-hot-toast";
@@ -86,33 +86,48 @@ export default function PackagesManagement() {
   );
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Hospital Packages</h1>
-          <p className="text-sm text-gray-500">Manage surgery and care packages</p>
+    <div className="max-w-7xl mx-auto min-h-screen bg-slate-50/50">
+      {/* Dynamic Header */}
+      <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 bg-white py-3 px-4 md:py-4 md:px-5 rounded-2xl border border-gray-100 shadow-sm shrink-0 mb-6">
+        
+        <div className="shrink-0 flex items-center gap-2 px-1">
+          <div className="p-1.5 md:p-2 bg-blue-50 rounded-lg text-blue-600">
+            <Package className="w-5 h-5 md:w-6 md:h-6" />
+          </div>
+          <div className="flex flex-col justify-center">
+            <h1 className="text-sm md:text-base font-bold text-gray-900 tracking-tight leading-none uppercase">
+              Hospital Packages
+            </h1>
+            <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1">
+              Manage surgery and care packages
+            </p>
+          </div>
         </div>
-        <button
-          onClick={() => {
-            setEditingPackage(null);
-            setIsFormOpen(true);
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          <Plus className="w-4 h-4" />
-          Create Package
-        </button>
-      </div>
 
-      <div className="flex items-center bg-white p-2 rounded-lg border">
-        <Search className="w-5 h-5 text-gray-400 ml-2" />
-        <input
-          type="text"
-          placeholder="Search packages..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 outline-none"
-        />
+        {/* Search Bar - Takes remaining width */}
+        <div className="relative flex-1 w-full xl:w-auto xl:mx-8">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input 
+            type="text" 
+            placeholder="Search packages..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+          />
+        </div>
+
+        <div className="flex items-center gap-2 w-full xl:w-auto shrink-0">
+          <button
+            onClick={() => {
+              setEditingPackage(null);
+              setIsFormOpen(true);
+            }}
+            className="flex items-center justify-center gap-2 w-full xl:w-auto px-3 md:px-6 py-2 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shrink-0 h-[34px] shadow-sm"
+          >
+            <Plus size={14} className="shrink-0" /> Create Package
+          </button>
+        </div>
+        
       </div>
 
       {loading ? (

@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import toast from "react-hot-toast";
 import { useQuery } from '@tanstack/react-query';
 import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
+import { clearApiCache } from "@/lib/integrations/api/apiClient";
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import {
@@ -322,157 +323,192 @@ function TransactionContent() {
   }
 
   return (
-    <div className="space-y-4 bg-slate-50/50 min-h-screen">
-      {/* Simple Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-lg md:text-xl font-bold text-slate-900 tracking-tight">Transactions</h1>
-          <p className="text-sm text-slate-500 font-medium mt-1 italic tracking-tight">Track payments and billing records</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="px-5 py-2 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest leading-none">
-            System Verified
-          </div>
-        </div>
-      </div>
-
-      {/* Simple Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
-        {[
-          { label: "Total Revenue", value: `₹${Math.round(totalGlobalRevenue).toLocaleString()}`, icon: IndianRupee, color: "text-blue-600", bg: "bg-blue-50" },
-          { label: "Total Transactions", value: totalCount, icon: TrendingUp, color: "text-indigo-600", bg: "bg-indigo-50" },
-          { label: "Average Bill Value", value: `₹${totalCount > 0 ? (totalGlobalRevenue / totalCount).toFixed(0) : 0}`, icon: CreditCard, color: "text-emerald-600", bg: "bg-emerald-50" }
-        ].map((stat, i) => (
-          <div key={i} className={`bg-white p-3 md:p-4 rounded-2xl border border-slate-200 shadow-sm transition-all hover:shadow-md ${i === 0 ? 'col-span-2 md:col-span-1' : ''}`}>
-            <div className={`p-2.5 md:p-3 rounded-xl ${stat.bg} ${stat.color} w-fit mb-3 md:mb-4`}>
-              <stat.icon size={18} className="md:w-[20px] md:h-[20px]" strokeWidth={3} />
-            </div>
-            <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase mb-1">{stat.label}</p>
-            <h3 className="text-sm md:text-xl font-black text-slate-900 leading-none break-all md:break-normal">{stat.value}</h3>
-          </div>
-        ))}
-      </div>
-
-      {/* Simple Controller */}
-      <div className="bg-white p-2 md:p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-4">
-        <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search by patient name or payment method..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-          />
-        </div>
-        <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto mt-3 md:mt-0">
-          <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold uppercase tracking-widest outline-none focus:ring-2 focus:ring-blue-500/10"
-            />
-            <span className="text-slate-300 font-bold">-</span>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold uppercase tracking-widest outline-none focus:ring-2 focus:ring-blue-500/10"
-            />
-          </div>
-
-          {/* CATEGORY TOGGLE (OPD / IPD) - SIDE BY SIDE UI */}
-          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-inner">
-            <button
-              onClick={() => {
-                setTypeFilter('opd');
-                setIpdPaymentType('all');
-              }}
-              className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${typeFilter === 'opd' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-500'}`}
-            >
-              OPD Payments
-            </button>
-            <button
-              onClick={() => setTypeFilter('ipd')}
-              className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${typeFilter === 'ipd' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-400 hover:text-slate-500'}`}
-            >
-              IPD Payments
-            </button>
-            <button
-              onClick={() => {
-                setTypeFilter('package');
-                setIpdPaymentType('all');
-              }}
-              className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${typeFilter === 'package' ? 'bg-white text-violet-600 shadow-sm' : 'text-slate-400 hover:text-slate-500'}`}
-            >
-              Packages
-            </button>
-          </div>
-
-          {/* IPD Payment Type Filter - Side by Side UI */}
-          {typeFilter === 'ipd' && (
-            <div className="flex bg-rose-50 p-1 rounded-xl border border-rose-100 shadow-inner animate-in slide-in-from-left-2 duration-300">
-              <button
-                onClick={() => setIpdPaymentType('all')}
-                className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${ipdPaymentType === 'all' ? 'bg-white text-rose-600 shadow-sm' : 'text-rose-300 hover:text-rose-400'}`}
-              >
-                All IPD
-              </button>
-              <button
-                onClick={() => setIpdPaymentType('advance')}
-                className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${ipdPaymentType === 'advance' ? 'bg-white text-rose-600 shadow-sm' : 'text-rose-300 hover:text-rose-400'}`}
-              >
-                IPD Advance
-              </button>
-              <button
-                onClick={() => setIpdPaymentType('discharge')}
-                className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${ipdPaymentType === 'discharge' ? 'bg-white text-rose-600 shadow-sm' : 'text-rose-300 hover:text-rose-400'}`}
-              >
-                Discharge Only
-              </button>
-            </div>
-          )}
-
-          <button
-            onClick={() => refetch()}
-            className="p-2.5 bg-white text-slate-400 border border-slate-200 rounded-xl hover:text-slate-900 transition-all font-black"
-          >
-            <RefreshCw size={18} strokeWidth={3} className={loading ? 'animate-spin' : ''} />
-          </button>
-
-          <button
-            onClick={handleExport}
-            disabled={isExporting}
-            className="flex items-center gap-2 px-3 md:px-6 py-2.5 bg-primary-theme text-white rounded-xl text-[10px] font-black uppercase  hover:bg-primary-theme/80 transition-all disabled:opacity-50 shadow-sm"
-          >
-            {isExporting ? <RefreshCw size={14} strokeWidth={3} className="animate-spin" /> : <FileSpreadsheet size={14} strokeWidth={3} />}
-            {isExporting ? 'Exporting...' : 'Export Data'}
-          </button>
-
-          {/* Pagination Controls */}
-          {filteredTransactions.length > 0 && (
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="p-1.5 rounded-lg hover:bg-white text-slate-400 hover:text-slate-900 disabled:opacity-20 transition-all"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <div className="px-3 py-1.5 text-xs font-black text-slate-900 bg-white rounded-md min-w-[40px] text-center">
-                {page}
+    <div className="max-w-7xl mx-auto min-h-screen bg-slate-50/50 space-y-4 md:space-y-6">
+      {/* Dynamic Header */}
+      <div className="flex flex-col gap-4 bg-white py-3 px-4 md:py-4 md:px-5 rounded-2xl border border-gray-100 shadow-sm shrink-0 mt-4 md:mt-6">
+        
+        {/* Top Row: Title, Stats, Action Badge */}
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-8 w-full xl:w-auto">
+            <div className="shrink-0 flex items-center gap-2 px-1">
+              <div className="p-1.5 md:p-2 bg-blue-50 rounded-lg text-blue-600">
+                <FileSpreadsheet className="w-5 h-5 md:w-6 md:h-6" />
               </div>
+              <div className="flex flex-col justify-center">
+                <h1 className="text-sm md:text-base font-bold text-gray-900 tracking-tight leading-none uppercase">
+                  Transactions
+                </h1>
+                <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 line-clamp-1">
+                  Track payments and billing records
+                </p>
+              </div>
+            </div>
+
+            {/* Compact Stats in Top Row */}
+            <div className="flex flex-wrap items-center gap-3 md:gap-6 px-3 py-1.5 md:px-4 md:py-2 bg-slate-50/80 rounded-xl border border-slate-100">
+                {[
+                    { label: "Revenue", value: `₹${Math.round(totalGlobalRevenue).toLocaleString()}`, icon: IndianRupee, color: "text-blue-600" },
+                    { label: "Transactions", value: totalCount, icon: TrendingUp, color: "text-indigo-600" },
+                    { label: "Avg Bill", value: `₹${totalCount > 0 ? (totalGlobalRevenue / totalCount).toFixed(0) : 0}`, icon: CreditCard, color: "text-emerald-600" }
+                ].map((stat, i) => (
+                    <div key={i} className="flex items-center gap-2 md:gap-2.5">
+                        <div className={`p-1.5 rounded-lg bg-white shadow-sm border border-slate-100 ${stat.color}`}>
+                            <stat.icon size={14} strokeWidth={3} />
+                        </div>
+                        <div>
+                            <p className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase leading-none mb-0.5">{stat.label}</p>
+                            <h3 className="text-xs md:text-sm font-black text-slate-900 leading-none">{stat.value}</h3>
+                        </div>
+                        {i < 2 && <div className="hidden md:block w-px h-6 bg-slate-200/60 ml-2 md:ml-4" />}
+                    </div>
+                ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end w-full xl:w-auto shrink-0 gap-3 relative">
+            {/* Pagination Controls inside the header Top Row */}
+            {filteredTransactions.length > 0 && (
+                <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-lg border border-gray-200 shrink-0">
+                    <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="p-1 rounded hover:bg-white text-slate-400 hover:text-slate-900 disabled:opacity-20 transition-all"
+                    >
+                    <ChevronLeft size={14} />
+                    </button>
+                    <div className="px-2 py-1 text-[10px] font-black text-slate-900 bg-white rounded min-w-[28px] text-center leading-none">
+                    {page}
+                    </div>
+                    <button
+                    onClick={() => setPage(p => p + 1)}
+                    className="p-1 rounded hover:bg-white text-slate-400 hover:text-slate-900 transition-all"
+                    >
+                    <ChevronRight size={14} />
+                    </button>
+                </div>
+            )}
+
+            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-full shrink-0">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"/>
+              <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">System Verified</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Row: Control Center (Search, Filters, Export) */}
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 border-t border-gray-50 pt-4">
+          
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 w-full">
+            {/* Search Bar */}
+            <div className="relative flex-1 w-full lg:max-w-xs">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search by patient name or method..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              />
+            </div>
+
+            {/* Date Picker */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-bold uppercase tracking-widest outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+              />
+              <span className="text-gray-300 font-bold">-</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-bold uppercase tracking-widest outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+              />
+            </div>
+
+            {/* Category Toggle */}
+            <div className="flex bg-gray-50 p-1 rounded-lg border border-gray-200 shadow-inner">
               <button
-                onClick={() => setPage(p => p + 1)}
-                className="p-1.5 rounded-lg hover:bg-white text-slate-400 hover:text-slate-900 transition-all"
+                onClick={() => {
+                  setTypeFilter('opd');
+                  setIpdPaymentType('all');
+                }}
+                className={`px-3 py-1.5 rounded text-[9px] font-black uppercase tracking-widest transition-all ${typeFilter === 'opd' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-500'}`}
               >
-                <ChevronRight size={16} />
+                OPD
+              </button>
+              <button
+                onClick={() => setTypeFilter('ipd')}
+                className={`px-3 py-1.5 rounded text-[9px] font-black uppercase tracking-widest transition-all ${typeFilter === 'ipd' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-400 hover:text-slate-500'}`}
+              >
+                IPD
+              </button>
+              <button
+                onClick={() => {
+                  setTypeFilter('package');
+                  setIpdPaymentType('all');
+                }}
+                className={`px-3 py-1.5 rounded text-[9px] font-black uppercase tracking-widest transition-all ${typeFilter === 'package' ? 'bg-white text-violet-600 shadow-sm' : 'text-slate-400 hover:text-slate-500'}`}
+              >
+                PKG
               </button>
             </div>
-          )}
+
+            {/* IPD Payment Type Filter */}
+            {typeFilter === 'ipd' && (
+              <div className="flex bg-rose-50 p-1 rounded-lg border border-rose-100 shadow-inner animate-in slide-in-from-left-2 duration-300">
+                <button
+                  onClick={() => setIpdPaymentType('all')}
+                  className={`px-2 py-1.5 rounded text-[9px] font-black uppercase tracking-widest transition-all ${ipdPaymentType === 'all' ? 'bg-white text-rose-600 shadow-sm' : 'text-rose-300 hover:text-rose-400'}`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setIpdPaymentType('advance')}
+                  className={`px-2 py-1.5 rounded text-[9px] font-black uppercase tracking-widest transition-all ${ipdPaymentType === 'advance' ? 'bg-white text-rose-600 shadow-sm' : 'text-rose-300 hover:text-rose-400'}`}
+                >
+                  Adv
+                </button>
+                <button
+                  onClick={() => setIpdPaymentType('discharge')}
+                  className={`px-2 py-1.5 rounded text-[9px] font-black uppercase tracking-widest transition-all ${ipdPaymentType === 'discharge' ? 'bg-white text-rose-600 shadow-sm' : 'text-rose-300 hover:text-rose-400'}`}
+                >
+                  Dis
+                </button>
+              </div>
+            )}
+            
+            {/* Actions: Refresh & Export */}
+            <div className="flex flex-wrap items-center gap-2 lg:ml-auto shrink-0">
+              <button
+                onClick={() => {
+                  clearApiCache();
+                  refetch();
+                }}
+                className="p-1.5 bg-white text-slate-400 border border-slate-200 rounded-lg hover:text-slate-900 transition-all font-black h-[32px] w-[32px] flex items-center justify-center shadow-sm"
+                title="Refresh"
+              >
+                <RefreshCw size={14} strokeWidth={3} className={loading ? 'animate-spin' : ''} />
+              </button>
+
+              <button
+                onClick={handleExport}
+                disabled={isExporting}
+                className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase hover:bg-blue-700 transition-all disabled:opacity-50 h-[32px] shadow-sm whitespace-nowrap"
+              >
+                {isExporting ? <RefreshCw size={12} strokeWidth={3} className="animate-spin" /> : <FileSpreadsheet size={12} strokeWidth={3} />}
+                <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'Export'}</span>
+              </button>
+
+            </div>
+
+          </div>
         </div>
       </div>
+
+      {/* Removed standalone stats grid since it's now in the header */}
 
       {/* Clean Transactions Registry */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
