@@ -21,6 +21,14 @@ export interface LabEquipment {
     updatedBy?: string;
     createdAt?: string;
     updatedAt?: string;
+    warrantyExpiry?: string;
+    barcode?: string;
+    qrCode?: string;
+    description?: string;
+    notes?: string;
+    invoiceNumber?: string;
+    nextServiceDate?: string;
+    calibrationDueDate?: string;
 }
 
 export interface LabEquipmentPayload {
