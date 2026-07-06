@@ -7,6 +7,7 @@ import { Save, Building2, Phone, Mail, Globe, MapPin, FileText, ImageIcon } from
 import ImageCropper from '@/components/ui/ImageCropper';
 import { useAuthStore } from '@/stores/authStore';
 import PrinterSettingsCard from '@/components/printers/PrinterSettingsCard';
+import SupportBadgeToggle from '@/components/common/SupportBadgeToggle';
 
 export default function LabSettingsPage() {
     const [settings, setSettings] = useState<LabSettings>({
@@ -41,19 +42,27 @@ export default function LabSettingsPage() {
         try {
             const data = await LabSettingsService.getSettings();
             if (data) {
+                let draftData: any = null;
+                if (typeof window !== 'undefined') {
+                    const draft = localStorage.getItem('curechain_lab_settings_draft');
+                    if (draft) {
+                        try { draftData = JSON.parse(draft); } catch (e) {}
+                    }
+                }
+                const merged = { ...data, ...draftData };
+
                 setSettings(prev => ({
                     ...prev,
-                    ...data,
-                    // Ensure no null/undefined values for controlled inputs
-                    name: data.name || '',
-                    tagline: data.tagline || '',
-                    address: data.address || '',
-                    phone: data.phone || '',
-                    email: data.email || '',
-                    logo: data.logo || '',
-                    website: data.website || '',
-                    gstin: data.gstin || '',
-                    footerText: data.footerText || ''
+                    ...merged,
+                    name: merged.name || '',
+                    tagline: merged.tagline || '',
+                    address: merged.address || '',
+                    phone: merged.phone || '',
+                    email: merged.email || '',
+                    logo: merged.logo || '',
+                    website: merged.website || '',
+                    gstin: merged.gstin || '',
+                    footerText: merged.footerText || ''
                 }));
             }
         } catch (error) {
@@ -63,6 +72,13 @@ export default function LabSettingsPage() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        if (settings.name || settings.phone || settings.email) {
+            localStorage.setItem('curechain_lab_settings_draft', JSON.stringify(settings));
+        }
+    }, [settings]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -84,6 +100,10 @@ export default function LabSettingsPage() {
                     avatar: settings.logo,
                     profilePic: settings.logo
                 } as any);
+            }
+
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem('curechain_lab_settings_draft');
             }
 
             toast.success('Lab settings updated successfully');
@@ -314,7 +334,10 @@ export default function LabSettingsPage() {
                         </div>
                     </div>
 
-                    <PrinterSettingsCard />
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6 pt-4">
+                         <SupportBadgeToggle />
+                         <PrinterSettingsCard />
+                     </div>
 
                     {/* Submit Button */}
                     <div className="pt-8 border-t border-slate-100 dark:border-gray-700">

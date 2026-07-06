@@ -45,7 +45,9 @@ const LabQuickActions: React.FC<LabQuickActionsProps> = ({ activeTestCount = 0, 
             <div className="flex items-center gap-1 bg-slate-100 dark:bg-gray-800/40 p-1 rounded-full border border-slate-200/50 dark:border-gray-700/50 backdrop-blur-sm shadow-sm overflow-x-auto max-w-[calc(100vw-120px)] sm:max-w-none no-scrollbar">
                 {actions.map((action, index) => {
                     const tenantPath = getPath(action.path);
-                    const isActive = pathname.includes(tenantPath);
+                    const isActive = action.path === '/lab/billing'
+                        ? pathname === tenantPath
+                        : pathname.includes(tenantPath);
                     const Icon = action.icon;
 
                     return (

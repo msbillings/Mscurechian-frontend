@@ -10,6 +10,8 @@ import {
     Settings,
     X,
     ClipboardList,
+    Wrench,
+    Package,
 } from "lucide-react";
 import { useTenantLink } from "@/hooks/useTenantLink";
 
@@ -174,6 +176,38 @@ function LabSidebar({ isOpen, onClose, activeTestCount = 0, onLogout, isPending,
                             className={`transition-colors duration-200 ${pathname === '/lab/edited-results' ? "text-blue-600 dark:text-blue-400" : "text-gray-400 group-hover:text-blue-500"}`}
                         />
                         Edited Results
+                    </button>
+
+                    {/* Equipment */}
+                    <button
+                        onClick={() => handleNavigation(getPath('/lab/equipment'))}
+                        className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-base font-semibold transition-all duration-200 w-full text-left group
+              ${pathname === getPath('/lab/equipment')
+                                ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 shadow-sm"
+                                : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                            }`}
+                    >
+                        <Wrench
+                            size={20}
+                            className={`transition-colors duration-200 ${pathname === '/lab/equipment' ? "text-blue-600 dark:text-blue-400" : "text-gray-400 group-hover:text-blue-500"}`}
+                        />
+                        Equipment
+                    </button>
+
+                    {/* Inventory */}
+                    <button
+                        onClick={() => handleNavigation(getPath('/lab/inventory'))}
+                        className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-base font-semibold transition-all duration-200 w-full text-left group
+              ${pathname === getPath('/lab/inventory')
+                                ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 shadow-sm"
+                                : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                            }`}
+                    >
+                        <Package
+                            size={20}
+                            className={`transition-colors duration-200 ${pathname === '/lab/inventory' ? "text-blue-600 dark:text-blue-400" : "text-gray-400 group-hover:text-blue-500"}`}
+                        />
+                        Inventory
                     </button>
 
                 </div>

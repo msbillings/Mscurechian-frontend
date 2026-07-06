@@ -30,6 +30,8 @@ const LabNotificationPanel = () => {
 
     useEffect(() => {
         let isMounted = true;
+        // Store callback ref so we can unsubscribe on cleanup
+        let unsubscribe: (() => void) | null = null;
 
         const initSocket = async () => {
             // Initial fetch of pending samples to show as recent notifications
@@ -55,55 +57,63 @@ const LabNotificationPanel = () => {
             }
 
             try {
-                const { subscribeToSocket } = await import('@/lib/integrations/api/socket');
-                
-                // Real-time listener for new lab orders
-                await subscribeToSocket('new_lab_order', async (data: any) => {
+                const { subscribeToSocket, unsubscribeFromSocket } = await import('@/lib/integrations/api/socket');
+
+                // Named callback so it can be removed in cleanup
+                const onNewLabOrder = async (data: any) => {
                     console.log('🔔 [LabNotification] New order event received:', data);
-                    if (isMounted) {
-                        const orderId = data.orderId || data._id;
-                        if (!orderId) return;
+                    if (!isMounted) return;
+                    const orderId = data.orderId || data._id;
+                    if (!orderId) return;
 
-                        try {
-                            // Fetch full order details since socket might only send ID
-                            const fullOrder = await LabSampleService.getSampleById(orderId, true);
-                            
-                            const newNotif: LabNotification = {
-                                id: fullOrder._id,
-                                patientName: fullOrder.patientDetails?.name || 'Unknown Patient',
-                                sampleId: fullOrder.sampleId || 'N/A',
-                                doctorName: fullOrder.patientDetails?.refDoctor || 'Unknown Doctor',
-                                price: fullOrder.tests.reduce((acc, test) => acc + (test.price || 0), 0),
-                                createdAt: fullOrder.createdAt || new Date().toISOString(),
-                                isRead: false,
-                                type: 'new_order',
-                                priority: fullOrder.priority || data.priority || 'routine',
-                                clinicalAnnotations: fullOrder.clinicalAnnotations || data.clinicalAnnotations || ''
-                            };
+                    try {
+                        // Fetch full order details since socket might only send ID
+                        const fullOrder = await LabSampleService.getSampleById(orderId, true);
 
-                            setNotifications(prev => {
-                                // Avoid duplicate notifications for the same order
-                                if (prev.some(n => n.id === newNotif.id)) return prev;
-                                return [newNotif, ...prev].slice(0, 50);
-                            });
-                            
+                        const newNotif: LabNotification = {
+                            id: fullOrder._id,
+                            patientName: fullOrder.patientDetails?.name || 'Unknown Patient',
+                            sampleId: fullOrder.sampleId || 'N/A',
+                            doctorName: fullOrder.patientDetails?.refDoctor || 'Unknown Doctor',
+                            price: fullOrder.tests.reduce((acc, test) => acc + (test.price || 0), 0),
+                            createdAt: fullOrder.createdAt || new Date().toISOString(),
+                            isRead: false,
+                            type: 'new_order',
+                            priority: fullOrder.priority || data.priority || 'routine',
+                            clinicalAnnotations: fullOrder.clinicalAnnotations || data.clinicalAnnotations || ''
+                        };
+
+                        setNotifications(prev => {
+                            // Avoid duplicate notifications for the same order
+                            if (prev.some(n => n.id === newNotif.id)) return prev;
+                            return [newNotif, ...prev].slice(0, 50);
+                        });
+
+                        // Only toast if still mounted
+                        if (isMounted) {
                             toast.success(`New Lab Order: ${newNotif.patientName}`, {
                                 icon: '🔬',
                                 className: 'text-xs font-bold'
                             });
-
-                            // Audio notification
-                            try {
-                                const isUrgent = ['urgent', 'stat', 'emergency'].includes((newNotif.priority || '').toLowerCase());
-                                const audioFile = isUrgent ? '/assets/emergency.mp3' : '/assets/nurse.mp3';
-                                const audio = new Audio(audioFile);
-                                audio.play().catch(e => console.warn('Audio play failed:', e));
-                            } catch (e) {}
-                        } catch (err) {
-                            console.error('Failed to fetch details for new lab order:', err);
                         }
+
+                        // Audio notification
+                        try {
+                            const isUrgent = ['urgent', 'stat', 'emergency'].includes((newNotif.priority || '').toLowerCase());
+                            const audioFile = isUrgent ? '/assets/emergency.mp3' : '/assets/nurse.mp3';
+                            const audio = new Audio(audioFile);
+                            audio.play().catch(e => console.warn('Audio play failed:', e));
+                        } catch (e) {}
+                    } catch (err) {
+                        console.error('Failed to fetch details for new lab order:', err);
                     }
-                });
+                };
+
+                // Real-time listener for new lab orders
+                await subscribeToSocket('new_lab_order', onNewLabOrder);
+
+                // Store cleanup fn
+                unsubscribe = () => unsubscribeFromSocket('new_lab_order', onNewLabOrder);
             } catch (err) {
                 console.error('Socket init error in LabNotificationPanel:', err);
             }
@@ -113,6 +123,8 @@ const LabNotificationPanel = () => {
 
         return () => {
             isMounted = false;
+            // Unsubscribe the named callback to prevent duplicate listeners on remount
+            if (unsubscribe) unsubscribe();
         };
     }, []);
 

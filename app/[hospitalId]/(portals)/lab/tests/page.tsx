@@ -376,6 +376,7 @@ function TestListPage() {
                                         <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[2px]">Department</th>
                                         <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[2px]">Sample Type</th>
                                         <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[2px]">Price (₹)</th>
+                                        <th className="px-8 py-6 text-[10px] font-black text-purple-400 uppercase tracking-[2px]">L2L Price (₹)</th>
                                         <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[2px] text-right">Actions</th>
                                     </tr>
                                 </thead>
@@ -411,6 +412,18 @@ function TestListPage() {
                                                 <span className="text-sm font-black text-gray-900 dark:text-white font-mono">
                                                     {test.price.toLocaleString()}
                                                 </span>
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                {(test as any).labPrice !== undefined ? (
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <span className="text-sm font-black text-purple-700 dark:text-purple-400 font-mono">
+                                                            {(test as any).labPrice.toLocaleString()}
+                                                        </span>
+                                                        <span className="text-[9px] font-bold text-purple-400 uppercase tracking-widest">L2L Rate</span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-xs text-gray-300 dark:text-gray-600 font-mono">—</span>
+                                                )}
                                             </td>
                                             <td className="px-8 py-6 text-right">
                                                 <div className="inline-flex items-center gap-2">

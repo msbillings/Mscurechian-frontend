@@ -47,6 +47,23 @@ function LabDashboard() {
   const router = useRouter();
   const { user } = useAuthStore();
 
+  // Billing Type Filter state
+  const [typeFilter, setTypeFilter] = useState<'all' | 'walkin' | 'inpatient' | 'lab'>('all');
+
+  // Helper to identify a sample's patient type
+  const getSamplePatientType = (sample: LabSample): 'walkin' | 'inpatient' | 'lab' => {
+      if (sample.patientDetails.patientType) return sample.patientDetails.patientType;
+      if (sample.patientDetails.bedInfo) return 'inpatient';
+      if (sample.patientDetails.originalPatientName) return 'lab';
+      if (sample.isWalkIn) return 'walkin';
+      
+      const nameLower = (sample.patientDetails.name || '').toLowerCase();
+      if (nameLower.includes('lab') || nameLower.includes('diagnostic') || nameLower.includes('center') || nameLower.includes('hospital')) {
+          return 'lab';
+      }
+      return 'walkin';
+  };
+
   useEffect(() => {
     fetchStats();
 
@@ -220,19 +237,47 @@ function LabDashboard() {
         {/* Pending Lab Orders Table - Maximized Height */}
         <div className="xl:col-span-2 flex flex-col h-full">
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex-1 flex flex-col">
-            <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-100 dark:border-gray-700">
-              <h2 className="text-base md:text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 md:p-6 border-b border-gray-100 dark:border-gray-700 gap-4">
+              <div className="flex items-center gap-2">
                 <span className="w-2 h-6 bg-indigo-500 rounded-full" />
-                Recent Lab Orders
-              </h2>
-              <button
-                onClick={() => startNavigation(() => router.push("/lab/samples"))}
-                disabled={isNavigating}
-                className="text-xs font-bold uppercase tracking-wider text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2"
-              >
-                {isNavigating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
-                View Full List
-              </button>
+                <h2 className="text-base md:text-lg font-bold text-gray-800 dark:text-white">
+                  Recent Lab Orders
+                </h2>
+              </div>
+              
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Billing Type Tabs */}
+                <div className="flex bg-slate-50 dark:bg-gray-900 p-1 rounded-lg border border-gray-100 dark:border-gray-800 gap-1">
+                    {(['all', 'walkin', 'inpatient', 'lab'] as const).map((t) => (
+                        <button
+                            key={t}
+                            onClick={() => setTypeFilter(t)}
+                            className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${
+                                typeFilter === t
+                                    ? t === 'walkin'
+                                        ? 'bg-emerald-500 text-white shadow-sm'
+                                        : t === 'inpatient'
+                                        ? 'bg-blue-500 text-white shadow-sm'
+                                        : t === 'lab'
+                                        ? 'bg-purple-500 text-white shadow-sm'
+                                        : 'bg-gray-800 dark:bg-gray-600 text-white shadow-sm'
+                                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                            }`}
+                        >
+                            {t === 'all' ? 'All' : t === 'walkin' ? 'Walk-in' : t === 'inpatient' ? 'Inpatient' : 'Lab-to-Lab'}
+                        </button>
+                    ))}
+                </div>
+
+                <button
+                  onClick={() => startNavigation(() => router.push("/lab/samples"))}
+                  disabled={isNavigating}
+                  className="text-xs font-bold uppercase tracking-wider text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2"
+                >
+                  {isNavigating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
+                  View Full List
+                </button>
+              </div>
             </div>
 
             <div className="overflow-x-auto flex-1 no-scrollbar">
@@ -262,7 +307,9 @@ function LabDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
-                    {activeTests.map((test) => (
+                    {activeTests
+                      .filter(test => typeFilter === 'all' || getSamplePatientType(test) === typeFilter)
+                      .map((test) => (
                       <tr
                         key={test._id}
                         className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors group"
@@ -276,8 +323,28 @@ function LabDashboard() {
                           </div>
                         </td>
                         <td className="px-4 md:px-6 py-3 md:py-4">
-                          <div className="font-semibold text-xs md:text-sm text-gray-900 dark:text-white flex items-center gap-2">
-                            {test.patientDetails.name}
+                          <div className="font-semibold text-xs md:text-sm text-gray-900 dark:text-white flex items-center gap-2 flex-wrap">
+                            {getSamplePatientType(test) === 'lab' ? (
+                              <>
+                                <span className="font-bold text-gray-950 dark:text-white">
+                                  {test.patientDetails.name}
+                                </span>
+                                <span className="px-1.5 py-0.5 text-[9px] bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border border-purple-100 rounded uppercase">
+                                  {test.patientDetails.refDoctor || 'Lab'}
+                                </span>
+                              </>
+                            ) : test.patientDetails.originalPatientName ? (
+                              <>
+                                <span className="font-bold text-gray-950 dark:text-white">
+                                  {test.patientDetails.originalPatientName}
+                                </span>
+                                <span className="px-1.5 py-0.5 text-[9px] bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border border-purple-100 rounded uppercase">
+                                  {test.patientDetails.name}
+                                </span>
+                              </>
+                            ) : (
+                              test.patientDetails.name
+                            )}
                             {test.priority && test.priority !== 'routine' && (
                               <span className="bg-red-500 text-white font-black text-[8px] px-1.5 py-0.5 rounded uppercase animate-pulse">
                                 🚨 {test.priority}

@@ -2,19 +2,21 @@
 
 import React, { useState, useRef, useTransition, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Save, Printer, CheckCircle, X, Check, Search, User } from 'lucide-react';
+import { Save, Printer, CheckCircle, X, Check, Search, User, Building2, ArrowLeftRight, Eye, Stethoscope } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { LabBillingService } from '@/lib/integrations/services/labBilling.service';
 import { BillItem, PatientDetails, BillPayload } from '@/lib/integrations/types/labBilling';
-import BillPrintView from '@/components/lab/BillPrintView';
+import BillPreviewModal from '@/components/lab/BillPreviewModal';
 import { useReactToPrint } from 'react-to-print';
 import { toast } from 'react-hot-toast';
+import { usePrintStore } from '@/stores/printStore';
 
 import { LabTestService } from '@/lib/integrations/services/labTest.service';
 import { LabTest } from '@/lib/integrations/types/labTest';
 import { LabSampleService } from '@/lib/integrations/services/labSample.service';
-import { clearApiCache, invalidateCachePattern } from '@/lib/integrations/api/apiClient';
+import { apiClient, clearApiCache, invalidateCachePattern } from '@/lib/integrations/api/apiClient';
 import { patientService } from '@/lib/integrations/services/patient.service';
+import BillPrintView from '@/components/lab/BillPrintView';
 
 function LabBillingPage() {
     const router = useRouter();
@@ -23,6 +25,26 @@ function LabBillingPage() {
     const [testsLoading, setTestsLoading] = useState(true);
     const [availableTests, setAvailableTests] = useState<LabTest[]>([]);
     const [generatedBill, setGeneratedBill] = useState<(BillPayload & { invoiceId: string; createdAt: string }) | null>(null);
+
+    // Billing mode: 'walkin' | 'inpatient' | 'lab'
+    const [billingMode, setBillingMode] = useState<'walkin' | 'inpatient' | 'lab'>('walkin');
+
+    // Preview modal state
+    const [showPreview, setShowPreview] = useState(false);
+
+    // Lab-to-Lab client details
+    const [labClient, setLabClient] = useState({
+        labName: '',
+        contactPerson: '',
+        mobile: '',
+        referenceDoctor: '',   // ADD THIS
+        gstin: '',
+        address: '',
+        originalPatientName: '',
+        patientAge: 0,
+        patientAgeUnit: 'Years' as 'Years' | 'Months' | 'Days',
+        patientGender: '' as 'Male' | 'Female' | 'Other',
+    });
 
     // Filter state
     const [searchTerm, setSearchTerm] = useState('');
@@ -40,7 +62,7 @@ function LabBillingPage() {
     const handlePatientNameChange = useCallback((value: string) => {
         setPatient(prev => ({ ...prev, name: value }));
         if (patientSearchDebounce.current) clearTimeout(patientSearchDebounce.current);
-        if (value.trim().length < 2) {
+        if (value.trim().length < 2 || billingMode === 'walkin') {
             setPatientSuggestions([]);
             setShowSuggestions(false);
             return;
@@ -58,7 +80,13 @@ function LabBillingPage() {
                 setSearchingPatients(false);
             }
         }, 350);
-    }, []);
+    }, [billingMode]);
+
+    // Clear suggestions when billing mode changes
+    useEffect(() => {
+        setPatientSuggestions([]);
+        setShowSuggestions(false);
+    }, [billingMode]);
 
     // Select a patient from suggestions and auto-fill fields
     const handleSelectPatient = useCallback((p: { _id: string; name: string; mobile: string; email?: string; age?: number; ageUnit?: string; gender?: string }) => {
@@ -172,7 +200,7 @@ function LabBillingPage() {
                         testsToAdd.push({
                             testName: found.testName || found.name || "Unknown",
                             testId: found._id,
-                            price: found.price,
+                            price: billingMode === 'lab' && found.labPrice !== undefined ? found.labPrice : found.price,
                             discount: 0
                         });
                     }
@@ -207,6 +235,49 @@ function LabBillingPage() {
     const [mixedPayments, setMixedPayments] = useState({ cash: 0, card: 0, upi: 0 });
     const [billingStatus, setBillingStatus] = useState<'Paid' | 'Due'>('Paid');
 
+    // Draft persistence
+    const [isInitialized, setIsInitialized] = useState(false);
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const draft = localStorage.getItem('curechain_lab_billing_draft');
+        if (draft) {
+            try {
+                const parsed = JSON.parse(draft);
+                if (parsed.billingMode) setBillingMode(parsed.billingMode);
+                if (parsed.patient) setPatient(parsed.patient);
+                if (parsed.labClient) setLabClient(prev => ({
+                    ...prev,
+                    ...parsed.labClient,
+                }));
+                if (parsed.selectedTests) setSelectedTests(parsed.selectedTests);
+                if (parsed.discount) setDiscount(parsed.discount);
+                if (parsed.paidAmount) setPaidAmount(parsed.paidAmount);
+                if (parsed.paymentMode) setPaymentMode(parsed.paymentMode);
+                if (parsed.mixedPayments) setMixedPayments(parsed.mixedPayments);
+                if (parsed.billingStatus) setBillingStatus(parsed.billingStatus);
+            } catch (e) {
+                console.error("Error loading billing draft:", e);
+            }
+        }
+        setIsInitialized(true);
+    }, []);
+
+    useEffect(() => {
+        if (!isInitialized || typeof window === 'undefined') return;
+        const draftData = {
+            billingMode,
+            patient,
+            labClient,
+            selectedTests,
+            discount,
+            paidAmount,
+            paymentMode,
+            mixedPayments,
+            billingStatus,
+        };
+        localStorage.setItem('curechain_lab_billing_draft', JSON.stringify(draftData));
+    }, [isInitialized, billingMode, patient, labClient, selectedTests, discount, paidAmount, paymentMode, mixedPayments, billingStatus]);
+
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
 
@@ -220,18 +291,29 @@ function LabBillingPage() {
 
     const validate = () => {
         const newErrors: { [key: string]: string } = {};
-        if (!/^\d{10}$/.test(patient.mobile)) newErrors.mobile = "Invalid 10-digit mobile";
-        if (patient.age < 0 || !Number.isInteger(Number(patient.age))) newErrors.age = "Invalid Age";
-        if (!patient.gender) newErrors.gender = "Gender is mandatory";
+        
+        if (billingMode === 'lab') {
+            if (!labClient.labName) newErrors.labName = "Lab name is mandatory";
+            if (!labClient.originalPatientName) newErrors.originalPatientName = "Patient name is mandatory";
+            if (labClient.patientAge < 0 || !Number.isInteger(Number(labClient.patientAge))) newErrors.patientAge = "Invalid Age";
+            if (!labClient.patientGender) newErrors.patientGender = "Gender is mandatory";
+            if (labClient.mobile && !/^\d{10}$/.test(labClient.mobile)) newErrors.labMobile = "Invalid 10-digit mobile";
+        } else {
+            if (!patient.name) newErrors.name = "Patient name is mandatory";
+            if (!/^\d{10}$/.test(patient.mobile)) newErrors.mobile = "Invalid 10-digit mobile";
+            if (patient.age < 0 || !Number.isInteger(Number(patient.age))) newErrors.age = "Invalid Age";
+            if (!patient.gender) newErrors.gender = "Gender is mandatory";
+        }
+
         if (discount < 0) newErrors.discount = "Invalid discount";
         else if (discount > totalAmount) newErrors.discount = "Exceeds total";
         if (paidAmount < 0) newErrors.paidAmount = "Invalid paid amount";
-
+ 
         if (paymentMode === 'Mixed') {
             const totalMixed = Number(mixedPayments.cash) + Number(mixedPayments.card) + Number(mixedPayments.upi);
             if (Math.abs(totalMixed - finalAmount) > 2) newErrors.mixedMatch = "Doesn't match total";
         }
-
+ 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -260,7 +342,16 @@ function LabBillingPage() {
         if (!test) return;
         const nameToUse = test.testName || test.name || "Unknown Test";
         if (!selectedTests.find(t => t.testName === nameToUse)) {
-            setSelectedTests([...selectedTests, { testName: nameToUse, testId: test._id, price: test.price, discount: 0 }]);
+            // Use labPrice for Lab-to-Lab billing if set, otherwise fallback to standard price
+            const effectivePrice = billingMode === 'lab' && test.labPrice !== undefined
+                ? test.labPrice
+                : test.price;
+            setSelectedTests([...selectedTests, {
+                testName: nameToUse,
+                testId: test._id,
+                price: effectivePrice,
+                discount: 0
+            }]);
         }
     };
 
@@ -270,42 +361,99 @@ function LabBillingPage() {
         setSelectedTests(updated);
     };
 
+    // ── Build patient details for the payload ────────────────────────────────
+    const getEffectivePatient = (): PatientDetails => {
+        if (billingMode === 'lab') {
+            return {
+                name: labClient.originalPatientName || 'Patient Client',
+                age: Number(labClient.patientAge) || 0,
+                ageUnit: labClient.patientAgeUnit || 'Years',
+                gender: labClient.patientGender || 'Other',
+                mobile: labClient.mobile || '0000000000',
+                refDoctor: labClient.referenceDoctor || 'Lab Client' ||labClient.labName,
+                originalPatientName: labClient.originalPatientName || '',
+                patientType: 'lab',
+            };
+        }
+        return {
+            ...patient,
+            patientType: billingMode,
+        };
+    };
+
+    // ── Build preview bill object (no API call) ───────────────────────────────
+    const buildPreviewBill = () => ({
+        patientDetails: getEffectivePatient(),
+        patientType: billingMode as 'walkin' | 'inpatient' | 'lab',
+        items: selectedTests,
+        totalAmount,
+        discount,
+        finalAmount,
+        paidAmount: billingStatus === 'Paid' ? finalAmount : paidAmount,
+        balance: billingStatus === 'Paid' ? 0 : Math.max(0, finalAmount - paidAmount),
+        paymentMode,
+        paymentDetails: paymentMode === 'Mixed' ? mixedPayments : undefined,
+    });
+
+    // ── Validate then open preview modal ─────────────────────────────────────
+    const handleOpenPreview = () => {
+        if (billingMode === 'lab') {
+            if (!labClient.labName || !labClient.originalPatientName || selectedTests.length === 0) {
+                toast.error('Fill lab name, patient name, and select at least one test');
+                return;
+            }
+        } else if (!patient.name || !patient.mobile || selectedTests.length === 0) {
+            toast.error('Fill patient details and select at least one test');
+            return;
+        }
+        setShowPreview(true);
+    };
+
+    // ── Save bill & trigger print (called from preview modal) ────────────────
     const handleGenerateBill = async (shouldPrint: boolean = true) => {
-        // ── Duplicate prevention: bail if invoice already generated ──
+        // Duplicate prevention
         if (generatedBill) {
             toast('Invoice already generated. Use "Save Bill" to finish.', { icon: 'ℹ️' });
-            if (shouldPrint) setTimeout(() => handlePrint(), 300);
             return;
         }
 
-        if (!patient.name || !patient.mobile || selectedTests.length === 0) {
-            toast.error('Fill patient details and select tests');
-            return;
-        }
+        const effectivePatient = getEffectivePatient();
+        const paidAmt = billingStatus === 'Paid' ? finalAmount : paidAmount;
+        const bal = billingStatus === 'Paid' ? 0 : Math.max(0, finalAmount - paidAmount);
 
         setLoading(true);
         try {
             if (sampleId) {
+                // Pre-update patientDetails on the order so it persists correctly
+                try {
+                    await apiClient(`/lab/orders/${sampleId}`, {
+                        method: 'PUT',
+                        body: JSON.stringify({ patientDetails: effectivePatient })
+                    });
+                } catch (err) {
+                    console.warn("Failed to pre-update order patientDetails:", err);
+                }
+
                 const res = await LabSampleService.finalizeOrder(sampleId, {
                     totalAmount: finalAmount,
                     items: selectedTests,
-                    patientDetails: patient
+                    patientDetails: effectivePatient
                 });
                 await LabSampleService.payOrder(sampleId, {
                     paymentMode: paymentMode || 'Cash',
                     paymentDetails: paymentMode === 'Mixed' ? mixedPayments : undefined,
-                    paidAmount: billingStatus === 'Paid' ? finalAmount : paidAmount,
-                    balance: billingStatus === 'Paid' ? 0 : Math.max(0, finalAmount - paidAmount)
+                    paidAmount: paidAmt,
+                    balance: bal
                 });
-
                 setGeneratedBill({
-                    patientDetails: patient,
+                    patientDetails: effectivePatient,
+                    patientType: billingMode as any,
                     items: selectedTests,
                     totalAmount,
                     discount,
                     finalAmount,
-                    paidAmount,
-                    balance,
+                    paidAmount: paidAmt,
+                    balance: bal,
                     paymentMode,
                     paymentDetails: paymentMode === 'Mixed' ? mixedPayments : undefined,
                     invoiceId: res.transaction?._id || res.transaction?.invoiceId || displayId || 'N/A',
@@ -314,25 +462,37 @@ function LabBillingPage() {
                 toast.success('Bill generated from order!');
             } else {
                 const payload: BillPayload = {
-                    patientDetails: patient,
+                    patientDetails: effectivePatient,
+                    patientType: billingMode as any,
                     items: selectedTests,
                     totalAmount,
                     discount,
                     finalAmount,
-                    paidAmount: billingStatus === 'Paid' ? finalAmount : paidAmount,
-                    balance: billingStatus === 'Paid' ? 0 : Math.max(0, finalAmount - paidAmount),
+                    paidAmount: paidAmt,
+                    balance: bal,
                     paymentMode,
                     paymentDetails: paymentMode === 'Mixed' ? mixedPayments : undefined
                 };
                 const res = await LabBillingService.createBill(payload);
                 setGeneratedBill({ ...payload, invoiceId: res.bill.invoiceId || res.bill._id, createdAt: res.bill.createdAt });
-                toast.success('Walk-in bill generated!');
+                const modeLabel = billingMode === 'inpatient' ? 'Inpatient' : billingMode === 'lab' ? 'Lab-to-Lab' : 'Walk-in';
+                toast.success(`${modeLabel} bill generated!`);
             }
 
-            if (shouldPrint) setTimeout(() => handlePrint(), 500);
+            // Clear draft
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem('curechain_lab_billing_draft');
+            }
 
-            // Refresh data everywhere
+            // Close preview, refresh data
+            setShowPreview(false);
             window.dispatchEvent(new Event('refresh-lab-data'));
+
+            if (shouldPrint) {
+                setTimeout(() => {
+                    handlePrint();
+                }, 500);
+            }
         } catch (err: any) {
             toast.error(err.message || 'Billing failed');
         } finally {
@@ -383,31 +543,106 @@ function LabBillingPage() {
                     </h1>
                     <p className="text-xs md:text-sm lg:text-base text-gray-500 dark:text-gray-400 mt-1 ml-12">Process transactions and generate invoices</p>
                 </div>
-                {sampleId && (
-                    <div className="flex items-center gap-3 px-4 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/30 rounded-lg">
-                        <span className="text-xs font-semibold text-amber-700 dark:text-amber-500">Active Order: {displayId || sampleId}</span>
+                <div className="flex items-center gap-3">
+                    {sampleId && (
+                        <div className="flex items-center gap-3 px-4 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/30 rounded-lg">
+                            <span className="text-xs font-semibold text-amber-700 dark:text-amber-500">Active Order: {displayId || sampleId}</span>
+                        </div>
+                    )}
+                    {/* Billing Mode Toggle — 3 tabs */}
+                    <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1 gap-1">
+                        <button
+                            type="button"
+                            onClick={() => setBillingMode('walkin')}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                billingMode === 'walkin'
+                                    ? 'bg-white dark:bg-gray-700 text-emerald-700 dark:text-emerald-300 shadow-sm'
+                                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                            }`}
+                        >
+                            <User size={13} />
+                            Walk-in
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setBillingMode('inpatient')}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                billingMode === 'inpatient'
+                                    ? 'bg-white dark:bg-gray-700 text-blue-700 dark:text-blue-300 shadow-sm'
+                                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                            }`}
+                        >
+                            <Stethoscope size={13} />
+                            Inpatient
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setBillingMode('lab')}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                billingMode === 'lab'
+                                    ? 'bg-white dark:bg-gray-700 text-purple-700 dark:text-purple-300 shadow-sm'
+                                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                            }`}
+                        >
+                            <Building2 size={13} />
+                            Lab to Lab
+                        </button>
                     </div>
-                )}
+                </div>
             </div>
+
+            {/* Mode banners */}
+            {billingMode === 'inpatient' && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/40 rounded-xl">
+                    <Stethoscope size={16} className="text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                    <p className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                        <span className="font-bold">Inpatient Billing</span> — Uses IPD rates. Tests without a separate inpatient price will fall back to the standard walk-in price.
+                    </p>
+                </div>
+            )}
+            {billingMode === 'lab' && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/40 rounded-xl">
+                    <ArrowLeftRight size={16} className="text-purple-600 dark:text-purple-400 flex-shrink-0" />
+                    <p className="text-xs font-medium text-purple-700 dark:text-purple-300">
+                        <span className="font-bold">Lab-to-Lab Billing</span> — Bill a referring lab or external partner. Invoice will be generated under the lab's name.
+                    </p>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
                 <div className="lg:col-span-8 space-y-4 lg:space-y-6">
-                    {/* Patient Details Card */}
-                    <div className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                        <div className="flex items-center gap-2 mb-4 lg:mb-6 border-b border-gray-100 dark:border-gray-700 pb-3 lg:pb-4">
-                            <span className="w-1 h-5 bg-indigo-600 rounded-full" />
+                    {/* Patient / Inpatient Details Card — shown for walkin and inpatient modes */}
+                    {(billingMode === 'walkin' || billingMode === 'inpatient') ? (
+                    <div className={`bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-2xl border shadow-sm ${
+                        billingMode === 'inpatient'
+                            ? 'border-blue-200 dark:border-blue-800/40'
+                            : 'border-gray-200 dark:border-gray-700'
+                    }`}>
+                        <div className={`flex items-center gap-2 mb-4 lg:mb-6 border-b pb-3 lg:pb-4 ${
+                            billingMode === 'inpatient'
+                                ? 'border-blue-100 dark:border-blue-800/30'
+                                : 'border-gray-100 dark:border-gray-700'
+                        }`}>
+                            <span className={`w-1 h-5 rounded-full ${
+                                billingMode === 'inpatient' ? 'bg-blue-600' : 'bg-indigo-600'
+                            }`} />
                             <h3 className="text-base font-semibold text-gray-900 dark:text-white">Patient Information</h3>
+                            {billingMode === 'inpatient' && (
+                                <span className="ml-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50">
+                                    IPD
+                                </span>
+                            )}
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1.5 relative" ref={suggestionRef}>
                                 <label className="text-xs font-medium text-gray-500">Patient Name</label>
                                 <div className="relative">
                                     <input
-                                        placeholder="Search registered patient..."
+                                        placeholder={billingMode === 'walkin' ? "Enter patient name..." : "Search registered patient..."}
                                         className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg pl-9 pr-4 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm font-medium"
                                         value={patient.name}
                                         onChange={e => handlePatientNameChange(e.target.value)}
-                                        onFocus={() => patient.name.length >= 2 && patientSuggestions.length > 0 && setShowSuggestions(true)}
+                                        onFocus={() => billingMode !== 'walkin' && patient.name.length >= 2 && patientSuggestions.length > 0 && setShowSuggestions(true)}
                                         autoComplete="off"
                                     />
                                     <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
@@ -494,6 +729,132 @@ function LabBillingPage() {
                             </div>
                         </div>
                     </div>
+                    ) : (
+                    /* Lab-to-Lab Client Details Card */
+                    <div className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-2xl border border-purple-200 dark:border-purple-800/40 shadow-sm">
+                        <div className="flex items-center gap-2 mb-4 lg:mb-6 border-b border-purple-100 dark:border-purple-800/30 pb-3 lg:pb-4">
+                            <span className="w-1 h-5 bg-purple-600 rounded-full" />
+                            <Building2 size={16} className="text-purple-600 dark:text-purple-400" />
+                            <h3 className="text-base font-semibold text-gray-900 dark:text-white">Referral Lab Details</h3>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1.5 md:col-span-2">
+                                <label className="text-xs font-medium text-gray-500">Lab / Organisation Name <span className="text-red-500">*</span></label>
+                                <input
+                                    placeholder="e.g. City Diagnostics Pvt. Ltd."
+                                    className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-sm font-medium"
+                                    value={labClient.labName}
+                                    onChange={e => setLabClient(prev => ({ ...prev, labName: e.target.value }))}
+                                />
+                            </div>
+                            <div className="space-y-1.5 md:col-span-2">
+                                <label className="text-xs font-medium text-gray-500">Patient Name <span className="text-red-500">*</span></label>
+                                <input
+                                    placeholder="Patient's Full Name"
+                                    className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-sm font-medium"
+                                    value={labClient.originalPatientName}
+                                    onChange={e => setLabClient(prev => ({ ...prev, originalPatientName: e.target.value }))}
+                                />
+                                {errors.originalPatientName && <p className="text-[10px] font-bold text-red-500">{errors.originalPatientName}</p>}
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-medium text-gray-500">Patient Age <span className="text-red-500">*</span></label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="number"
+                                        placeholder="Age"
+                                        className="w-24 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-sm font-medium"
+                                        value={labClient.patientAge || ''}
+                                        onChange={e => setLabClient(prev => ({ ...prev, patientAge: parseInt(e.target.value) || 0 }))}
+                                    />
+                                    <select
+                                        className="flex-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-sm font-medium"
+                                        value={labClient.patientAgeUnit}
+                                        onChange={e => setLabClient(prev => ({ ...prev, patientAgeUnit: e.target.value as any }))}
+                                    >
+                                        <option value="Years">Years</option>
+                                        <option value="Months">Months</option>
+                                        <option value="Days">Days</option>
+                                    </select>
+                                </div>
+                                {errors.patientAge && <p className="text-[10px] font-bold text-red-500">{errors.patientAge}</p>}
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-medium text-gray-500">Patient Gender <span className="text-red-500">*</span></label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {['Male', 'Female', 'Other'].map(g => (
+                                        <button
+                                            key={g}
+                                            type="button"
+                                            onClick={() => setLabClient(prev => ({ ...prev, patientGender: g as any }))}
+                                            className={`py-2.5 rounded-lg text-xs font-medium transition-all border ${labClient.patientGender === g ? 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-400' : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                                        >
+                                            {g}
+                                        </button>
+                                    ))}
+                                </div>
+                                {errors.patientGender && <p className="text-[10px] font-bold text-red-500">{errors.patientGender}</p>}
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-medium text-gray-500">Contact Person (optional)</label>
+                                <input
+                                    placeholder="Contact person name"
+                                    className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-sm font-medium"
+                                    value={labClient.contactPerson}
+                                    onChange={e => setLabClient(prev => ({ ...prev, contactPerson: e.target.value }))}
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-medium text-gray-500">Mobile / Phone (optional)</label>
+                                <input
+                                    placeholder="Contact number"
+                                    maxLength={10}
+                                    className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-sm font-medium"
+                                    value={labClient.mobile}
+                                    onChange={e => setLabClient(prev => ({ ...prev, mobile: e.target.value.replace(/\D/g, '') }))}
+                                />
+                                {errors.labMobile && <p className="text-[10px] font-bold text-red-500">{errors.labMobile}</p>}
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-medium text-gray-500">GSTIN (optional)</label>
+                                <input
+                                    placeholder="e.g. 22AAAAA0000A1Z5"
+                                    maxLength={15}
+                                    className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-sm font-medium uppercase"
+                                    value={labClient.gstin}
+                                    onChange={e => setLabClient(prev => ({ ...prev, gstin: e.target.value.toUpperCase() }))}
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+    <label className="text-xs font-medium text-gray-500">
+        Reference Doctor (optional)
+    </label>
+
+    <input
+        type="text"
+        placeholder="Dr. John Smith"
+        className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-sm font-medium"
+        value={labClient.referenceDoctor || ''}
+        onChange={(e) =>
+            setLabClient(prev => ({
+                ...prev,
+                referenceDoctor: e.target.value
+            }))
+        }
+    />
+</div>
+                            <div className="space-y-1.5 md:col-span-2">
+                                <label className="text-xs font-medium text-gray-500">Address (optional)</label>
+                                <input
+                                    placeholder="Lab address"
+                                    className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-sm font-medium"
+                                    value={labClient.address}
+                                    onChange={e => setLabClient(prev => ({ ...prev, address: e.target.value }))}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    )}
 
                     {/* Test Selection Card */}
                     <div className="bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col min-h-[500px]">
@@ -513,6 +874,9 @@ function LabBillingPage() {
                             {filteredTests.map((test) => {
                                 const currentName = test.testName || test.name || "Unknown";
                                 const isSelected = selectedTests.some(t => t.testName === currentName);
+                                const effectivePrice = billingMode === 'lab' && test.labPrice !== undefined
+                                    ? test.labPrice
+                                    : test.price;
                                 return (
                                     <div
                                         key={test._id}
@@ -520,7 +884,7 @@ function LabBillingPage() {
                                             if (isSelected) {
                                                 setSelectedTests(selectedTests.filter(t => t.testName !== currentName));
                                             } else {
-                                                setSelectedTests([...selectedTests, { testName: currentName, testId: test._id, price: test.price, discount: 0 }]);
+                                                setSelectedTests([...selectedTests, { testName: currentName, testId: test._id, price: effectivePrice, discount: 0 }]);
                                             }
                                         }}
                                         className={`p-4 rounded-xl border cursor-pointer transition-all group ${isSelected ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 ring-1 ring-indigo-500/20' : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-sm'}`}
@@ -531,7 +895,14 @@ function LabBillingPage() {
                                                 <p className={`text-xs mt-1 ${isSelected ? 'text-indigo-700 dark:text-indigo-400' : 'text-gray-500'}`}>{test.sampleType}</p>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <p className={`font-semibold text-sm ${isSelected ? 'text-indigo-700 dark:text-indigo-400' : 'text-gray-900 dark:text-white'}`}>₹{test.price}</p>
+                                                {billingMode === 'lab' && test.labPrice !== undefined ? (
+                                                    <div className="text-right">
+                                                        <p className="font-bold text-sm text-purple-700 dark:text-purple-400">₹{test.labPrice}</p>
+                                                        <p className="text-[10px] text-gray-400 line-through">₹{test.price}</p>
+                                                    </div>
+                                                ) : (
+                                                    <p className={`font-semibold text-sm ${isSelected ? 'text-indigo-700 dark:text-indigo-400' : 'text-gray-900 dark:text-white'}`}>₹{test.price}</p>
+                                                )}
                                                 {isSelected && <CheckCircle size={16} className="text-indigo-600 fill-indigo-100 dark:fill-indigo-900" />}
                                             </div>
                                         </div>
@@ -640,22 +1011,68 @@ function LabBillingPage() {
                                 </div>
                             </div>
 
+                            {paymentMode === 'Mixed' && (
+                                <div className="space-y-3 p-4 bg-slate-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 animate-in fade-in duration-300">
+                                    <p className="text-xs font-bold text-gray-700 dark:text-gray-300">Mixed Payment Split (Total: ₹{finalAmount})</p>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-gray-500 uppercase">Cash</label>
+                                            <input
+                                                type="number"
+                                                min={0}
+                                                value={mixedPayments.cash || ''}
+                                                onChange={e => {
+                                                    const val = Number(e.target.value) || 0;
+                                                    setMixedPayments(prev => ({ ...prev, cash: val }));
+                                                }}
+                                                className="w-full px-2 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-semibold text-gray-950 dark:text-white"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-gray-500 uppercase">Card</label>
+                                            <input
+                                                type="number"
+                                                min={0}
+                                                value={mixedPayments.card || ''}
+                                                onChange={e => {
+                                                    const val = Number(e.target.value) || 0;
+                                                    setMixedPayments(prev => ({ ...prev, card: val }));
+                                                }}
+                                                className="w-full px-2 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-semibold text-gray-950 dark:text-white"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-gray-500 uppercase">UPI</label>
+                                            <input
+                                                type="number"
+                                                min={0}
+                                                value={mixedPayments.upi || ''}
+                                                onChange={e => {
+                                                    const val = Number(e.target.value) || 0;
+                                                    setMixedPayments(prev => ({ ...prev, upi: val }));
+                                                }}
+                                                className="w-full px-2 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-semibold text-gray-950 dark:text-white"
+                                            />
+                                        </div>
+                                    </div>
+                                    {errors.mixedMatch && <p className="text-[10px] font-bold text-red-500 mt-1">{errors.mixedMatch}</p>}
+                                    <p className="text-[10px] text-gray-400">Sum: ₹{Number(mixedPayments.cash) + Number(mixedPayments.card) + Number(mixedPayments.upi)} / ₹{finalAmount}</p>
+                                </div>
+                            )}
+
                             <div className="pt-2 space-y-3">
+                                {/* Preview Invoice button — opens modal before saving */}
                                 <button
-                                    onClick={() => handleGenerateBill(true)}
-                                    disabled={loading || selectedTests.length === 0 || !!generatedBill}
-                                    className={`w-full py-3 text-white rounded-xl font-semibold shadow-lg transition-all flex items-center justify-center gap-2 ${generatedBill
+                                    onClick={handleOpenPreview}
+                                    disabled={selectedTests.length === 0 || !!generatedBill}
+                                    className={`w-full py-3 text-white rounded-xl font-semibold shadow-lg transition-all flex items-center justify-center gap-2 ${
+                                        generatedBill
                                             ? 'bg-green-600 cursor-not-allowed opacity-90 shadow-green-100 dark:shadow-none'
                                             : 'bg-primary-theme hover:bg-primary-theme/80 disabled:opacity-50 disabled:shadow-none shadow-indigo-100 dark:shadow-none'
-                                        }`}
+                                    }`}
                                 >
-                                    {loading
-                                        ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        : generatedBill
-                                            ? <Check size={18} />
-                                            : <Printer size={18} />
-                                    }
-                                    {loading ? 'Processing...' : generatedBill ? 'Invoice Generated' : 'Generate Invoice'}
+                                    {generatedBill ? <Check size={18} /> : <Eye size={18} />}
+                                    {generatedBill ? 'Invoice Generated' : 'Preview Invoice'}
                                 </button>
                                 {generatedBill && (
                                     <button
@@ -681,10 +1098,20 @@ function LabBillingPage() {
                     </div>
                 </div>
             </div>
-            {/* Hidden Print View */}
+            {/* Bill Preview Modal */}
+            <BillPreviewModal
+                isOpen={showPreview}
+                billData={buildPreviewBill()}
+                patientType={billingMode as any}
+                invoiceId={generatedBill?.invoiceId}
+                loading={loading}
+                onPrint={() => handleGenerateBill(true)}
+                onClose={() => setShowPreview(false)}
+            />
+            {/* Hidden print ref for post-save print (used by BillPreviewModal internally) */}
             <div className="hidden">
                 <div ref={printRef}>
-                    {generatedBill && <BillPrintView billData={generatedBill} invoiceId={generatedBill.invoiceId} />}
+                    {generatedBill && <BillPrintView billData={generatedBill} invoiceId={generatedBill.invoiceId} patientType={billingMode as any} />}
                 </div>
             </div>
         </div>
