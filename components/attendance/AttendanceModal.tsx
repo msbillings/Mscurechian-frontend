@@ -32,31 +32,6 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({ isOpen, onClos
     const { user, verifyHospitalId } = useAuthStore();
     const [retryCount, setRetryCount] = useState(0);
 
-    // Fetch hospital address from logged-in user data
-    const getHospitalAddress = async () => {
-        console.log("[AttendanceModal] User Context:", { user, hospitalId });
-        console.log("[AttendanceModal] Secure Context:", window.isSecureContext);
-        
-        // 1. Try user profile first
-        if (user?.hospital && user?.address) {
-            return `${user.hospital}, ${user.address}`;
-        }
-
-        // 2. Try to fetch hospital name via verify endpoint
-        if (hospitalId) {
-            try {
-                const res = await verifyHospitalId(hospitalId);
-                if (res?.valid && res.hospitalName) {
-                    return res.hospitalName;
-                }
-            } catch (err) {
-                console.error("[AttendanceModal] Error verifying hospital ID:", err);
-            }
-        }
-        
-        return '';
-    };
-
     useEffect(() => {
         if (isOpen) {
             console.log("[AttendanceModal] Modal Opened. Initializing Step 1: Location...");
@@ -65,15 +40,35 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({ isOpen, onClos
             setIsCameraActive(false);
             setCameraError(null);
             
-            const resolveAddress = async () => {
-                const addr = await getHospitalAddress();
-                console.log("[AttendanceModal] Resolved Final Address:", addr || "EMPTY");
-                setLocation(addr);
-                setStep('camera');
+            const fetchRealLocation = () => {
+                if (typeof navigator === 'undefined' || !navigator.geolocation) {
+                    setLocation("Geolocation not supported by this browser.");
+                    setStep('camera');
+                    return;
+                }
+
+                navigator.geolocation.getCurrentPosition(
+                    async (position) => {
+                        const { latitude, longitude } = position.coords;
+                        try {
+                            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+                            const data = await res.json();
+                            setLocation(data.display_name || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+                        } catch (err) {
+                            setLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+                        }
+                        setStep('camera');
+                    },
+                    (error) => {
+                        console.error("[AttendanceModal] Geolocation error:", error);
+                        setLocation("Location access denied or unavailable.");
+                        setStep('camera');
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
             };
 
-            const timer = setTimeout(resolveAddress, 800);
-            return () => clearTimeout(timer);
+            fetchRealLocation();
         }
     }, [isOpen]);
 

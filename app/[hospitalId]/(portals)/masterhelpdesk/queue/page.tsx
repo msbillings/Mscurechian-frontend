@@ -183,7 +183,12 @@ export default function MasterQueuePage() {
                         </button>
                     </div>
 
-                    <button onClick={() => refetch()} className="p-2 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-indigo-600 shadow-sm transition-all active:scale-95">
+                    <button onClick={() => {
+                    toast.loading('Refreshing page...', { duration: 1000 });
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 800);
+                  }} className="p-2 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-indigo-600 shadow-sm transition-all active:scale-95">
                         <RefreshCw size={14} className={isFetching ? "animate-spin" : ""} />
                     </button>
                 </div>

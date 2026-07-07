@@ -15,6 +15,7 @@ import {
     Smartphone,
     UserCircle2
 } from "lucide-react";
+import toast from "react-hot-toast";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useMasterTransactions } from "@/lib/integrations/hooks";
 
@@ -115,7 +116,12 @@ export default function TransactionSummaryPage() {
                             <span className="text-[8px] font-black uppercase">Live Tracking</span>
                         </div>
                         <button 
-                            onClick={() => refetch()}
+                            onClick={() => {
+                    toast.loading('Refreshing page...', { duration: 1000 });
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 800);
+                  }}
                             className="p-2 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-slate-900 transition-all shadow-sm"
                         >
                             <RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />

@@ -409,7 +409,12 @@ const QualityIndicatorDashboard = () => {
                     </div>
 
                     <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <button onClick={() => refetch()} className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-all flex-1 sm:flex-none flex justify-center">
+                        <button onClick={() => {
+                    toast.loading('Refreshing page...', { duration: 1000 });
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 800);
+                  }} className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-all flex-1 sm:flex-none flex justify-center">
                             <RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />
                         </button>
 

@@ -55,7 +55,11 @@ export const AttendanceButton: React.FC<AttendanceButtonProps> = ({ userRole, cl
         body: JSON.stringify({})
       });
 
-      toast.success('Checked in successfully!');
+      if (data && data.warning) {
+        toast.success(`Checked in: ${data.warning}`, { duration: 5000 });
+      } else {
+        toast.success('Checked in successfully!');
+      }
       await fetchTodayStatus();
     } catch (error: any) {
       console.error('[Attendance] Check-in error:', error);
@@ -73,7 +77,11 @@ export const AttendanceButton: React.FC<AttendanceButtonProps> = ({ userRole, cl
         body: JSON.stringify({})
       });
 
-      toast.success('Checked out successfully!');
+      if (data && data.warning) {
+        toast.success(`Checked out: ${data.warning}`, { duration: 5000 });
+      } else {
+        toast.success('Checked out successfully!');
+      }
       await fetchTodayStatus();
     } catch (error: any) {
       console.error('[Attendance] Check-out error:', error);

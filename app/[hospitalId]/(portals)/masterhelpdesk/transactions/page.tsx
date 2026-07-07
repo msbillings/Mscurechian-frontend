@@ -454,7 +454,12 @@ export default function TransactionsPage() {
                             <Download size={16} />
                             <span>Export Excel</span>
                         </button>
-                        <button onClick={() => refetch()} className="p-3 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-teal-600 shadow-sm active:scale-95">
+                        <button onClick={() => {
+                    toast.loading('Refreshing page...', { duration: 1000 });
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 800);
+                  }} className="p-3 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-teal-600 shadow-sm active:scale-95">
                             <RefreshCw size={18} className={`${isFetching ? 'animate-spin' : ''}`} />
                         </button>
                     </div>

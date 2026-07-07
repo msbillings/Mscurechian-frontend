@@ -122,7 +122,12 @@ function DoctorsList() {
                         )}
                     </div>
                     <button
-                        onClick={() => refetch()}
+                        onClick={() => {
+                    toast.loading('Refreshing page...', { duration: 1000 });
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 800);
+                  }}
                         disabled={isFetching}
                         className="p-2 sm:p-2.5 bg-white border border-slate-200 text-slate-400 rounded-lg sm:rounded-xl hover:text-teal-600 shadow-sm disabled:opacity-50"
                         aria-label="Refresh doctors"

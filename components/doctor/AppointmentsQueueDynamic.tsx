@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Calendar, Clock, User, CheckCircle2, Loader2, Trash2 } from 'lucide-react';
 import { doctorService } from '@/lib/integrations/services/doctor.service';
@@ -59,7 +59,7 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTy
     return today.toISOString().split('T')[0];
   });
 
-  const fetchDoctorProfile = async () => {
+  const fetchDoctorProfile = useCallback(async () => {
     try {
       const profile = await doctorService.getProfile();
       if (profile && typeof profile.isOnline === 'boolean') {
@@ -68,7 +68,7 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTy
     } catch (err) {
       console.error('Failed to fetch doctor profile status:', err);
     }
-  };
+  }, []);
 
   const handleToggleQueue = async () => {
     const nextState = !showQueue;
@@ -96,9 +96,8 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTy
     }
   };
 
-
   // Fetch appointments
-  const fetchAppointments = async () => {
+  const fetchAppointments = useCallback(async () => {
     try {
       setLoading(true);
       const response: any = await doctorService.getDashboard();
@@ -109,7 +108,7 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTy
       if (response?.appointments) {
         console.log('[Queue] Setting appointments:', response.appointments);
         setAppointments(response.appointments || []);
-        setStats(response.stats || stats);
+        setStats(prev => response.stats || prev);
       } else {
         console.log('[Queue] No appointments found in response');
       }
@@ -119,19 +118,23 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTy
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Initial fetch
   useEffect(() => {
     fetchAppointments();
     fetchDoctorProfile();
-  }, []);
+  }, [fetchAppointments, fetchDoctorProfile]);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
     const interval = setInterval(fetchAppointments, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchAppointments]);
+
+  const todayObj = new Date();
+  todayObj.setMinutes(todayObj.getMinutes() - todayObj.getTimezoneOffset());
+  const todayStr = todayObj.toISOString().split('T')[0];
 
   // Filter: Show all appointments except completed, cancelled, and paused ones
   // Also show appointments with status "Booked", "confirmed", "scheduled", etc.
@@ -150,16 +153,17 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTy
     }
 
     // Filter by Date Range
-    if (startDateFilter || endDateFilter) {
-      const aptDateStr = apt.date ? new Date(apt.date).toISOString().split('T')[0] : '';
-      if (!aptDateStr) return false;
-      
-      let isValid = true;
-      if (startDateFilter && aptDateStr < startDateFilter) isValid = false;
-      if (endDateFilter && aptDateStr > endDateFilter) isValid = false;
-      
-      if (!isValid) return false;
-    }
+    const effectiveStart = startDateFilter || todayStr;
+    const effectiveEnd = endDateFilter || todayStr;
+    
+    const aptDateStr = apt.date ? new Date(apt.date).toISOString().split('T')[0] : '';
+    if (!aptDateStr) return false;
+    
+    let isValid = true;
+    if (effectiveStart && aptDateStr < effectiveStart) isValid = false;
+    if (effectiveEnd && aptDateStr > effectiveEnd) isValid = false;
+    
+    if (!isValid) return false;
     
     return !isExcluded;
   });
@@ -216,17 +220,16 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTy
 
   // Determine dynamic label inside the render so it can be used for the title
   let dynamicLabel = "Today's";
-  const todayObj = new Date();
-  todayObj.setMinutes(todayObj.getMinutes() - todayObj.getTimezoneOffset());
-  const todayStr = todayObj.toISOString().split('T')[0];
   
-  if (startDateFilter !== todayStr || endDateFilter !== todayStr) {
-      if (startDateFilter === endDateFilter && startDateFilter) {
-          dynamicLabel = startDateFilter.split('-').reverse().join('-');
-      } else if (startDateFilter && endDateFilter) {
-          dynamicLabel = `${startDateFilter.split('-').reverse().join('-')} TO ${endDateFilter.split('-').reverse().join('-')}`;
+  // If dates are cleared, default to today
+  const effectiveStart = startDateFilter || todayStr;
+  const effectiveEnd = endDateFilter || todayStr;
+
+  if (effectiveStart !== todayStr || effectiveEnd !== todayStr) {
+      if (effectiveStart === effectiveEnd) {
+          dynamicLabel = effectiveStart.split('-').reverse().join('-');
       } else {
-          dynamicLabel = "All Dates";
+          dynamicLabel = `${effectiveStart.split('-').reverse().join('-')} TO ${effectiveEnd.split('-').reverse().join('-')}`;
       }
   }
 
@@ -245,14 +248,13 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTy
         }
 
         // Filter by Date Range
-        if (startDateFilter || endDateFilter) {
-          const aptDateStr = apt.date ? new Date(apt.date).toISOString().split('T')[0] : '';
-          if (!aptDateStr) return false;
-          let isValid = true;
-          if (startDateFilter && aptDateStr < startDateFilter) isValid = false;
-          if (endDateFilter && aptDateStr > endDateFilter) isValid = false;
-          if (!isValid) return false;
-        }
+        const aptDateStr = apt.date ? new Date(apt.date).toISOString().split('T')[0] : '';
+        if (!aptDateStr) return false;
+        let isValid = true;
+        if (effectiveStart && aptDateStr < effectiveStart) isValid = false;
+        if (effectiveEnd && aptDateStr > effectiveEnd) isValid = false;
+        if (!isValid) return false;
+
         return true;
     });
 
@@ -289,8 +291,8 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTy
       <div className="p-4 sm:p-6 border-b border-border-theme dark:border-border-theme flex flex-col lg:flex-row lg:items-center justify-between gap-4 shrink-0 overflow-hidden">
         <div className="flex items-center justify-between w-full lg:w-auto">
           <div>
-            <h2 className="text-sm sm:text-base md:text-lg font-black text-foreground dark:text-foreground uppercase tracking-tight leading-tight">
-              {startDateFilter === todayStr && endDateFilter === todayStr ? "Schedule Today" : `Schedule: ${dynamicLabel}`}
+            <h2 className="text-xs sm:text-sm md:text-base font-black text-foreground dark:text-foreground uppercase tracking-tight leading-tight">
+              {effectiveStart === todayStr && effectiveEnd === todayStr ? "Schedule Today" : `Schedule: ${dynamicLabel}`}
             </h2>
             <p className="text-[9px] sm:text-[10px] text-muted mt-0.5 font-bold uppercase tracking-widest opacity-70">
               {showQueue ? (
@@ -358,13 +360,9 @@ function AppointmentsQueueDynamic({ onStatsChange, consultationDuration, visitTy
                 />
               </div>
 
-              {/* Action buttons inline */}
               <div className="flex items-center gap-2 ml-auto">
                 {(() => {
-                    const today = new Date();
-                    today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
-                    const todayStr = today.toISOString().split('T')[0];
-                    return (startDateFilter !== todayStr || endDateFilter !== todayStr);
+                    return (effectiveStart !== todayStr || effectiveEnd !== todayStr);
                 })() && (
                   <button 
                     onClick={() => {

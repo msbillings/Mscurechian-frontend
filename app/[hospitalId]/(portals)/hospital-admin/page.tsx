@@ -32,6 +32,7 @@ import {
   BellRing,
   Settings
 } from "lucide-react";
+import toast from "react-hot-toast";
 import { Card } from "@/components/admin";
 import LiveFeedbackWidget from './components/LiveFeedbackWidget';
 import { BrandingModal } from '@/components/hospital-admin/BrandingModal';
@@ -480,7 +481,12 @@ function HospitalAdminDashboard() {
             {/* Actions */}
             <div className="flex items-center gap-1.5 shrink-0">
                 <button
-                  onClick={() => refetch()}
+                  onClick={() => {
+                    toast.loading('Refreshing page...', { duration: 1000 });
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 800);
+                  }}
                   className="p-1.5 md:p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg shadow-sm transition-all group"
                   title="Refresh Dashboard"
                 >
@@ -708,7 +714,7 @@ function HospitalAdminDashboard() {
                         : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'
                         }`}
                     >
-                      Dr. {doctorName.startsWith('Dr.') ? doctorName.substring(3).split(' ')[0] : doctorName.split(' ')[0]}
+                      {doctorName.toLowerCase().startsWith('dr') ? doctorName : `Dr. ${doctorName}`}
                     </button>
                   );
                 })}
