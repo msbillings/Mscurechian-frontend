@@ -79,17 +79,11 @@ export default function GeofenceGuard({ children }: { children: React.ReactNode 
         if (distance <= settings.radiusMeters) {
           setStatus('allowed');
         } else {
-          setStatus('denied');
-          setErrorMessage(`You are ${Math.round(distance)} meters away. You must be within ${settings.radiusMeters} meters of the hospital to access this portal.`);
+          setStatus('allowed'); // Do not restrict the portal even if far
         }
       },
       (error) => {
-        setStatus('error');
-        if (error.code === error.PERMISSION_DENIED) {
-          setErrorMessage('Location access was denied. You must allow location access to use this portal.');
-        } else {
-          setErrorMessage('Unable to retrieve your location.');
-        }
+        setStatus('allowed'); // Do not restrict the portal on error
       },
       {
         enableHighAccuracy: true,

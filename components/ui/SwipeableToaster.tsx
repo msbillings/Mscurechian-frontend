@@ -18,14 +18,21 @@ const SwipeableToaster = () => {
         toasts.forEach((t) => {
             if (t.visible && !processedToasts.current.has(t.id)) {
                 processedToasts.current.add(t.id);
-                // Play notification sound
+                // Play notification sound safely
                 try {
                     const soundFile = t.type === 'error' ? '/assets/emergency.mp3' : '/assets/nurse.mp3';
-                    const audio = new Audio(soundFile);
+                    // Append query param to potentially bypass service worker cache issues (ERR_CACHE_OPERATION_NOT_SUPPORTED) on 206 Partial Content
+                    const audio = new Audio(soundFile + "?cb=" + Date.now());
                     audio.volume = 0.5; // Set volume to 50% so it's not too loud
-                    audio.play().catch((e) => console.log('Audio play blocked by browser:', e));
+                    
+                    const playPromise = audio.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(() => {
+                            // Silently ignore autoplay restrictions instead of logging
+                        });
+                    }
                 } catch (error) {
-                    console.error('Failed to play notification sound', error);
+                    // completely silent
                 }
             }
         });

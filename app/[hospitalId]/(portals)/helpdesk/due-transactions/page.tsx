@@ -27,6 +27,20 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import MainHeader from '@/components/printers/MainHeader';
 import MainFooter from '@/components/printers/MainFooter';
 
+export const formatPaymentMode = (tx: any) => {
+    const mode = (tx.paymentMethod || tx.paymentMode || 'CASH').toUpperCase();
+    if (mode === 'MIXED' && tx.paymentDetails) {
+        const details = [];
+        if (tx.paymentDetails.cash) details.push(`Cash: ₹${tx.paymentDetails.cash}`);
+        if (tx.paymentDetails.card) details.push(`Card: ₹${tx.paymentDetails.card}`);
+        if (tx.paymentDetails.upi) details.push(`UPI: ₹${tx.paymentDetails.upi}`);
+        if (details.length > 0) {
+            return `MIXED (${details.join(', ')})`;
+        }
+    }
+    return mode;
+};
+
 export default function TransactionsPage() {
     const [exporting, setExporting] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -920,7 +934,7 @@ export default function TransactionsPage() {
                                             <td className="px-6 py-4 text-center">
                                                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-slate-200 shadow-sm">
                                                     <CreditCard size={12} className="text-slate-400" />
-                                                    {tx.paymentMethod || tx.paymentMode || 'CASH'}
+                                                    {formatPaymentMode(tx)}
                                                 </div>
                                             </td>
                                             {/* PRINT BUTTON COLUMN */}

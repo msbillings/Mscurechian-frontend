@@ -3340,28 +3340,117 @@ export const generateAddBillsReceiptHtml = (data: any) => {
       </div>
 
       <div class="header-wrapper">
-        <div class="hospital-header">
-          ${hospital?.logo ? `<img src="${hospital.logo}" alt="Logo" style="max-height: 85px; width: auto; object-fit: contain;" />` : ""}
-          <div style="flex: 1; text-align: left;">
-            <h1 class="hospital-name">${hospital?.name || "Hospital Name"}</h1>
-            <p class="hospital-info">${hospital?.address || ""}</p>
-            <p class="hospital-info">${hospital?.contact ? `Phone: ${hospital.contact}` : ""} ${hospital?.email ? ` | Email: ${hospital.email}` : ""}</p>
-          </div>
+        <div style="position: relative; width: 100%;" class="main-header-print-container">
+            <div style="width: 100%; background-color: #ffffff; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin-bottom: 12px; padding: 0; box-sizing: border-box;">
+                <div style="display: flex; align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: 20px; padding: 8px 0; width: 100%; box-sizing: border-box;">
+                    <!-- Logo Section -->
+                    <div style="flex: 0 0 auto; padding-right: 15px;">
+                        ${hospital?.logo ? `
+                            <img src="${hospital.logo}" alt="Hospital Logo" style="width: 100px; height: 100px; object-fit: contain;" />
+                        ` : `
+                            <div style="width: 90px; height: 90px; border: 1.5px solid #1e3a8a; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #1e3a8a; font-size: 10px; font-weight: bold; text-transform: uppercase;">LOGO</div>
+                        `}
+                    </div>
+
+                    <!-- Vertical Divider Line -->
+                    <div style="width: 2px; height: 70px; background-color: #1e3a8a; opacity: 0.1; display: block;"></div>
+
+                    <!-- Details Section -->
+                    <div style="flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding-left: 5px;">
+                        <h1 style="margin: 0; font-weight: 900; color: #1e3a8a; line-height: 1.1; font-size: 32px; text-transform: uppercase; letter-spacing: -0.5px;">
+                            ${hospital?.name || 'Hospital Name'}
+                        </h1>
+                        
+                        ${hospital?.email && hospital.email !== 'N/A' && hospital.email !== 'Email Address' ? `
+                            <div style="display: flex; align-items: center; gap: 6px; color: #1e40af; font-size: 12px; font-weight: 700; margin-top: 2px;">
+                                <div style="width: 12px; height: 12px; background-color: #1e3a8a; border-radius: 2px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                                </div>
+                                <span>${hospital.email}</span>
+                            </div>
+                        ` : ''}
+
+                        <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 11px; color: #475569; font-weight: 600; margin-top: 2px; width: 100%;">
+                            ${hospital?.address && hospital.address !== 'N/A' && hospital.address !== 'Hospital Address' ? `
+                                <span style="color: #64748b;">${hospital.address}</span>
+                            ` : ''}
+
+                            ${hospital?.phone && hospital.phone !== 'N/A' && hospital.phone !== 'Phone Number' ? `
+                                <div style="display: flex; align-items: center; gap: 6px; margin-left: ${hospital?.address ? '8px' : '0'};">
+                                    <div style="width: 16px; height: 16px; background-color: #22c55e; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                    </div>
+                                    <span style="color: #16a34a; font-weight: 800;">${hospital.phone}</span>
+                                </div>
+                            ` : ''}
+
+                            ${hospital?.gstNumber && hospital.gstNumber !== 'N/A' ? `
+                                <div style="display: flex; align-items: center; gap: 6px; margin-left: ${(hospital?.address || hospital?.phone) ? '8px' : '0'};">
+                                    <span style="color: #1e3a8a; font-weight: 900; font-size: 11px;">
+                                        GST No: ${hospital.gstNumber}
+                                    </span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Accent line -->
+                <div style="width: 100%; height: 4px; background-color: #10b981; margin-top: 10px; border-radius: 2px;"></div>
+            </div>
         </div>
       </div>
 
       <div class="footer-wrapper">
-        <div class="footer">
-          <div style="flex: 1;">
-            <p style="margin: 0; font-weight: 700;">PREPARED BY: ${preparedBy || "System Administrator"}</p>
-            <p style="margin: 4px 0 0 0;">This is a computer-generated document and does not require a physical signature.</p>
-            <p style="margin: 2px 0 0 0;">Print Date: ${new Date().toLocaleDateString("en-GB")} at ${new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}</p>
-          </div>
-          <div class="signatory-box">
-            <div class="sign-line"></div>
-            <div class="authorized-text">Authorized Signatory</div>
-            <div style="font-size: 8px; font-weight: 600; color: #64748b; margin-top: 2px;">${(hospital?.name || "Hospital Name").toUpperCase()}</div>
-          </div>
+        <div style="width: 100%; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin-top: 20px; padding: 0;">
+            <!-- Contact Large Blocks -->
+            <div style="display: flex; flex-wrap: wrap; align-items: stretch; min-height: 40px; margin-bottom: 15px; gap: 8px; width: 100%;">
+                ${hospital?.phone && hospital.phone !== 'N/A' && hospital.phone !== 'Phone Number' ? `
+                    <div style="flex: 1; background: #22c55e; color: #ffffff; display: flex; align-items: center; justify-content: flex-start; padding: 10px 20px; border-radius: 8px; font-weight: 900; font-size: 14px; letter-spacing: 0.5px;">
+                        <div style="margin-right: 10px; display: flex; align-items: center;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                        </div>
+                        ${hospital.phone}
+                    </div>
+                ` : ''}
+
+                ${hospital?.email && hospital.email !== 'N/A' && hospital.email !== 'Email Address' ? `
+                    <div style="flex: 1; background: #3b82f6; color: #ffffff; display: flex; align-items: center; justify-content: flex-start; padding: 10px 20px; border-radius: 8px; font-weight: 900; font-size: 14px; letter-spacing: 0.5px;">
+                        <div style="margin-right: 10px; display: flex; align-items: center;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                        </div>
+                        ${hospital.email}
+                    </div>
+                ` : ''}
+            </div>
+
+            <!-- Instructions & Address Grid -->
+            <div style="display: flex; flex-direction: row; justify-content: space-between; align-items: flex-start; width: 100%; gap: 40px; margin-top: 10px;">
+                <!-- Left: Signature Box -->
+                <div style="flex: 1 1 auto; min-width: 0; display: flex; align-items: flex-end;">
+                  <div class="signatory-box" style="text-align: left;">
+                    <div class="sign-line" style="width: 180px; border-bottom: 1px solid #1e293b; margin-bottom: 8px;"></div>
+                    <div class="authorized-text" style="font-weight: 800; text-transform: uppercase; font-size: 9px; color: #1e293b;">Authorized Signatory</div>
+                    <div style="font-size: 8px; font-weight: 600; color: #64748b; margin-top: 2px;">${(hospital?.name || "Hospital Name").toUpperCase()}</div>
+                  </div>
+                </div>
+
+                <!-- Right: Address -->
+                <div style="flex: 0 0 250px; text-align: left; min-width: 0;">
+                    <p style="margin: 0; font-size: 10px; font-weight: 800; color: #0f172a; text-transform: uppercase; line-height: 1.4; max-width: none; word-break: break-word;">
+                        ${hospital?.address || ''}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Footer Disclaimer -->
+            <div style="text-align: center; font-size: 9px; color: #64748b; margin-top: 25px; padding-top: 10px; border-top: 1.5px solid #f1f5f9; font-weight: 600;">
+                <p style="margin: 0 0 2px 0;">PREPARED BY: ${preparedBy || "System Administrator"}</p>
+                <p style="margin: 0 0 2px 0;">This is a computer generated document and does not require a physical signature.</p>
+                <p style="margin: 0;">Print Date: ${new Date().toLocaleDateString("en-GB")} at ${new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}</p>
+            </div>
+            
+            <div style="height: 10px;"></div>
         </div>
       </div>
 

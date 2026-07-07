@@ -28,6 +28,39 @@ import MainHeader from '@/components/printers/MainHeader';
 import MainFooter from '@/components/printers/MainFooter';
 import EditTransactionModal from './EditTransactionModal';
 
+export const formatPaymentMode = (tx: any) => {
+    const mode = (tx.paymentMethod || tx.paymentMode || 'CASH').toUpperCase();
+    if (mode === 'MIXED') {
+        const details = [];
+        // Search deeply for payment details
+        const detailsObj = tx.paymentDetails || 
+                          tx.payment?.paymentDetails || 
+                          tx.referenceId?.paymentDetails || 
+                          tx.referenceId?.payment?.paymentDetails || 
+                          {};
+
+        const cash = Number(detailsObj.cash) || 0;
+        const card = Number(detailsObj.card) || 0;
+        const upi = Number(detailsObj.upi) || 0;
+        
+        if (cash > 0) details.push(`Cash: ₹${cash}`);
+        if (card > 0) details.push(`Card: ₹${card}`);
+        if (upi > 0) details.push(`UPI: ₹${upi}`);
+        
+        const totalAmount = Number(tx.payment?.amount || tx.amount || 0);
+        const paidAmount = cash + card + upi;
+        const remaining = totalAmount - paidAmount;
+        
+        if (remaining > 0) {
+            details.push(`Remaining: ₹${remaining}`);
+        }
+        
+        if (details.length > 0) {
+            return `MIXED (${details.join(', ')})`;
+        }
+    }
+    return mode;
+};
 export default function TransactionsPage() {
     const [exporting, setExporting] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -722,7 +755,7 @@ export default function TransactionsPage() {
             <div class="info-item"><div class="label">Patient Name</div><div class="value">${patientName}</div></div>
             <div class="info-item"><div class="label">Reference / ID</div><div class="value" style="font-family:monospace;font-size:11px;">${tx.transactionId || tx.receiptNumber || apptData.transactionId || apptData.admissionId || apptData.appointmentId || '—'}</div></div>
             <div class="info-item"><div class="label">Date & Time</div><div class="value">${formattedDate}</div></div>
-            <div class="info-item"><div class="label">Payment Mode</div><div class="value"><span class="mode-badge">${tx.paymentMethod || tx.paymentMode || 'Cash'}</span></div></div>
+            <div class="info-item"><div class="label">Payment Mode</div><div class="value"><span class="mode-badge">${formatPaymentMode(tx)}</span></div></div>
             ${apptData.admissionId ? `<div class="info-item"><div class="label">Admission ID</div><div class="value">${apptData.admissionId}</div></div>` : ''}
             ${apptData.primaryDoctor && !/^[a-f0-9]{24}$/i.test(apptData.primaryDoctor) ? `<div class="info-item"><div class="label">Doctor Name</div><div class="value">Dr. ${apptData.primaryDoctor.replace(/^Dr\.\s*/i, '')}</div></div>` : ''}
         </div>
@@ -1255,7 +1288,7 @@ export default function TransactionsPage() {
                                                 <div className="flex flex-col items-center gap-1">
                                                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-slate-200 shadow-sm">
                                                         <CreditCard size={12} className="text-slate-400" />
-                                                        {tx.paymentMethod || tx.paymentMode || 'CASH'}
+                                                        {formatPaymentMode(tx)}
                                                     </div>
                                                     {tx.isEdited && (
                                                         <div className="text-[9px] font-bold text-amber-500 uppercase tracking-widest flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded border border-amber-100">

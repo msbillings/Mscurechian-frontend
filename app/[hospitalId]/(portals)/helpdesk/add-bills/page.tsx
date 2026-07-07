@@ -14,6 +14,7 @@ import { apiClient } from '@/lib/integrations/api/apiClient';
 import toast from 'react-hot-toast';
 import { generateAddBillsReceiptHtml, computeAgeFromDob } from '@/lib/print-utils';
 import { useAuthStore } from '@/stores/authStore';
+import { usePrintStore } from '@/stores/printStore';
 import type { LabTest } from '@/lib/integrations/services/lab.service';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -78,6 +79,46 @@ export default function AddBillsPage() {
     const [submitting, setSubmitting] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'upi' | 'mixed' | 'due'>('cash');
     const [mixedDetails, setMixedDetails] = useState({ cash: 0, card: 0, upi: 0 });
+
+    // ── Print Preview ──
+    const [showPrintModal, setShowPrintModal] = useState(false);
+    const { printWithHeader, setPrintWithHeader } = usePrintStore();
+    const [previewHtml, setPreviewHtml] = useState("");
+
+    // ── Local Storage Persistence ──
+    const STORAGE_KEY = 'add-bills-form-state';
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (parsed.selectedPatient) setSelectedPatient(parsed.selectedPatient);
+                if (parsed.patientSearch) setPatientSearch(parsed.patientSearch);
+                if (parsed.billItems) setBillItems(parsed.billItems);
+                if (parsed.activeAdmission) setActiveAdmission(parsed.activeAdmission);
+                if (parsed.paymentMethod) setPaymentMethod(parsed.paymentMethod);
+                if (parsed.mixedDetails) setMixedDetails(parsed.mixedDetails);
+            }
+        } catch (e) {
+            console.error('Failed to load form state', e);
+        }
+    }, []);
+
+    useEffect(() => {
+        try {
+            const stateToSave = {
+                selectedPatient,
+                patientSearch,
+                billItems,
+                activeAdmission,
+                paymentMethod,
+                mixedDetails
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+        } catch (e) {
+            console.error('Failed to save form state', e);
+        }
+    }, [selectedPatient, patientSearch, billItems, activeAdmission, paymentMethod, mixedDetails]);
 
     // ── Load Lab Tests ──
     useEffect(() => {
@@ -364,7 +405,7 @@ export default function AddBillsPage() {
 
                 try {
                     const totalLabAmount = effectiveLabItems.reduce((sum, i) => sum + i.amount, 0);
-                    
+
                     const labRatio = totalAmount > 0 ? totalLabAmount / totalAmount : 1;
                     const labMixed = {
                         cash: Math.round((mixedDetails.cash || 0) * labRatio),
@@ -389,7 +430,7 @@ export default function AddBillsPage() {
                             paymentMode: paymentMethod,
                             paidAmount: paymentMethod === 'due' ? 0 : totalLabAmount,
                             balance: paymentMethod === 'due' ? totalLabAmount : 0,
-                            mixedDetails: paymentMethod === 'mixed' ? labMixed : undefined,
+                            paymentDetails: paymentMethod === 'mixed' ? labMixed : undefined,
                             admissionId: activeAdmission?._id,
                             notes: `Bill created from Front Desk on ${new Date().toLocaleDateString()}`,
                         }),
@@ -497,15 +538,34 @@ export default function AddBillsPage() {
             setSubmitting(false);
         }
     };
+    const handleClearForm = () => {
+        setSelectedPatient(null);
+        setPatientSearch('');
+        setBillItems([]);
+        setActiveAdmission(null);
+        setPaymentMethod('cash');
+        setMixedDetails({ cash: 0, card: 0, upi: 0 });
+    };
 
-    const handlePrint = () => {
+    const handlePrint = async () => {
         if (!selectedPatient || billItems.length === 0) return;
 
         try {
-            const hospital = useAuthStore.getState().user?.hospital;
+            // Fetch actual hospital details for the main header/footer
+            let hospitalData = useAuthStore.getState().user?.hospital as any;
+
+            try {
+                const { hospitalAdminService } = await import('@/lib/integrations/services/hospitalAdmin.service');
+                const response = await hospitalAdminService.getHospital();
+                if (response?.hospital) {
+                    hospitalData = response.hospital;
+                }
+            } catch (err) {
+                console.error("Failed to fetch full hospital details for print", err);
+            }
 
             const htmlContent = generateAddBillsReceiptHtml({
-                hospital,
+                hospital: hospitalData,
                 patient: {
                     name: selectedPatient.name,
                     mrn: selectedPatient.mrn,
@@ -523,19 +583,20 @@ export default function AddBillsPage() {
                 preparedBy: useAuthStore.getState().user?.name || "System Administrator"
             });
 
-            const printWindow = window.open('', '_blank');
-            if (printWindow) {
-                printWindow.document.open();
-                printWindow.document.write(htmlContent);
-                printWindow.document.close();
-            } else {
-                toast.error("Please allow popups to print receipts");
-            }
+            setPreviewHtml(htmlContent);
+            setShowPrintModal(true);
         } catch (error: any) {
             console.error("Print Error:", error);
             toast.error("Failed to generate receipt: " + error.message);
         }
     };
+
+    // Update preview if toggle changes while modal is open
+    useEffect(() => {
+        if (showPrintModal) {
+            handlePrint();
+        }
+    }, [printWithHeader]);
 
     // ── IPD Charge Categories ──
     const staticIpdCategories = [
@@ -643,6 +704,11 @@ export default function AddBillsPage() {
                     padding: 24px;
                     font-family: 'Inter', -apple-system, sans-serif;
                 }
+                @media (max-width: 768px) {
+                    .add-bills-page {
+                        padding: 0px;
+                    }
+                }
                 .page-header {
                     display: flex;
                     align-items: center;
@@ -723,6 +789,10 @@ export default function AddBillsPage() {
                     letter-spacing: 0.06em;
                 }
                 .card-body { padding: 24px; }
+                @media (max-width: 768px) {
+                    .card-body { padding: 12px; }
+                    .page-header { padding: 12px 12px 0 12px; margin-bottom: 16px; }
+                }
 
                 /* ── Patient Search ── */
                 .search-container { position: relative; }
@@ -1170,17 +1240,17 @@ export default function AddBillsPage() {
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    gap: 10px;
+                    gap: 6px;
                     width: 100%;
-                    padding: 14px;
-                    border-radius: 14px;
+                    padding: 6px 12px;
+                    border-radius: 8px;
                     border: none;
                     background: linear-gradient(135deg, #059669, #047857);
                     color: white;
-                    font-size: 0.82rem;
-                    font-weight: 800;
+                    font-size: 0.75rem;
+                    font-weight: 700;
                     text-transform: uppercase;
-                    letter-spacing: 0.08em;
+                    letter-spacing: 0.05em;
                     cursor: pointer;
                     transition: all 0.25s;
                 }
@@ -1953,15 +2023,15 @@ export default function AddBillsPage() {
                                             <div style={{ marginTop: 12, padding: 12, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
                                                 <div>
                                                     <label style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 4 }}>Cash (₹)</label>
-                                                    <input type="number" min="0" value={mixedDetails.cash || ''} onChange={e => setMixedDetails(prev => ({...prev, cash: Number(e.target.value)}))} style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.8rem', outline: 'none' }} />
+                                                    <input type="number" min="0" value={mixedDetails.cash || ''} onChange={e => setMixedDetails(prev => ({ ...prev, cash: Number(e.target.value) }))} style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.8rem', outline: 'none' }} />
                                                 </div>
                                                 <div>
                                                     <label style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 4 }}>Card (₹)</label>
-                                                    <input type="number" min="0" value={mixedDetails.card || ''} onChange={e => setMixedDetails(prev => ({...prev, card: Number(e.target.value)}))} style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.8rem', outline: 'none' }} />
+                                                    <input type="number" min="0" value={mixedDetails.card || ''} onChange={e => setMixedDetails(prev => ({ ...prev, card: Number(e.target.value) }))} style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.8rem', outline: 'none' }} />
                                                 </div>
                                                 <div>
                                                     <label style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 4 }}>UPI (₹)</label>
-                                                    <input type="number" min="0" value={mixedDetails.upi || ''} onChange={e => setMixedDetails(prev => ({...prev, upi: Number(e.target.value)}))} style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.8rem', outline: 'none' }} />
+                                                    <input type="number" min="0" value={mixedDetails.upi || ''} onChange={e => setMixedDetails(prev => ({ ...prev, upi: Number(e.target.value) }))} style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: '0.8rem', outline: 'none' }} />
                                                 </div>
                                                 <div style={{ gridColumn: '1 / -1', fontSize: '0.75rem', fontWeight: 700, color: (mixedDetails.cash + mixedDetails.card + mixedDetails.upi) === Math.round(totalAmount) ? '#10b981' : '#ef4444', textAlign: 'right', marginTop: 4 }}>
                                                     Total: ₹{mixedDetails.cash + mixedDetails.card + mixedDetails.upi} / ₹{Math.round(totalAmount)}
@@ -1976,7 +2046,22 @@ export default function AddBillsPage() {
                                     </div>
 
                                     {/* Actions */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 12, marginTop: 24 }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 8, marginTop: 16 }}>
+                                        <button
+                                            onClick={handleClearForm}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: 4,
+                                                padding: '6px 12px', borderRadius: 8,
+                                                background: 'white', color: '#ef4444',
+                                                border: '1px solid #fecaca', fontWeight: 600, fontSize: '0.75rem',
+                                                cursor: 'pointer', transition: 'all 0.2s'
+                                            }}
+                                            onMouseEnter={e => e.currentTarget.style.borderColor = '#ef4444'}
+                                            onMouseLeave={e => e.currentTarget.style.borderColor = '#fecaca'}
+                                        >
+                                            <Trash2 size={14} />
+                                            Clear Form
+                                        </button>
                                         <button
                                             className="submit-btn"
                                             onClick={handleSubmitBill}
@@ -1985,12 +2070,12 @@ export default function AddBillsPage() {
                                         >
                                             {submitting ? (
                                                 <>
-                                                    <Loader2 size={18} className="animate-spin" />
+                                                    <Loader2 size={14} className="animate-spin" />
                                                     Processing...
                                                 </>
                                             ) : (
                                                 <>
-                                                    <CheckCircle2 size={18} />
+                                                    <CheckCircle2 size={14} />
                                                     Submit Bill · ₹{Math.round(totalAmount).toLocaleString()}
                                                 </>
                                             )}
@@ -1999,10 +2084,10 @@ export default function AddBillsPage() {
                                             onClick={handlePrint}
                                             disabled={billItems.length === 0 || !selectedPatient}
                                             style={{
-                                                display: 'flex', alignItems: 'center', gap: 8,
-                                                padding: '0 20px', borderRadius: 14,
+                                                display: 'flex', alignItems: 'center', gap: 4,
+                                                padding: '6px 12px', borderRadius: 8,
                                                 background: 'white', color: '#0f172a',
-                                                border: '2px solid #e2e8f0', fontWeight: 700, fontSize: '0.9rem',
+                                                border: '1px solid #e2e8f0', fontWeight: 600, fontSize: '0.75rem',
                                                 cursor: (billItems.length === 0 || !selectedPatient) ? 'not-allowed' : 'pointer',
                                                 opacity: (billItems.length === 0 || !selectedPatient) ? 0.5 : 1,
                                                 transition: 'all 0.2s'
@@ -2010,7 +2095,7 @@ export default function AddBillsPage() {
                                             onMouseEnter={e => { if (billItems.length > 0 && selectedPatient) (e.currentTarget.style.borderColor = '#cbd5e1') }}
                                             onMouseLeave={e => { if (billItems.length > 0 && selectedPatient) (e.currentTarget.style.borderColor = '#e2e8f0') }}
                                         >
-                                            <Printer size={18} />
+                                            <Printer size={14} />
                                             Print
                                         </button>
                                     </div>
@@ -2020,6 +2105,120 @@ export default function AddBillsPage() {
                     </div>
                 </div>
             </div>
+
+            {/* ── PRINT PREVIEW MODAL ── */}
+            <AnimatePresence>
+                {showPrintModal && (
+                    <motion.div
+                        className="modal-overlay"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+                    >
+                        <motion.div
+                            className="modal-content"
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            style={{ background: '#f8fafc', width: '100%', maxWidth: 900, height: '90vh', borderRadius: 16, display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}
+                        >
+                            {/* Modal Header */}
+                            <div style={{ padding: '16px 24px', background: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                    <div style={{ background: '#e0e7ff', color: '#4f46e5', padding: 8, borderRadius: 8 }}>
+                                        <Printer size={20} />
+                                    </div>
+                                    <div>
+                                        <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>Print Preview</h2>
+                                        <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>Review bill details before printing</p>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                    {/* Toggle Header/Footer */}
+                                    <button
+                                        onClick={() => setPrintWithHeader(!printWithHeader)}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: 8,
+                                            padding: '8px 16px', borderRadius: 8,
+                                            background: printWithHeader ? '#e0e7ff' : '#f1f5f9',
+                                            color: printWithHeader ? '#4f46e5' : '#64748b',
+                                            border: `1px solid ${printWithHeader ? '#c7d2fe' : '#e2e8f0'}`,
+                                            fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        <div style={{ width: 32, height: 18, background: printWithHeader ? '#4f46e5' : '#cbd5e1', borderRadius: 10, position: 'relative', transition: 'all 0.2s' }}>
+                                            <div style={{ width: 14, height: 14, background: 'white', borderRadius: '50%', position: 'absolute', top: 1, left: printWithHeader ? 15 : 1, transition: 'all 0.2s' }} />
+                                        </div>
+                                        Header & Footer
+                                    </button>
+
+                                    <button onClick={() => setShowPrintModal(false)} style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', padding: 4 }}>
+                                        <X size={24} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Modal Body (Iframe) */}
+                            <div style={{ flex: 1, padding: 0, background: '#f1f5f9', overflow: 'hidden', display: 'flex', justifyContent: 'center', position: 'relative' }}>
+                                <iframe
+                                    srcDoc={previewHtml
+                                        .replace('<body onload="window.print();">', `
+                                            <body style="margin:0; background:#f1f5f9; overflow:hidden; display:flex; justify-content:center; align-items:center;">
+                                            <style>
+                                                .no-print { display: none !important; }
+                                                ::-webkit-scrollbar { display: none; }
+                                            </style>
+                                            <div id="print-wrapper" style="width:794px; height:1123px; background:white; transform-origin:center; box-shadow:0 10px 25px -5px rgba(0,0,0,0.1); position:relative; overflow:hidden;">
+                                        `)
+                                        .replace('</body>', `
+                                            </div>
+                                            <script>
+                                                function setScale() {
+                                                    var scale = Math.min((window.innerWidth - 40) / 794, (window.innerHeight - 40) / 1123);
+                                                    if(scale > 1) scale = 1;
+                                                    document.getElementById('print-wrapper').style.transform = 'scale(' + scale + ')';
+                                                }
+                                                window.addEventListener('resize', setScale);
+                                                setTimeout(setScale, 10);
+                                            </script>
+                                            </body>
+                                        `)
+                                    }
+                                    style={{ width: '100%', height: '100%', border: 'none' }}
+                                    scrolling="no"
+                                    title="Print Preview"
+                                />
+                            </div>
+
+                            {/* Modal Footer */}
+                            <div style={{ padding: '16px 24px', background: 'white', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+                                <button
+                                    onClick={() => setShowPrintModal(false)}
+                                    style={{ padding: '10px 20px', borderRadius: 10, background: 'white', color: '#475569', border: '1px solid #cbd5e1', fontWeight: 600, cursor: 'pointer' }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        const printWindow = window.open('', '_blank');
+                                        if (printWindow) {
+                                            printWindow.document.open();
+                                            printWindow.document.write(previewHtml);
+                                            printWindow.document.close();
+                                            setShowPrintModal(false);
+                                        }
+                                    }}
+                                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 24px', borderRadius: 10, background: '#0f172a', color: 'white', border: 'none', fontWeight: 600, cursor: 'pointer' }}
+                                >
+                                    <Printer size={18} />
+                                    Print Receipt
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
