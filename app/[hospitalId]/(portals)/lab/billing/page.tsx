@@ -592,7 +592,7 @@ function LabBillingPage() {
             </div>
 
             {/* Mode banners */}
-            {billingMode === 'inpatient' && (
+            {billingMode === 'ipd' && (
                 <div className="flex items-center gap-3 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/40 rounded-xl">
                     <Stethoscope size={16} className="text-blue-600 dark:text-blue-400 flex-shrink-0" />
                     <p className="text-xs font-medium text-blue-700 dark:text-blue-300">
@@ -614,20 +614,20 @@ function LabBillingPage() {
                     {/* Patient / Inpatient Details Card — shown for walkin and inpatient modes */}
                     {(billingMode === 'opd' || billingMode === 'ipd') ? (
                     <div className={`bg-white dark:bg-gray-800 p-4 lg:p-6 rounded-2xl border shadow-sm ${
-                        billingMode === 'inpatient'
+                        billingMode === 'ipd'
                             ? 'border-blue-200 dark:border-blue-800/40'
                             : 'border-gray-200 dark:border-gray-700'
                     }`}>
                         <div className={`flex items-center gap-2 mb-4 lg:mb-6 border-b pb-3 lg:pb-4 ${
-                            billingMode === 'inpatient'
+                            billingMode === 'ipd'
                                 ? 'border-blue-100 dark:border-blue-800/30'
                                 : 'border-gray-100 dark:border-gray-700'
                         }`}>
                             <span className={`w-1 h-5 rounded-full ${
-                                billingMode === 'inpatient' ? 'bg-blue-600' : 'bg-indigo-600'
+                                billingMode === 'ipd' ? 'bg-blue-600' : 'bg-indigo-600'
                             }`} />
                             <h3 className="text-base font-semibold text-gray-900 dark:text-white">Patient Information</h3>
-                            {billingMode === 'inpatient' && (
+                            {billingMode === 'ipd' && (
                                 <span className="ml-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50">
                                     IPD
                                 </span>

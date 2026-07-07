@@ -1,4 +1,4 @@
-﻿export interface PatientProfile {
+export interface PatientProfile {
     _id: string;
     user: {
         _id: string;
@@ -41,4 +41,5 @@ export interface UpdatePatientProfileRequest {
     weight?: string;
     maritalStatus?: 'Single' | 'Married' | 'Divorced' | 'Widowed';
     bloodGroup?: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-';
+    bio?: string;
 }

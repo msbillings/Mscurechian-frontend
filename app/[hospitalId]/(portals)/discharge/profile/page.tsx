@@ -58,7 +58,8 @@ const DischargeProfile = () => {
             degreeCertificate: { url: '', publicId: '' },
             nursingCouncilRegistration: { url: '', publicId: '' },
             internshipCertificate: { url: '', publicId: '' }
-        }
+        },
+        bio: ''
     });
 
     // File Name State for UI Feedback

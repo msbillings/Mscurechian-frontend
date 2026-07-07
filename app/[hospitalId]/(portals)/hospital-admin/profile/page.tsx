@@ -23,7 +23,8 @@ import {
   MapPin,
   Globe,
   Activity,
-  Upload
+  Upload,
+  X
 } from "lucide-react";
 import ImageCropper from '@/components/ui/ImageCropper';
 import SupportBadgeToggle from "@/components/common/SupportBadgeToggle";

@@ -80,14 +80,14 @@ const BillPrintView: React.FC<BillPrintViewProps> = ({ billData, invoiceId, date
                             <span className="font-semibold text-black">Invoice ID:</span>
                             <span>{(() => {
                                 if (!invoiceId) {
-                                    return `${effectiveType === 'lab' ? 'L2L' : effectiveType === 'inpatient' ? 'IPD' : 'WLK'}-PREVIEW`;
+                                    return `${effectiveType === 'lab' ? 'L2L' : effectiveType === 'ipd' ? 'IPD' : 'WLK'}-PREVIEW`;
                                 }
                                 let cleanId = invoiceId;
                                 if (invoiceId.startsWith('REC')) cleanId = invoiceId.slice(3);
                                 if (invoiceId.startsWith('OPD-')) cleanId = invoiceId.slice(4);
                                 if (invoiceId.length >= 24) cleanId = invoiceId.slice(-6).toUpperCase();
                                 
-                                if (effectiveType === 'inpatient') return `IPD-${cleanId}`;
+                                if (effectiveType === 'ipd') return `IPD-${cleanId}`;
                                 if (effectiveType === 'lab') return `L2L-${cleanId}`;
                                 return `WLK-${cleanId}`;
                             })()}</span>
