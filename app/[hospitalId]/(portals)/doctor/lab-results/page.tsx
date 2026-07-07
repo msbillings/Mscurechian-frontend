@@ -443,194 +443,192 @@ export default function DoctorLabResultsPage() {
     return (
         <div className="min-h-screen space-y-3 pt-1 pb-16">
 
-            {/* ── Header Card ── */}
-            <div className="bg-card rounded-xl border border-border-theme p-3 sm:p-4 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-primary-theme/5 rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none" />
+            {/* Dynamic Header */}
+            <div className="flex flex-col gap-3 bg-white dark:bg-[#111] py-3 px-3 md:py-3 md:px-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm shrink-0 mx-1 sm:mx-0 relative z-20">
+                <div className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none" />
+                </div>
 
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative">
-                    {/* Title */}
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                            <FlaskConical className="w-5 h-5 text-white" />
+                {/* Top Row: Title, Action Button, Pagination */}
+                <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 w-full relative z-10">
+                    <div className="flex items-center gap-3 shrink-0">
+                        <div className="p-1.5 md:p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-600 dark:text-blue-400">
+                            <FlaskConical className="w-4 h-4 md:w-5 md:h-5" />
                         </div>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <h1 className="text-base font-black text-foreground uppercase tracking-tight">Lab Results</h1>
+                        <div className="flex flex-col justify-center">
+                            <h1 className="text-sm md:text-base font-bold text-gray-900 dark:text-white tracking-tight leading-none uppercase flex items-center gap-2">
+                                Lab Results
                                 <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${socketConnected ? 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/20' : 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-900/20'}`}>
                                     <div className={`w-1.5 h-1.5 rounded-full ${socketConnected ? 'bg-blue-500 animate-pulse' : 'bg-rose-500'}`} />
                                     {socketConnected ? 'Live' : 'Offline'}
                                 </div>
-                            </div>
-                            <p className="text-[9px] font-bold text-muted uppercase tracking-widest opacity-50">
-                                {filteredResults.length} result{filteredResults.length !== 1 ? 's' : ''} · Page {currentPage}/{totalPages}
+                            </h1>
+                            <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse" />
+                                {filteredResults.length} result{filteredResults.length !== 1 ? 's' : ''}
                             </p>
                         </div>
                     </div>
 
-                    {/* Controls */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                        {/* Filter Tabs */}
-                        <div className="flex items-center bg-secondary-theme/60 p-0.5 rounded-lg border border-border-theme">
-                            {tabs.map(tab => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setFilter(tab.id)}
-                                    className={`px-3 py-1.5 rounded-md text-[9px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
-                                        filter === tab.id ? 'bg-card text-primary-theme shadow-sm' : 'text-muted hover:text-foreground'
-                                    }`}
-                                >
-                                    {tab.label}
-                                    <span className={`px-1 py-0.5 rounded text-[8px] font-black ${filter === tab.id ? 'bg-primary-theme/10 text-primary-theme' : 'bg-border-theme/50 text-muted'}`}>
-                                        {tab.count}
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* View Mode Toggle */}
-                        <div className="flex items-center bg-secondary-theme/60 p-0.5 rounded-lg border border-border-theme">
-                            <button
-                                onClick={() => setViewMode('card')}
-                                className={`p-1.5 rounded-md transition-all ${viewMode === 'card' ? 'bg-card text-primary-theme shadow-sm' : 'text-muted hover:text-foreground'}`}
-                                title="Card View"
-                            >
-                                <LayoutGrid size={14} />
-                            </button>
-                            <button
-                                onClick={() => setViewMode('table')}
-                                className={`p-1.5 rounded-md transition-all ${viewMode === 'table' ? 'bg-card text-primary-theme shadow-sm' : 'text-muted hover:text-foreground'}`}
-                                title="Table View"
-                            >
-                                <List size={14} />
-                            </button>
-                        </div>
-
-                        {/* Refresh */}
+                    <div className="flex items-center gap-2 w-full xl:w-auto shrink-0 justify-between xl:justify-end">
+                        {/* Refresh Button */}
                         <button
                             onClick={() => fetchLabResults(true)}
                             disabled={isRefreshing}
-                            className="p-2 bg-secondary-theme hover:bg-primary-theme/5 text-muted hover:text-primary-theme rounded-lg border border-border-theme transition-all disabled:opacity-50"
-                            title="Refresh"
+                            className="px-2.5 py-1.5 bg-gray-50 dark:bg-gray-800/50 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 border border-gray-200 dark:border-gray-700 transition-all shadow-sm shrink-0 disabled:opacity-50"
+                            title="Refresh Data"
                         >
-                            <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
+                            <RefreshCw size={12} className={isRefreshing ? 'animate-spin' : ''} /> Refresh
                         </button>
                     </div>
                 </div>
-            </div>
 
-            {/* ── Search & Filter Bar ── */}
-            <div className="bg-card rounded-xl border border-border-theme p-2 shadow-sm flex flex-col md:flex-row items-center gap-2">
-                {/* Search Input */}
-                <div className="relative flex-1 group w-full">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search size={14} className="text-muted group-focus-within:text-primary-theme transition-colors" />
-                    </div>
-                    <input
-                        type="text"
-                        placeholder="Search by Patient Name or MRN Number..."
-                        className="w-full bg-secondary-theme/50 border border-border-theme rounded-lg pl-9 pr-9 py-2 text-[11px] font-black uppercase tracking-tight focus:outline-none focus:ring-1 focus:ring-primary-theme/30 focus:border-primary-theme/30 transition-all"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                    {searchQuery && (
-                        <button
-                            onClick={() => setSearchQuery('')}
-                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted hover:text-rose-500 transition-colors"
-                        >
-                            <X size={14} />
-                        </button>
-                    )}
-                </div>
-
-                {/* Test Name Filter - Custom Searchable Dropdown */}
-                <div className="relative w-full md:w-72 group" ref={testDropdownRef}>
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-                        <Filter size={14} className={`transition-colors ${isTestDropdownOpen ? 'text-primary-theme' : 'text-muted'}`} />
-                    </div>
+                {/* Bottom Row: Control Center (Search, Filters) */}
+                <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 border-t border-gray-50 dark:border-gray-800 pt-3 relative z-10">
                     
-                    <button
-                        onClick={() => {
-                            setIsTestDropdownOpen(!isTestDropdownOpen);
-                            if (!isTestDropdownOpen) setTestSearchQuery('');
-                        }}
-                        className={`w-full bg-secondary-theme/50 border rounded-lg pl-9 pr-10 py-2.5 text-[11px] font-black uppercase tracking-tight flex items-center justify-between transition-all outline-none ${
-                            isTestDropdownOpen ? 'border-primary-theme/40 ring-1 ring-primary-theme/10 bg-card shadow-sm' : 'border-border-theme hover:border-primary-theme/30'
-                        }`}
-                    >
-                        <span className="truncate">
-                            {selectedTest === 'all' ? 'All Available Tests' : selectedTest}
-                        </span>
-                        <div className="absolute right-3 flex items-center pointer-events-none">
-                            <ChevronRight size={14} className={`text-muted transition-transform duration-300 ${isTestDropdownOpen ? 'rotate-[-90deg]' : 'rotate-90'}`} />
-                        </div>
-                    </button>
+                    {/* View Mode Toggle */}
+                    <div className="flex items-center bg-gray-50 dark:bg-gray-800/50 p-1 rounded-lg border border-gray-200 dark:border-gray-700 shrink-0 hidden md:flex">
+                        <button
+                            onClick={() => setViewMode('card')}
+                            className={`p-1.5 rounded-md transition-all ${viewMode === 'card' ? 'bg-white dark:bg-[#111] text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}
+                            title="Card View"
+                        >
+                            <LayoutGrid size={12} />
+                        </button>
+                        <button
+                            onClick={() => setViewMode('table')}
+                            className={`p-1.5 rounded-md transition-all ${viewMode === 'table' ? 'bg-white dark:bg-[#111] text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}
+                            title="Table View"
+                        >
+                            <List size={12} />
+                        </button>
+                    </div>
 
-                    {isTestDropdownOpen && (
-                        <div className="absolute top-[calc(100%+5px)] left-0 right-0 bg-card border border-border-theme rounded-xl shadow-2xl z-[100] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                            {/* Search Input for Test */}
-                            <div className="p-2 border-b border-border-theme bg-secondary-theme/30 flex items-center gap-2">
-                                <Search size={12} className="text-muted" />
-                                <input 
-                                    autoFocus
-                                    type="text" 
-                                    placeholder="Search tests..."
-                                    className="w-full bg-transparent border-none text-[10px] font-black uppercase tracking-tight focus:outline-none placeholder:text-muted/50 text-foreground"
-                                    value={testSearchQuery}
-                                    onChange={(e) => setTestSearchQuery(e.target.value)}
-                                />
-                                {testSearchQuery && (
-                                    <button onClick={() => setTestSearchQuery('')} className="text-muted hover:text-rose-500">
-                                        <X size={12} />
-                                    </button>
-                                )}
+                    {/* Filter Tabs */}
+                    <div className="flex items-center bg-gray-50 dark:bg-gray-800/50 p-1 rounded-lg border border-gray-200 dark:border-gray-700 overflow-x-auto no-scrollbar shrink-0 max-w-full">
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setFilter(tab.id)}
+                                className={`px-3 py-1.5 rounded-md text-[9px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                                    filter === tab.id ? 'bg-white dark:bg-[#111] text-blue-600 dark:text-blue-400 shadow-sm border border-gray-200 dark:border-gray-700' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                                }`}
+                            >
+                                {tab.label}
+                                <span className={`px-1 py-0.5 rounded text-[8px] font-black ${filter === tab.id ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'}`}>
+                                    {tab.count}
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Search Bar */}
+                    <div className="relative flex-1 w-full min-w-0">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={12} />
+                        <input
+                            type="text"
+                            placeholder="Search Patient Name or MRN..."
+                            className="w-full pl-8 pr-8 py-1.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-[10px] font-bold outline-none focus:ring-1 focus:ring-blue-500 transition-all text-gray-900 dark:text-white placeholder-gray-400"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className="absolute inset-y-0 right-0 pr-2 flex items-center text-gray-400 hover:text-red-500 transition-colors"
+                            >
+                                <X size={12} />
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Test Name Filter - Custom Searchable Dropdown */}
+                    <div className="relative w-full md:w-72 shrink-0 group" ref={testDropdownRef}>
+                        <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none z-10">
+                            <Filter size={12} className={`transition-colors ${isTestDropdownOpen ? 'text-blue-500' : 'text-gray-400'}`} />
+                        </div>
+                        
+                        <button
+                            onClick={() => {
+                                setIsTestDropdownOpen(!isTestDropdownOpen);
+                                if (!isTestDropdownOpen) setTestSearchQuery('');
+                            }}
+                            className={`w-full bg-gray-50 dark:bg-gray-800/50 border rounded-lg pl-8 pr-8 py-1.5 text-[9px] font-bold uppercase tracking-widest text-gray-700 dark:text-gray-300 flex items-center justify-between transition-all outline-none ${
+                                isTestDropdownOpen ? 'border-blue-400/40 ring-1 ring-blue-500/10 bg-white dark:bg-[#111]' : 'border-gray-200 dark:border-gray-700 hover:border-blue-500/30'
+                            }`}
+                        >
+                            <span className="truncate">
+                                {selectedTest === 'all' ? 'All Available Tests' : selectedTest}
+                            </span>
+                            <div className="absolute right-2.5 flex items-center pointer-events-none">
+                                <ChevronRight size={12} className={`text-gray-400 transition-transform duration-300 ${isTestDropdownOpen ? 'rotate-[-90deg]' : 'rotate-90'}`} />
                             </div>
-                            
-                            <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
-                                <button
-                                    className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase tracking-tight transition-all flex items-center justify-between group ${
-                                        selectedTest === 'all' ? 'text-primary-theme bg-primary-theme/5 border-l-2 border-primary-theme' : 'text-muted hover:bg-secondary-theme hover:text-foreground border-l-2 border-transparent'
-                                    }`}
-                                    onClick={() => {
-                                        setSelectedTest('all');
-                                        setIsTestDropdownOpen(false);
-                                    }}
-                                >
-                                    <span>All Available Tests</span>
-                                    {selectedTest === 'all' && (
-                                        <div className="w-1.5 h-1.5 rounded-full bg-primary-theme shadow-[0_0_8px_rgba(var(--primary-theme-rgb),0.5)]" />
+                        </button>
+
+                        {isTestDropdownOpen && (
+                            <div className="absolute top-[calc(100%+5px)] right-0 w-[280px] bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 rounded-xl shadow-2xl z-[100] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                {/* Search Input for Test */}
+                                <div className="p-2 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/30 flex items-center gap-2">
+                                    <Search size={12} className="text-gray-400" />
+                                    <input 
+                                        autoFocus
+                                        type="text" 
+                                        placeholder="Search tests..."
+                                        className="w-full bg-transparent border-none text-[9px] font-bold uppercase tracking-widest focus:outline-none placeholder:text-gray-400/50 text-gray-900 dark:text-white"
+                                        value={testSearchQuery}
+                                        onChange={(e) => setTestSearchQuery(e.target.value)}
+                                    />
+                                    {testSearchQuery && (
+                                        <button onClick={() => setTestSearchQuery('')} className="text-gray-400 hover:text-red-500">
+                                            <X size={12} />
+                                        </button>
                                     )}
-                                </button>
+                                </div>
                                 
-                                {testOptions
-                                    .filter(test => test.toLowerCase().includes(testSearchQuery.toLowerCase()))
-                                    .map(test => (
+                                <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                                    <button
+                                        className={`w-full text-left px-3 py-2 text-[9px] font-bold uppercase tracking-widest transition-all flex items-center justify-between group ${
+                                            selectedTest === 'all' ? 'text-blue-600 bg-blue-50/50 dark:bg-blue-900/20 border-l-2 border-blue-500' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white border-l-2 border-transparent'
+                                        }`}
+                                        onClick={() => {
+                                            setSelectedTest('all');
+                                            setIsTestDropdownOpen(false);
+                                        }}
+                                    >
+                                        <span>All Available Tests</span>
+                                        {selectedTest === 'all' && (
+                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                                        )}
+                                    </button>
+                                    
+                                    {testOptions
+                                        .filter(test => test.toLowerCase().includes(testSearchQuery.toLowerCase()))
+                                        .map(test => (
                                         <button
                                             key={test}
-                                            className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase tracking-tight transition-all flex items-center justify-between group ${
-                                                selectedTest === test ? 'text-primary-theme bg-primary-theme/5 border-l-2 border-primary-theme' : 'text-muted hover:bg-secondary-theme hover:text-foreground border-l-2 border-transparent'
+                                            className={`w-full text-left px-3 py-2 text-[9px] font-bold uppercase tracking-widest transition-all flex items-center justify-between group ${
+                                                selectedTest === test ? 'text-blue-600 bg-blue-50/50 dark:bg-blue-900/20 border-l-2 border-blue-500' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white border-l-2 border-transparent'
                                             }`}
                                             onClick={() => {
                                                 setSelectedTest(test);
                                                 setIsTestDropdownOpen(false);
                                             }}
                                         >
-                                            <span className="truncate">{test}</span>
+                                            <span className="truncate pr-2">{test}</span>
                                             {selectedTest === test && (
-                                                <div className="w-1.5 h-1.5 rounded-full bg-primary-theme shadow-[0_0_8px_rgba(var(--primary-theme-rgb),0.5)]" />
+                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)] shrink-0" />
                                             )}
                                         </button>
-                                    ))
-                                }
-                                
-                                {testOptions.filter(test => test.toLowerCase().includes(testSearchQuery.toLowerCase())).length === 0 && (
-                                    <div className="px-4 py-8 text-center bg-secondary-theme/10">
-                                        <Search size={20} className="text-muted/20 mx-auto mb-2" />
-                                        <p className="text-[9px] font-black text-muted uppercase tracking-widest italic">No matching tests</p>
-                                    </div>
-                                )}
+                                    ))}
+                                    {testOptions.filter(test => test.toLowerCase().includes(testSearchQuery.toLowerCase())).length === 0 && (
+                                        <div className="px-4 py-6 text-center">
+                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">No matching tests</p>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -653,13 +651,6 @@ export default function DoctorLabResultsPage() {
                         : <TableView items={pageItems} getPath={getPath} />
                     }
 
-                    {/* Pagination */}
-                    <Pagination
-                        page={currentPage}
-                        total={filteredResults.length}
-                        perPage={ITEMS_PER_PAGE}
-                        onChange={setCurrentPage}
-                    />
                 </>
             )}
 

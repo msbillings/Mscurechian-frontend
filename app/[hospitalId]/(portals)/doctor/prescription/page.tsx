@@ -2685,11 +2685,11 @@ function CreatePrescriptionPage() {
 
     return (
         <div className="bg-slate-50/50 min-h-screen">
-            {/* Unified Ultra-Premium Prescription & Consultation Header */}
-            <header className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-border-theme px-4 sm:px-6 py-3.5 mb-6 sticky top-0 z-50 shadow-sm transition-all">
-                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3.5">
+            {/* Dynamic Header */}
+            <header className="flex flex-col gap-3 bg-white dark:bg-[#111] py-3 px-3 md:py-3 md:px-4 border-b border-gray-100 dark:border-gray-800 sticky top-0 z-50 shadow-sm transition-all">
+                <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 w-full relative z-10">
                     {/* Left: Unified Title & Patient Identity */}
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center gap-3 shrink-0">
                         <button
                             onClick={() => {
                                 if (appointmentId) {
@@ -2698,32 +2698,32 @@ function CreatePrescriptionPage() {
                                     router.back();
                                 }
                             }}
-                            className="p-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-xl text-slate-700 dark:text-slate-200 transition-all shrink-0 shadow-sm flex items-center justify-center cursor-pointer"
+                            className="p-1.5 md:p-2 bg-gray-50 dark:bg-gray-800 rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors border border-gray-200 dark:border-gray-700 shrink-0"
                             title={appointmentId ? "Back to Consultation Overview" : "Go Back"}
                         >
-                            <ArrowLeft size={18} />
+                            <ArrowLeft size={16} />
                         </button>
 
-                        <div className="min-w-0">
+                        <div className="flex flex-col justify-center">
                             <div className="flex items-center gap-2 flex-wrap">
-                                <h1 className="text-base sm:text-lg font-black text-gray-900 dark:text-white tracking-tight">
+                                <h1 className="text-sm md:text-base font-bold text-gray-900 dark:text-white tracking-tight leading-none uppercase">
                                     Prescription Desk
                                 </h1>
                                 {appointmentId && (
-                                    <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1">
+                                    <span className="px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-widest flex items-center gap-1">
                                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                         In Consultation
                                     </span>
                                 )}
                             </div>
-                            <div className="flex items-center gap-2 flex-wrap mt-0.5 text-xs">
-                                <span className="font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wide">
+                            <div className="flex items-center gap-2 flex-wrap mt-1">
+                                <span className="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest">
                                     Patient: {formData.patientName || appointmentData?.patient?.name || 'New Case'}
                                 </span>
                                 {(appointmentData?.patient?.mrn || appointmentData?.mrn) && (
                                     <>
-                                        <span className="text-slate-300 dark:text-slate-600 font-bold">•</span>
-                                        <span className="font-bold text-slate-500 dark:text-slate-400 uppercase font-mono text-[11px]">
+                                        <span className="text-gray-300 dark:text-gray-700 font-bold">•</span>
+                                        <span className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                                             MRN: {appointmentData?.patient?.mrn || appointmentData?.mrn}
                                         </span>
                                     </>
@@ -2733,9 +2733,9 @@ function CreatePrescriptionPage() {
                     </div>
 
                     {/* Right: Integrated Action Bars */}
-                    <div className="flex items-center gap-2.5 flex-wrap xl:justify-end">
+                    <div className="flex items-center gap-2 w-full xl:w-auto shrink-0 justify-between xl:justify-end overflow-x-auto no-scrollbar pb-1 xl:pb-0">
                         {/* Clinical Tools Group */}
-                        <div className="flex items-center gap-1.5 bg-slate-100/80 dark:bg-gray-800/80 p-1 rounded-2xl border border-slate-200/80 dark:border-gray-700/80 flex-wrap">
+                        <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800/50 p-1 rounded-lg border border-gray-200 dark:border-gray-700 shrink-0">
                             {/* Lab Token */}
                             <button
                                 onClick={() => {
@@ -2747,9 +2747,9 @@ function CreatePrescriptionPage() {
                                     }
                                 }}
                                 disabled={isSendingLab}
-                                className="px-3 py-1.5 bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/50 rounded-xl text-[11px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 shadow-sm border border-blue-100 dark:border-blue-900/40 transition-all cursor-pointer shrink-0"
+                                className="px-2 py-1.5 bg-white dark:bg-[#111] text-blue-600 dark:text-blue-400 hover:text-blue-700 rounded-md text-[9px] font-black uppercase tracking-widest flex items-center gap-1 shadow-sm border border-gray-200 dark:border-gray-600 transition-colors cursor-pointer shrink-0"
                             >
-                                {isSendingLab ? <Loader2 size={13} className="animate-spin" /> : <Beaker size={13} />}
+                                {isSendingLab ? <Loader2 size={12} className="animate-spin" /> : <Beaker size={12} />}
                                 Lab Token
                             </button>
 
@@ -2757,20 +2757,20 @@ function CreatePrescriptionPage() {
                             <button
                                 onClick={() => setShowHistoryModal(true)}
                                 disabled={!selectedPatientId}
-                                className={`px-3 py-1.5 rounded-xl text-[11px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 transition-all shrink-0 ${
+                                className={`px-2 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest flex items-center gap-1 transition-all shrink-0 ${
                                     selectedPatientId
-                                        ? 'bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 cursor-pointer shadow-sm'
-                                        : 'bg-transparent text-slate-400 cursor-not-allowed opacity-50'
+                                        ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400 shadow-sm cursor-pointer'
+                                        : 'bg-transparent text-gray-400 cursor-not-allowed'
                                 }`}
                             >
-                                <History size={13} />
+                                <History size={12} />
                                 <span className="hidden sm:inline">Medical</span> History
                             </button>
 
                             {/* Scope Toggle */}
                             {selectedPatientId && (
-                                <div className="flex items-center gap-2 px-2.5 py-1 border-l border-slate-200 dark:border-gray-700 shrink-0" title={showFullHistory ? "All Network Records" : "Current Facility Only"}>
-                                    <span className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-tight hidden sm:inline">
+                                <div className="flex items-center gap-1.5 pl-1.5 border-l border-gray-200 dark:border-gray-700 shrink-0">
+                                    <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest hidden sm:inline">
                                         {showFullHistory ? "All Network" : "Facility Only"}
                                     </span>
                                     <button
@@ -2779,59 +2779,55 @@ function CreatePrescriptionPage() {
                                             setShowFullHistory(!showFullHistory);
                                             if (!showHistoryModal) setShowHistoryModal(true);
                                         }}
-                                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                                            showFullHistory ? 'bg-amber-500 shadow-sm' : 'bg-slate-300 dark:bg-slate-700'
+                                        className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                            showFullHistory ? 'bg-amber-500' : 'bg-gray-300 dark:bg-gray-600'
                                         }`}
                                     >
-                                        <span
-                                            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                                showFullHistory ? 'translate-x-4' : 'translate-x-0'
-                                            }`}
-                                        />
+                                        <span className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow-sm transition duration-200 ease-in-out mt-0.5 ml-0.5 ${showFullHistory ? 'translate-x-3' : 'translate-x-0'}`} />
                                     </button>
                                 </div>
                             )}
                         </div>
 
                         {/* Prescription Entry Mode Toggle */}
-                        <div className="bg-slate-100/80 dark:bg-gray-800/80 p-1 rounded-2xl flex items-center shrink-0 border border-slate-200/80 dark:border-gray-700/80">
+                        <div className="flex items-center gap-1 bg-gray-50 dark:bg-gray-800/50 p-1 rounded-lg border border-gray-200 dark:border-gray-700 shrink-0">
                             <button
                                 onClick={() => setMode('SELF')}
-                                className={`px-3 py-1.5 rounded-xl text-[11px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer ${mode === 'SELF' ? 'bg-white dark:bg-gray-900 shadow-sm text-primary-theme' : 'text-muted hover:bg-white/50'}`}
+                                className={`px-2 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest flex items-center gap-1 transition-all cursor-pointer ${mode === 'SELF' ? 'bg-white dark:bg-[#111] shadow-sm text-indigo-600 dark:text-indigo-400 border border-gray-200 dark:border-gray-600' : 'text-gray-500 hover:text-gray-700'}`}
                             >
-                                <PenTool size={13} /> Manual
+                                <PenTool size={12} /> Manual
                             </button>
                             <button
                                 onClick={() => setMode('AI')}
-                                className={`px-3 py-1.5 rounded-xl text-[11px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer ${mode === 'AI' ? 'bg-indigo-600 shadow-sm text-white' : 'text-muted hover:bg-white/50'}`}
+                                className={`px-2 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest flex items-center gap-1 transition-all cursor-pointer ${mode === 'AI' ? 'bg-indigo-600 shadow-sm text-white border border-indigo-700' : 'text-gray-500 hover:text-gray-700'}`}
                             >
-                                <Mic2 size={13} className={mode === 'AI' ? 'animate-pulse' : ''} /> Voice
+                                <Mic2 size={12} className={mode === 'AI' ? 'animate-pulse' : ''} /> Voice
                             </button>
                         </div>
 
                         {/* Session Timer & End Controls Group */}
                         {appointmentId && (
-                            <div className="flex items-center gap-1.5 bg-slate-900 dark:bg-black text-white p-1 rounded-2xl border border-slate-800 shadow-md shrink-0">
-                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-800/90 font-mono text-xs font-black text-teal-400 tabular-nums border border-slate-700/50">
-                                    <Clock size={12} className="animate-pulse text-teal-400" />
+                            <div className="flex items-center gap-1.5 bg-gray-900 dark:bg-black p-1 rounded-lg border border-gray-800 shadow-sm shrink-0">
+                                <div className="flex items-center gap-1 px-2 py-1.5 rounded-md bg-gray-800 font-mono text-[10px] font-black text-emerald-400 border border-gray-700">
+                                    <Clock size={10} className="animate-pulse text-emerald-400" />
                                     <span>{formatTime(elapsedTime)}</span>
                                 </div>
                                 <button
                                     onClick={handlePauseConsultation}
-                                    className="px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase tracking-wider text-amber-400 hover:bg-amber-500/20 transition-all flex items-center gap-1 cursor-pointer"
+                                    className="px-2 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest text-amber-400 hover:bg-amber-400/10 transition-colors flex items-center gap-1 cursor-pointer"
                                     title="Pause Consultation"
                                 >
-                                    <Pause size={12} />
+                                    <Pause size={10} />
                                     <span className="hidden sm:inline">Pause</span>
                                 </button>
                                 <button
                                     onClick={handleEndConsultation}
                                     disabled={isEndingSession}
-                                    className="px-3.5 py-1 rounded-xl text-[11px] font-black uppercase tracking-wider bg-teal-500 hover:bg-teal-600 text-white shadow-sm shadow-teal-500/30 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                                    className="px-3 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm transition-colors flex items-center gap-1 disabled:opacity-50 cursor-pointer border border-emerald-600"
                                     title="Complete Session"
                                 >
-                                    {isEndingSession ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
-                                    <span>Complete Session</span>
+                                    {isEndingSession ? <Loader2 size={10} className="animate-spin" /> : <CheckCircle size={10} />}
+                                    <span>Complete</span>
                                 </button>
                             </div>
                         )}

@@ -47,7 +47,7 @@ const SupportFloatingButton: React.FC<SupportFloatingButtonProps> = ({ onClick, 
             className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-[100] flex items-center justify-center group touch-none"
         >
             {/* Rotating Text Outside the Button */}
-            <div className="absolute w-16 h-16 sm:w-28 sm:h-28 animate-[spin_12s_linear_infinite] pointer-events-none origin-center">
+            <div className="absolute w-12 h-12 sm:w-20 sm:h-20 animate-[spin_12s_linear_infinite] pointer-events-none origin-center">
                 <svg viewBox="0 0 100 100" className="w-full h-full">
                     <defs>
                         <path
@@ -55,7 +55,7 @@ const SupportFloatingButton: React.FC<SupportFloatingButtonProps> = ({ onClick, 
                             d="M 50, 50 m -35, 0 a 35,35 0 1,1 70,0 a 35,35 0 1,1 -70,0"
                         />
                     </defs>
-                    <text className="text-[7.5px] sm:text-[8.5px] font-black uppercase tracking-[0.2em] fill-black dark:fill-white opacity-60">
+                    <text className="text-[6.5px] sm:text-[7.5px] font-black uppercase tracking-[0.2em] fill-black dark:fill-white opacity-60">
                         <textPath xlinkHref="#supportCirclePath">
                             {label} • {label} •
                         </textPath>
@@ -65,7 +65,7 @@ const SupportFloatingButton: React.FC<SupportFloatingButtonProps> = ({ onClick, 
 
             <button
                 onClick={onClick}
-                className="relative w-10 h-10 sm:w-16 sm:h-16 bg-primary-theme rounded-full flex items-center justify-center text-white transform hover:scale-110 active:scale-95 transition-all duration-300 shadow-2xl shadow-primary-theme/40 z-10"
+                className="relative w-8 h-8 sm:w-12 sm:h-12 bg-primary-theme rounded-full flex items-center justify-center text-white transform hover:scale-110 active:scale-95 transition-all duration-300 shadow-2xl shadow-primary-theme/40 z-10"
                 aria-label="Support and Feedback"
             >
                 {/* Background Animation Effect */}
@@ -75,7 +75,7 @@ const SupportFloatingButton: React.FC<SupportFloatingButtonProps> = ({ onClick, 
                 <div className="absolute inset-0 animate-pulse bg-primary-theme/20 rounded-full pointer-events-none" />
 
                 <div className="relative flex flex-col items-center">
-                    <Headset className="w-5 h-5 sm:w-8 sm:h-8 text-white group-hover:rotate-12 transition-transform duration-300" />
+                    <Headset className="w-4 h-4 sm:w-6 sm:h-6 text-white group-hover:rotate-12 transition-transform duration-300" />
                 </div>
             </button>
         </motion.div>

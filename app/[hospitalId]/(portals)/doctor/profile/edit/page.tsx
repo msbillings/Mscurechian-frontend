@@ -510,28 +510,41 @@ export default function EditDoctorProfilePage() {
                 />
             )}
 
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row items-center justify-between mb-4 sm:mb-8 pb-4 sm:pb-6 border-b border-gray-100 dark:border-gray-800 gap-4">
-                <div className="flex items-center gap-3 sm:gap-4 w-full">
-                    <button
-                        onClick={() => router.back()}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-400 transition-colors"
-                    >
-                        <ArrowLeft size={24} />
-                    </button>
-                    <div>
-                        <h1 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">Edit Your Profile</h1>
-                        <p className="text-gray-500 mt-1">Manage all your personal, professional, and payroll details.</p>
+            {/* Dynamic Header */}
+            <div className="flex flex-col gap-3 bg-white dark:bg-[#111] py-3 px-3 md:py-3 md:px-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm shrink-0 mx-1 sm:mx-0 relative overflow-hidden mb-4 sm:mb-6 z-20">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none"></div>
+                
+                {/* Top Row: Title, Action */}
+                <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 w-full relative z-10">
+                    <div className="flex items-center gap-3 shrink-0">
+                        <button
+                            onClick={() => router.back()}
+                            className="p-1.5 md:p-2 bg-gray-50 dark:bg-gray-800 rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors border border-gray-200 dark:border-gray-700"
+                        >
+                            <ArrowLeft size={16} />
+                        </button>
+                        <div className="flex flex-col justify-center">
+                            <h1 className="text-sm md:text-base font-bold text-gray-900 dark:text-white tracking-tight leading-none uppercase">
+                                Edit Your Profile
+                            </h1>
+                            <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 hidden sm:flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                Manage personal, professional & payroll details
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full xl:w-auto shrink-0 justify-between xl:justify-end">
+                        <button
+                            onClick={handleSave}
+                            disabled={isSaving}
+                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] font-black uppercase tracking-widest rounded-lg transition-all shadow-sm shadow-emerald-500/20 w-full sm:w-auto justify-center active:scale-95 disabled:opacity-50"
+                        >
+                            {isSaving ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Save size={12} />}
+                            <span className="shrink-0">Save Changes</span>
+                        </button>
                     </div>
                 </div>
-                <button
-                    onClick={handleSave}
-                    disabled={isSaving}
-                    className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm sm:text-base font-bold rounded-xl sm:rounded-2xl shadow-xl shadow-emerald-500/20 active:scale-95 transition-all disabled:opacity-50"
-                >
-                    {isSaving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Save size={20} />}
-                    <span className="shrink-0">Save Changes</span>
-                </button>
             </div>
 
             <div className="flex flex-col lg:flex-row gap-6 sm:gap-8">

@@ -27,41 +27,43 @@ export default function DoctorIncidentPage() {
 
     return (
         <div className="min-h-screen space-y-4 sm:space-y-6 pt-2 sm:pt-4 pb-16 max-w-7xl mx-auto">
-            {/* Header Area */}
-            <div className="bg-card rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-border-theme shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+            {/* Dynamic Header */}
+            <div className="flex flex-col gap-3 bg-white dark:bg-[#111] py-3 px-3 md:py-3 md:px-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm shrink-0 mx-1 sm:mx-0 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none"></div>
                 
-                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 relative z-10">
-                    <div className="flex items-center gap-6 sm:gap-10">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-red-600 to-rose-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-xl shadow-red-500/10 rotate-3 transition-transform hover:rotate-0 duration-500">
-                            <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-white animate-pulse" />
+                {/* Top Row: Title, Action Button */}
+                <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 w-full relative z-10">
+                    <div className="flex items-center gap-3 shrink-0">
+                        <div className="p-1.5 md:p-2 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400">
+                            <AlertTriangle className="w-4 h-4 md:w-5 md:h-5 animate-pulse" />
                         </div>
-                        <div>
-                            <h1 className="text-lg md:text-xl lg:text-xl font-bold text-foreground uppercase tracking-tight">Safety Protocols</h1>
-                            <div className="flex items-center gap-4 mt-2">
-                                <div className="text-muted font-bold uppercase tracking-[0.4em] text-[10px] sm:text-xs opacity-60 flex items-center gap-3">
-                                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                                    Active Governance & Incident Network
-                                </div>
-                            </div>
+                        <div className="flex flex-col justify-center">
+                            <h1 className="text-sm md:text-base font-bold text-gray-900 dark:text-white tracking-tight leading-none uppercase">
+                                Safety Protocols
+                            </h1>
+                            <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                                Active Governance & Incident Network
+                            </p>
                         </div>
                     </div>
 
-                    <button
-                        onClick={() => setIsReporting(!isReporting)}
-                        className={`
-                            w-full lg:w-auto px-5 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl font-black uppercase tracking-[0.2em] text-[9px] sm:text-[10px] transition-all active:scale-95 flex items-center justify-center gap-3 shadow-lg
-                            ${isReporting
-                                ? 'bg-secondary-theme text-muted hover:bg-secondary-theme/80 border border-border-theme shadow-none'
-                                : 'bg-primary-theme hover:bg-primary-theme/90 text-white shadow-primary-theme/20'}
-                        `}
-                    >
-                        {isReporting ? (
-                            <><X size={18} /> Discard Session</>
-                        ) : (
-                            <><Plus size={18} /> Initialize Report</>
-                        )}
-                    </button>
+                    <div className="flex items-center gap-2 w-full xl:w-auto shrink-0 justify-between xl:justify-end">
+                        <button
+                            onClick={() => setIsReporting(!isReporting)}
+                            className={`px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all shadow-sm shrink-0 border ${
+                                isReporting
+                                ? 'bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/40'
+                            }`}
+                        >
+                            {isReporting ? (
+                                <><X size={12} /> Discard Session</>
+                            ) : (
+                                <><Plus size={12} /> Initialize Report</>
+                            )}
+                        </button>
+                    </div>
                 </div>
             </div>
 

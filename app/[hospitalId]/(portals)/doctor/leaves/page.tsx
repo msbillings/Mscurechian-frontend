@@ -19,7 +19,9 @@ import {
   History,
   X,
   Phone,
-  User
+  User,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -52,6 +54,7 @@ function DoctorLeaves() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedLeave, setSelectedLeave] = useState<any>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const leaves = leavesRes?.leaves || [];
   const balance = balanceRes?.balance || (balanceRes as any) || {};
@@ -70,6 +73,18 @@ function DoctorLeaves() {
       return matchesSearch && matchesStatus;
     });
   }, [leaves, searchQuery, statusFilter]);
+
+  const ITEMS_PER_PAGE = 7;
+  const totalPages = Math.ceil(filteredLeaves.length / ITEMS_PER_PAGE);
+  const paginatedLeaves = filteredLeaves.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  // Reset pagination when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
 
   const refreshData = () => {
     toast.promise(Promise.all([refetch(), queryClient.invalidateQueries({ queryKey: ['staff', 'leave-balance'] })]), {
@@ -106,99 +121,149 @@ function DoctorLeaves() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-4 sm:space-y-8 pb-10">
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
-        <div>
-          <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 dark:text-white tracking-tighter uppercase">Leave Management</h1>
-          <p className="text-[7px] md:text-[10px] lg:text-[10px] font-bold text-gray-500 dark:text-gray-400 mt-1 uppercase tracking-widest">Manage your planned absences and track approval status.</p>
+      {/* Ultra Compact Dynamic Header */}
+      <div className="flex flex-col gap-3 bg-white dark:bg-[#111] py-3 px-3 md:py-3 md:px-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm shrink-0 mx-1 sm:mx-0 relative overflow-hidden z-20">
+        <div className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none"></div>
         </div>
-        <div className="flex items-center gap-2 sm:gap-3">
-          <button 
-            onClick={refreshData}
-            title="Refresh Data"
-            className="p-2 sm:p-3 bg-white dark:bg-gray-800 text-gray-400 rounded-xl sm:rounded-2xl border border-gray-100 dark:border-gray-700 hover:text-emerald-500 shadow-sm transition-all active:rotate-180"
-          >
-            <RefreshCcw size={18} />
-          </button>
-          <a 
-            href="/doctor/leave"
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-2 py-2 bg-gray-900 dark:bg-white text-white dark:text-black rounded-xl sm:rounded-2xl text-xs sm:text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-all active:scale-95 group"
-          >
-            <Plus size={16} className="group-hover:rotate-90 transition-transform" /> 
-            New Request
-          </a>
-        </div>
-      </div>
-
-      {/* Stats Summary & Leave Balance */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-        <div className="bg-white dark:bg-gray-900 text-gray-900 p-6 sm:p-8 rounded-2xl relative overflow-hidden group shadow-sm border border-gray-100 dark:border-gray-800 col-span-2 sm:col-span-1 lg:col-span-1">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Total Balance</p>
-          <div className="flex items-baseline gap-2">
-            <h3 className="text-3xl sm:text-4xl font-black dark:text-white">{balance.totalQuota || 30}</h3>
-            <span className="text-[10px] font-bold text-slate-400 uppercase">Days / Year</span>
-          </div>
-          <div className="mt-6 flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-            <span className="text-emerald-500">Used: {balance.used || 0}</span>
-            <span className="text-slate-400">Rem: {(balance.totalQuota || 30) - (balance.used || 0)}</span>
-          </div>
-          <div className="mt-3 w-full h-1.5 bg-gray-50 dark:bg-gray-800 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-emerald-500 transition-all duration-1000" 
-              style={{ width: `${((balance.used || 0) / (balance.totalQuota || 30)) * 100}%` }}
-            ></div>
-          </div>
-        </div>
-
-        {[
-          { label: "Approved Leaves", value: leaves.filter((l: any) => l.status === 'approved').length, icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-900/10" },
-          { label: "Pending Review", value: leaves.filter((l: any) => l.status === 'pending').length, icon: Clock, color: "text-amber-500", bg: "bg-amber-50 dark:bg-amber-900/10" },
-          { label: "History Total", value: leaves.length, icon: History, color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-900/10" }
-        ].map((stat, i) => (
-          <div key={i} className="bg-white dark:bg-gray-900 p-6 sm:p-8 rounded-2xl border border-gray-100 dark:border-gray-800 group hover:border-emerald-500/50 transition-all shadow-sm">
-            <div className={`p-3 w-10 h-10 sm:w-12 sm:h-12 ${stat.bg} rounded-xl sm:rounded-2xl flex items-center justify-center ${stat.color} mb-4 sm:mb-6`}>
-              <stat.icon size={20} />
+        
+        {/* Top Row: Title, Inline Stats, Actions */}
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 xl:gap-4 w-full relative z-10">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 w-full xl:w-auto">
+            {/* Title Block */}
+            <div className="flex items-center gap-3 shrink-0 border-b sm:border-b-0 sm:border-r border-gray-100 dark:border-gray-800 pb-3 sm:pb-0 sm:pr-6">
+              <div className="p-1.5 md:p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg text-emerald-600 dark:text-emerald-400">
+                <CalendarDays className="w-4 h-4 md:w-5 md:h-5" />
+              </div>
+              <div className="flex flex-col justify-center">
+                <h1 className="text-sm md:text-base font-bold text-gray-900 dark:text-white tracking-tight leading-none uppercase">
+                  Leave Management
+                </h1>
+                <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 hidden sm:flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                  Manage absences
+                </p>
+              </div>
             </div>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{stat.label}</p>
-            <h3 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white underline decoration-emerald-500/30 underline-offset-8">{stat.value}</h3>
+
+            {/* Compact Inline Stats */}
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0 w-full sm:w-auto">
+                <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 shrink-0 shadow-sm">
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Balance</span>
+                    <span className="text-xs font-black text-gray-900 dark:text-white">{balance.totalQuota || 30}</span>
+                </div>
+                <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/10 px-3 py-1.5 rounded-lg border border-emerald-100 dark:border-emerald-800/30 shrink-0 shadow-sm">
+                    <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Approved</span>
+                    <span className="text-xs font-black text-emerald-700 dark:text-emerald-400">{leaves.filter((l: any) => l.status === 'approved').length}</span>
+                </div>
+                <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/10 px-3 py-1.5 rounded-lg border border-amber-100 dark:border-amber-800/30 shrink-0 shadow-sm">
+                    <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest">Pending</span>
+                    <span className="text-xs font-black text-amber-700 dark:text-amber-400">{leaves.filter((l: any) => l.status === 'pending').length}</span>
+                </div>
+                <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/10 px-3 py-1.5 rounded-lg border border-blue-100 dark:border-blue-800/30 shrink-0 shadow-sm">
+                    <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">Total</span>
+                    <span className="text-xs font-black text-blue-700 dark:text-blue-400">{leaves.length}</span>
+                </div>
+            </div>
           </div>
-        ))}
+
+          <div className="flex items-center gap-2 w-full xl:w-auto shrink-0 justify-between xl:justify-end">
+            <button 
+              onClick={refreshData}
+              title="Refresh Data"
+              className="p-1.5 sm:p-2 bg-white dark:bg-gray-800 text-gray-500 hover:text-emerald-600 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm transition-all active:scale-95"
+            >
+              <RefreshCcw size={14} />
+            </button>
+            <a 
+              href="/doctor/leave"
+              className="inline-flex items-center justify-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] font-black uppercase tracking-widest rounded-lg transition-all shadow-sm shadow-emerald-500/20 active:scale-95 group"
+            >
+              <Plus size={12} className="group-hover:rotate-90 transition-transform" /> 
+              New Request
+            </a>
+          </div>
+        </div>
       </div>
 
       {/* Main Content: Leave Log */}
       <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
-         <div className="p-4 sm:p-8 border-b border-gray-50 dark:border-gray-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6">
-            <div>
-               <h3 className="text-lg sm:text-xl lg:text-xl font-bold text-gray-900 dark:text-white uppercase tracking-tighter">Leave History</h3>
-               <p className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-widest mt-1">Review and manage your previous absence requests</p>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full lg:w-auto">
-               <div className="relative w-full sm:w-64">
-                  <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input 
-                    type="text" 
-                    placeholder="Search logs..." 
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-11 pr-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500/20 w-full transition-all"
-                  />
+         {/* Dynamic Header */}
+         <div className="flex flex-col gap-3 bg-white dark:bg-[#111] py-3 px-3 md:py-3 md:px-4 border-b border-gray-50 dark:border-gray-800 relative z-10">
+            {/* Top Row: Title, Action Button, Pagination */}
+            <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 w-full">
+               <div className="flex items-center gap-3 shrink-0">
+                  <div className="p-1.5 md:p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg text-emerald-600 dark:text-emerald-400">
+                     <CalendarDays className="w-4 h-4 md:w-5 md:h-5" />
+                  </div>
+                  <div className="flex flex-col justify-center">
+                     <h3 className="text-sm md:text-base font-bold text-gray-900 dark:text-white tracking-tight leading-none uppercase">
+                        Leave History
+                     </h3>
+                     <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 hidden sm:block">
+                        Review and manage your absence requests
+                     </p>
+                  </div>
                </div>
-               <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto no-scrollbar pb-1 sm:pb-0">
+
+               <div className="flex items-center gap-2 w-full xl:w-auto shrink-0 justify-between xl:justify-end">
+                  {/* Pagination */}
+                  {totalPages > 0 && (
+                     <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 p-1 px-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                        <div className="text-[9px] text-gray-500 dark:text-gray-400 font-black uppercase tracking-widest whitespace-nowrap hidden sm:block px-1">
+                           <span className="text-gray-900 dark:text-white">Page {currentPage}</span> / {totalPages}
+                        </div>
+                        <div className="flex items-center gap-1">
+                           <button
+                              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                              disabled={currentPage === 1}
+                              className="p-1 rounded bg-white dark:bg-[#111] text-gray-600 dark:text-gray-400 hover:text-emerald-600 disabled:opacity-30 border border-gray-200 dark:border-gray-700 transition-colors shadow-sm"
+                           >
+                              <ChevronLeft size={12} />
+                           </button>
+                           <button
+                              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                              disabled={currentPage === totalPages}
+                              className="p-1 rounded bg-white dark:bg-[#111] text-gray-600 dark:text-gray-400 hover:text-emerald-600 disabled:opacity-30 border border-gray-200 dark:border-gray-700 transition-colors shadow-sm"
+                           >
+                              <ChevronRight size={12} />
+                           </button>
+                        </div>
+                     </div>
+                  )}
+               </div>
+            </div>
+
+            {/* Bottom Row: Control Center (Search, Filters) */}
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 border-t border-gray-50 dark:border-gray-800 pt-3">
+               
+               {/* Filter Tabs */}
+               <div className="flex items-center gap-1 w-full lg:w-auto overflow-x-auto no-scrollbar shrink-0 bg-gray-50 dark:bg-gray-800/50 p-1 rounded-lg border border-gray-200 dark:border-gray-700">
                   {['all', 'pending', 'approved', 'rejected'].map((status) => (
-                    <button
-                      key={status}
-                      onClick={() => setStatusFilter(status)}
-                      className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${
-                        statusFilter === status 
-                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-500/20' 
-                        : 'bg-white dark:bg-gray-800 text-gray-500 border-gray-100 dark:border-gray-700 hover:border-emerald-500'
-                      }`}
-                    >
-                      {status}
-                    </button>
+                     <button
+                        key={status}
+                        onClick={() => setStatusFilter(status)}
+                        className={`px-3 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${
+                           statusFilter === status 
+                           ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm border border-gray-200 dark:border-gray-600' 
+                           : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                        }`}
+                     >
+                        {status}
+                     </button>
                   ))}
+               </div>
+
+               {/* Search Bar */}
+               <div className="relative flex-1 w-full min-w-0 lg:max-w-xs">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={12} />
+                  <input
+                     type="text"
+                     placeholder="Search logs..."
+                     value={searchQuery}
+                     onChange={(e) => setSearchQuery(e.target.value)}
+                     className="w-full pl-8 pr-3 py-1.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-[10px] font-bold outline-none focus:ring-1 focus:ring-emerald-500 transition-all text-gray-900 dark:text-white placeholder-gray-400"
+                  />
                </div>
             </div>
          </div>
@@ -217,7 +282,7 @@ function DoctorLeaves() {
                   </tr>
                </thead>
                <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
-                  {filteredLeaves.length > 0 ? filteredLeaves.map((leave: any) => {
+                  {paginatedLeaves.length > 0 ? paginatedLeaves.map((leave: any) => {
                      const config = STATUS_CONFIG[leave.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.pending;
                      const StatusIcon = config.icon;
                      
@@ -283,7 +348,7 @@ function DoctorLeaves() {
 
          {/* Mobile View Cards */}
          <div className="md:hidden divide-y divide-gray-50 dark:divide-gray-800">
-            {filteredLeaves.length > 0 ? filteredLeaves.map((leave: any) => {
+            {paginatedLeaves.length > 0 ? paginatedLeaves.map((leave: any) => {
                const config = STATUS_CONFIG[leave.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.pending;
                const StatusIcon = config.icon;
                

@@ -381,24 +381,36 @@ function AnalyticsPage() {
    return (
       <div className="max-w-7xl mx-auto space-y-4 lg:space-y-6 pb-16 pt-3 lg:pt-6">
 
-         {/* Clinical Header */}
-         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border-theme pb-4 sm:pb-6 lg:pb-6">
-            <div className="space-y-1">
-               <div className="flex items-center gap-2">
-                  <div className="p-1.5 sm:p-2 bg-emerald-500/10 rounded-xl">
-                     <Activity className="text-emerald-500 sm:w-5 sm:h-5" size={18} />
+         {/* Dynamic Header */}
+         <div className="flex flex-col gap-3 bg-white dark:bg-[#111] py-3 px-3 md:py-3 md:px-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm shrink-0 mx-1 sm:mx-0 relative overflow-hidden mb-4 sm:mb-6 z-20">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none"></div>
+            
+            {/* Top Row: Title, Action */}
+            <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 w-full relative z-10">
+               <div className="flex items-center gap-3 shrink-0">
+                  <div className="p-1.5 md:p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg text-emerald-600 dark:text-emerald-400">
+                     <Activity className="w-4 h-4 md:w-5 md:h-5" />
                   </div>
-                  <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground transition-all">Clinical Analytics</h1>
+                  <div className="flex flex-col justify-center">
+                     <h1 className="text-sm md:text-base font-bold text-gray-900 dark:text-white tracking-tight leading-none uppercase">
+                        Clinical Analytics
+                     </h1>
+                     <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 hidden sm:flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                        Professional Practice Insight & Patient Flux
+                     </p>
+                  </div>
                </div>
-               <p className="text-muted font-bold uppercase tracking-[0.2em] sm:tracking-[0.3em] text-[8px] sm:text-[9px] pl-1">Professional Practice Insight & Patient Flux</p>
-            </div>
 
-            <button
-               onClick={loadData}
-               className="inline-flex items-center gap-2 px-4 py-3 sm:px-6 sm:py-2.5 bg-primary-theme text-white text-[10px] sm:text-[11px] font-black uppercase tracking-widest rounded-xl hover:opacity-95 transition-all shadow-lg shadow-primary-theme/20 w-full sm:w-auto justify-center active:scale-95"
-            >
-               <Activity size={13} /> Refresh Intelligence
-            </button>
+               <div className="flex items-center gap-2 w-full xl:w-auto shrink-0 justify-between xl:justify-end">
+                  <button
+                     onClick={loadData}
+                     className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] font-black uppercase tracking-widest rounded-lg transition-all shadow-sm shadow-emerald-500/20 w-full sm:w-auto justify-center active:scale-95"
+                  >
+                     <Activity size={12} className={isUpdating ? "animate-spin" : ""} /> Refresh Intelligence
+                  </button>
+               </div>
+            </div>
          </div>
 
          {/* Accuracy-Focus Metrics */}

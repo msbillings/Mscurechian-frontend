@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import {
    Calendar as CalendarIcon, Clock, Filter, Search,
-   MoreVertical, X, ChevronLeft, ChevronRight, Activity
+   MoreVertical, X, ChevronLeft, ChevronRight, Activity, RefreshCw
 } from 'lucide-react';
 import { getAllAppointmentsAction } from '@/lib/integrations/actions/doctor.actions';
 import toast from 'react-hot-toast';
@@ -22,7 +22,8 @@ function DoctorAppointmentsPage() {
    const [searchQuery, setSearchQuery] = useState('');
    const [debouncedSearch, setDebouncedSearch] = useState('');
    const [statusFilter, setStatusFilter] = useState('');
-   const [dateFilter, setDateFilter] = useState('');
+   const [startDate, setStartDate] = useState('');
+   const [endDate, setEndDate] = useState('');
    const [typeFilter, setTypeFilter] = useState('all');
    const [sortBy, setSortBy] = useState('newest');
 
@@ -47,10 +48,10 @@ function DoctorAppointmentsPage() {
       return () => clearTimeout(timer);
    }, [searchQuery]);
 
-  
+
    useEffect(() => {
       fetchAppointments();
-   }, [currentPage, debouncedSearch, statusFilter, dateFilter, sortBy, typeFilter]);
+   }, [currentPage, debouncedSearch, statusFilter, startDate, endDate, sortBy, typeFilter]);
 
    const fetchAppointments = async () => {
       setLoading(true);
@@ -60,7 +61,8 @@ function DoctorAppointmentsPage() {
             limit: 10,
             search: debouncedSearch,
             status: statusFilter,
-            date: dateFilter,
+            startDate: startDate,
+            endDate: endDate,
             type: typeFilter !== 'all' ? typeFilter : undefined,
             sort: sortBy
          });
@@ -84,7 +86,7 @@ function DoctorAppointmentsPage() {
       }
    };
 
-    // ✅ REAL-TIME: Auto-refetch whenever an appointment SSE event arrives
+   // ✅ REAL-TIME: Auto-refetch whenever an appointment SSE event arrives
    useRealtimeRefetch(useAppointmentStore, fetchAppointments);
 
    const startIndex = (currentPage - 1) * pagination.limit + 1;
@@ -93,7 +95,8 @@ function DoctorAppointmentsPage() {
    const clearFilters = () => {
       setSearchQuery('');
       setStatusFilter('');
-      setDateFilter('');
+      setStartDate('');
+      setEndDate('');
       setTypeFilter('all');
       setCurrentPage(1);
       setSortBy('newest');
@@ -101,97 +104,153 @@ function DoctorAppointmentsPage() {
 
    return (
       <div className="space-y-2 sm:space-y-6">
-         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 sm:gap-4">
-            <div>
-               <h1 className="text-lg md:text-xl lg:text-xl font-bold text-gray-900 dark:text-white">Appointments</h1>
-               <p className="text-[8px] sm:text-[9px] font-bold text-muted uppercase tracking-[0.2em] mt-0.5 sm:mt-1">Manage your schedule and patient consultations.</p>
-            </div>
-         </div>
-
-         {/* Filters */}
-         <div className="bg-white dark:bg-[#111] p-1.5 sm:p-4 rounded-xl border border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-4 items-stretch sm:items-center shadow-sm mx-1 sm:mx-0">
-            <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
-               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-               <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search Patient or MRN..."
-                  className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-xs sm:text-sm outline-none focus:ring-2 focus:ring-blue-500"
-               />
-            </div>
-
-            <div className="grid grid-cols-2 lg:flex lg:flex-wrap gap-2 sm:gap-4">
-               <div className="relative">
-                  <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
-                  <select
-                     value={statusFilter}
-                     onChange={(e) => setStatusFilter(e.target.value)}
-                     className="w-full pl-9 pr-8 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-bold rounded-lg text-[10px] sm:text-xs border border-blue-100 dark:border-blue-800 outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30"
-                  >
-                     <option value="">All Status</option>
-                     <option value="Scheduled">Scheduled</option>
-                     <option value="Completed">Completed</option>
-                     <option value="Cancelled">Cancelled</option>
-                     <option value="No Show">No Show</option>
-                  </select>
+         {/* Dynamic Header */}
+         <div className="flex flex-col gap-3 bg-white dark:bg-[#111] py-3 px-3 md:py-3 md:px-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm shrink-0 mx-1 sm:mx-0">
+            {/* Top Row: Title, Action Button, Pagination */}
+            <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 w-full">
+               <div className="flex items-center gap-3 shrink-0">
+                  <div className="p-1.5 md:p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-600 dark:text-blue-400">
+                     <CalendarIcon className="w-4 h-4 md:w-5 md:h-5" />
+                  </div>
+                  <div className="flex flex-col justify-center">
+                     <h1 className="text-sm md:text-base font-bold text-gray-900 dark:text-white tracking-tight leading-none uppercase">
+                        Appointments
+                     </h1>
+                     <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse" />
+                        {pagination.total} Total Consultations
+                     </p>
+                  </div>
                </div>
 
-               <div className="relative">
-                  <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
+               <div className="flex items-center gap-2 w-full xl:w-auto shrink-0 justify-between xl:justify-end">
+                  {/* Refresh Button */}
+                  <button
+                     onClick={fetchAppointments}
+                     className="px-2.5 py-1.5 bg-gray-50 dark:bg-gray-800/50 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 border border-gray-200 dark:border-gray-700 transition-all shadow-sm shrink-0"
+                     title="Refresh Data"
+                  >
+                     <RefreshCw size={12} className={loading ? "animate-spin" : ""} /> Refresh
+                  </button>
+
+                  {/* Pagination */}
+                  {pagination.total > 0 && (
+                     <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 p-1 px-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                        <div className="text-[9px] text-gray-500 dark:text-gray-400 font-black uppercase tracking-widest whitespace-nowrap hidden sm:block">
+                           <span className="text-gray-900 dark:text-white">{startIndex}-{endIndex}</span> / {pagination.total}
+                        </div>
+                        <div className="flex items-center gap-1">
+                           <button
+                              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                              disabled={currentPage === 1}
+                              className="p-1 rounded bg-white dark:bg-[#111] text-gray-600 dark:text-gray-400 hover:text-blue-600 disabled:opacity-30 border border-gray-200 dark:border-gray-700 transition-colors shadow-sm"
+                           >
+                              <ChevronLeft size={12} />
+                           </button>
+                           <button
+                              onClick={() => setCurrentPage(prev => Math.min(prev + 1, pagination.totalPages))}
+                              disabled={currentPage === pagination.totalPages || pagination.totalPages === 0}
+                              className="p-1 rounded bg-white dark:bg-[#111] text-gray-600 dark:text-gray-400 hover:text-blue-600 disabled:opacity-30 border border-gray-200 dark:border-gray-700 transition-colors shadow-sm"
+                           >
+                              <ChevronRight size={12} />
+                           </button>
+                        </div>
+                     </div>
+                  )}
+               </div>
+            </div>
+
+            {/* Bottom Row: Control Center (Search, Filters) */}
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 border-t border-gray-50 dark:border-gray-800 pt-3">
+               
+               {/* Search Bar */}
+               <div className="relative flex-1 w-full min-w-0">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={12} />
                   <input
-                     type="date"
-                     value={dateFilter}
-                     onChange={(e) => setDateFilter(e.target.value)}
-                     className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 font-bold rounded-lg text-[10px] sm:text-xs border border-gray-200 dark:border-gray-800 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                     type="text"
+                     value={searchQuery}
+                     onChange={(e) => setSearchQuery(e.target.value)}
+                     placeholder="Search Patient or MRN..."
+                     className="w-full pl-8 pr-3 py-1.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-[10px] font-bold outline-none focus:ring-1 focus:ring-blue-500 transition-all text-gray-900 dark:text-white placeholder-gray-400"
                   />
                </div>
 
-               <div className="relative">
-                  <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
-                  <select
-                     value={sortBy}
-                     onChange={(e) => {
-                        setSortBy(e.target.value);
-                        setCurrentPage(1);
-                     }}
-                     className="w-full pl-9 pr-8 py-2 bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 font-bold rounded-lg text-[10px] sm:text-xs border border-gray-200 dark:border-gray-800 outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
-                  >
-                     <option value="newest">Newest</option>
-                     <option value="oldest">Oldest</option>
-                  </select>
-               </div>
+               {/* Filters Group */}
+               <div className="flex flex-wrap lg:flex-nowrap items-center gap-2 shrink-0">
+                  {/* Status Filter */}
+                  <div className="relative shrink-0 w-full sm:w-auto">
+                     <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={12} />
+                     <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="w-full sm:w-auto pl-7 pr-7 py-1.5 bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 font-bold rounded-lg text-[9px] uppercase tracking-widest border border-gray-200 dark:border-gray-700 outline-none focus:ring-1 focus:ring-blue-500 appearance-none cursor-pointer"
+                     >
+                        <option value="">All Status</option>
+                        <option value="Scheduled">Scheduled</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Cancelled">Cancelled</option>
+                        <option value="No Show">No Show</option>
+                     </select>
+                  </div>
 
-               <div className="relative">
-                  <Activity className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
-                  <select
-                     value={typeFilter}
-                     onChange={(e) => {
-                        setTypeFilter(e.target.value);
-                        setCurrentPage(1);
-                     }}
-                     className={`w-full pl-9 pr-8 py-2 font-bold rounded-lg text-[10px] sm:text-xs border outline-none focus:ring-2 appearance-none cursor-pointer transition-all ${typeFilter === 'all'
-                        ? 'bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800 focus:ring-blue-500'
-                        : typeFilter === 'IPD'
-                           ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 border-rose-100 dark:border-rose-800 focus:ring-rose-500'
-                           : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800 focus:ring-emerald-500'
-                        }`}
-                  >
-                     <option value="all">All Dept</option>
-                     <option value="OPD">OPD</option>
-                     <option value="IPD">IPD</option>
-                  </select>
+                  {/* Date Range */}
+                  <div className="flex items-center gap-1 shrink-0 w-full sm:w-auto">
+                     <div className="relative flex-1 sm:w-32">
+                        <CalendarIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={12} />
+                        <input
+                           type="date"
+                           value={startDate}
+                           onChange={(e) => setStartDate(e.target.value)}
+                           className="w-full pl-7 pr-2 py-1.5 bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 font-bold rounded-lg text-[9px] uppercase tracking-wider border border-gray-200 dark:border-gray-700 outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                           title="Start Date"
+                        />
+                     </div>
+                     <span className="text-gray-400 font-bold text-[9px]">-</span>
+                     <div className="relative flex-1 sm:w-32">
+                        <CalendarIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={12} />
+                        <input
+                           type="date"
+                           value={endDate}
+                           onChange={(e) => setEndDate(e.target.value)}
+                           className="w-full pl-7 pr-2 py-1.5 bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 font-bold rounded-lg text-[9px] uppercase tracking-wider border border-gray-200 dark:border-gray-700 outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                           title="End Date"
+                        />
+                     </div>
+                  </div>
+
+                  {/* Type Filter */}
+                  <div className="relative shrink-0 w-full sm:w-auto">
+                     <Activity className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={12} />
+                     <select
+                        value={typeFilter}
+                        onChange={(e) => {
+                           setTypeFilter(e.target.value);
+                           setCurrentPage(1);
+                        }}
+                        className={`w-full sm:w-auto pl-7 pr-7 py-1.5 font-bold rounded-lg text-[9px] uppercase tracking-widest border outline-none focus:ring-1 appearance-none cursor-pointer transition-all ${typeFilter === 'all'
+                           ? 'bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 focus:ring-blue-500'
+                           : typeFilter === 'IPD'
+                              ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 border-rose-100 dark:border-rose-800 focus:ring-rose-500'
+                              : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800 focus:ring-emerald-500'
+                           }`}
+                     >
+                        <option value="all">All Dept</option>
+                        <option value="OPD">OPD</option>
+                        <option value="IPD">IPD</option>
+                     </select>
+                  </div>
+
+                  {/* Clear Button */}
+                  {(searchQuery || statusFilter || startDate || endDate || sortBy !== 'newest') && (
+                     <button
+                        onClick={clearFilters}
+                        className="px-2 py-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-1 border border-red-100 dark:border-red-900/20 transition-all shrink-0"
+                     >
+                        <X size={12} /> Clear
+                     </button>
+                  )}
                </div>
             </div>
-
-            {(searchQuery || statusFilter || dateFilter || sortBy !== 'newest') && (
-               <button
-                  onClick={clearFilters}
-                  className="w-full sm:w-auto px-3 py-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-[10px] sm:text-xs font-black uppercase tracking-widest flex items-center justify-center gap-1.5 border border-red-100 dark:border-red-900/20 sm:border-transparent"
-               >
-                  <X size={14} /> Clear
-               </button>
-            )}
          </div>
 
          {/* Appointments List */}
@@ -348,52 +407,7 @@ function DoctorAppointmentsPage() {
                      </table>
                   </div>
 
-                  {/* Pagination */}
-                  <div className="px-1.5 sm:px-6 py-3 sm:py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-                     <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium">
-                        Showing <span className="font-bold text-gray-900 dark:text-white">{startIndex}-{endIndex}</span> of <span className="font-bold text-gray-900 dark:text-white">{pagination.total}</span>
-                     </div>
-                     <div className="flex items-center gap-1 sm:gap-2">
-                        <button
-                           onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                           disabled={currentPage === 1}
-                           className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
-                        >
-                           <ChevronLeft size={16} />
-                        </button>
-                        <div className="flex items-center gap-1">
-                           {Array.from({ length: Math.min(pagination.totalPages, pagination.totalPages > 5 ? 3 : 5) }, (_, i) => {
-                              const totalPages = pagination.totalPages;
-                              let pageNum = i + 1;
-                              if (totalPages > 5 && currentPage > 3) {
-                                 pageNum = currentPage - 1 + i;
-                                 if (pageNum > totalPages) pageNum = totalPages - (2 - i);
-                              }
-
-                              return (
-                                 <button
-                                    key={pageNum}
-                                    onClick={() => setCurrentPage(pageNum)}
-                                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-xs font-black ${currentPage === pageNum
-                                       ? 'bg-blue-600 text-white'
-                                       : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                                       }`}
-                                 >
-                                    {pageNum}
-                                 </button>
-                              );
-                           })}
-                           {pagination.totalPages > 5 && <span className="text-gray-300 mx-1">...</span>}
-                        </div>
-                        <button
-                           onClick={() => setCurrentPage(prev => Math.min(prev + 1, pagination.totalPages))}
-                           disabled={currentPage === pagination.totalPages}
-                           className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
-                        >
-                           <ChevronRight size={16} />
-                        </button>
-                     </div>
-                  </div>
+                  {/* Pagination logic removed from bottom */}
                </>
             )}
          </div>

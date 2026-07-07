@@ -54,7 +54,7 @@ const calculateNEWS = (vitals: any) => {
     else if (vitals.status === 'Warning' || (vitals.spO2 && Number(vitals.spO2) < 94)) score += 3;
     if (vitals.heartRate && (Number(vitals.heartRate) > 120 || Number(vitals.heartRate) < 45)) score += 2;
     if (vitals.temp && (Number(vitals.temp) > 38.5 || Number(vitals.temp) < 35.5)) score += 2;
-    
+
     if (score >= 5 || vitals.status === 'Critical') {
         return { score: score || 6, label: `NEWS: ${score || 6} (High Risk)`, color: 'bg-rose-500 text-white border-rose-600 animate-pulse font-black shadow-sm' };
     }
@@ -228,37 +228,102 @@ export default function DoctorInpatientsPage() {
 
     return (
         <div className="space-y-4 animate-in fade-in duration-500">
-            {/* Header Section */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-lg md:text-xl lg:text-xl font-black text-foreground tracking-tight flex items-center gap-2">
-                        SURVEILLANCE <Users className="text-emerald-500" size={20} />
-                    </h1>
-                    <p className="text-[8px] sm:text-[9px] font-bold text-muted uppercase tracking-[0.2em] mt-0.5 sm:mt-1">Active Assigned Inpatients</p>
+            {/* Dynamic Header */}
+            <div className="flex flex-col gap-3 bg-white dark:bg-[#111] py-3 px-3 md:py-3 md:px-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm shrink-0 mx-1 sm:mx-0 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none"></div>
+                
+                {/* Top Row: Title, Action Button, Pagination */}
+                <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 w-full relative z-10">
+                    <div className="flex items-center gap-3 shrink-0">
+                        <div className="p-1.5 md:p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg text-emerald-600 dark:text-emerald-400">
+                            <Users className="w-4 h-4 md:w-5 md:h-5" />
+                        </div>
+                        <div className="flex flex-col justify-center">
+                            <h1 className="text-sm md:text-base font-bold text-gray-900 dark:text-white tracking-tight leading-none uppercase">
+                                SURVEILLANCE
+                            </h1>
+                            <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                Active Assigned Inpatients
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full xl:w-auto shrink-0 justify-between xl:justify-end">
+                        {/* Refresh Button */}
+                        <button
+                            onClick={fetchAdmissions}
+                            className="px-2.5 py-1.5 bg-gray-50 dark:bg-gray-800/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 border border-gray-200 dark:border-gray-700 transition-all shadow-sm shrink-0"
+                            title="Refresh Data"
+                        >
+                            <RefreshCw size={12} className={loading ? "animate-spin" : ""} /> Refresh
+                        </button>
+
+                        {/* Pagination */}
+                        {!loading && filteredAdmissions.length > 0 && (
+                            <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 p-1 px-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                                <div className="text-[9px] text-gray-500 dark:text-gray-400 font-black uppercase tracking-widest whitespace-nowrap hidden sm:block">
+                                    <span className="text-gray-900 dark:text-white">Page {currentPage}</span> / {totalPages}
+                                    <span className="ml-1.5 text-emerald-600 dark:text-emerald-400">({filteredAdmissions.length} TOTAL)</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                        disabled={currentPage === 1}
+                                        className="p-1 rounded bg-white dark:bg-[#111] text-gray-600 dark:text-gray-400 hover:text-emerald-600 disabled:opacity-30 border border-gray-200 dark:border-gray-700 transition-colors shadow-sm"
+                                    >
+                                        <ChevronLeft size={12} />
+                                    </button>
+                                    <button
+                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                        disabled={currentPage === totalPages}
+                                        className="p-1 rounded bg-white dark:bg-[#111] text-gray-600 dark:text-gray-400 hover:text-emerald-600 disabled:opacity-30 border border-gray-200 dark:border-gray-700 transition-colors shadow-sm"
+                                    >
+                                        <ChevronRight size={12} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-fit">
-                    {/* Row 1: View toggle + Filters + Pagination */}
-                    <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
-                        <div className="flex items-center bg-card border border-border-theme p-1 rounded-lg shrink-0">
-                            <button
-                                onClick={() => setViewType('list')}
-                                className={`p-1.5 rounded-md transition-all ${viewType === 'list' ? 'bg-emerald-50 text-emerald-600' : 'text-muted hover:text-foreground'}`}
-                                title="List View"
-                            >
-                                <List size={14} />
-                            </button>
-                            <button
-                                onClick={() => setViewType('card')}
-                                className={`p-1.5 rounded-md transition-all ${viewType === 'card' ? 'bg-emerald-50 text-emerald-600' : 'text-muted hover:text-foreground'}`}
-                                title="Card View"
-                            >
-                                <LayoutGrid size={14} />
-                            </button>
-                        </div>
+                {/* Bottom Row: Control Center (Search, Filters) */}
+                <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 border-t border-gray-50 dark:border-gray-800 pt-3 relative z-10">
+                    
+                    {/* View Toggle */}
+                    <div className="flex items-center bg-gray-50 dark:bg-gray-800/50 p-1 rounded-lg border border-gray-200 dark:border-gray-700 shrink-0">
+                        <button
+                            onClick={() => setViewType('list')}
+                            className={`p-1.5 rounded-md transition-all ${viewType === 'list' ? 'bg-white dark:bg-[#111] text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}
+                            title="List View"
+                        >
+                            <List size={12} />
+                        </button>
+                        <button
+                            onClick={() => setViewType('card')}
+                            className={`p-1.5 rounded-md transition-all ${viewType === 'card' ? 'bg-white dark:bg-[#111] text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}
+                            title="Card View"
+                        >
+                            <LayoutGrid size={12} />
+                        </button>
+                    </div>
 
+                    {/* Search Bar */}
+                    <div className="relative flex-1 w-full min-w-0">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={12} />
+                        <input
+                            type="text"
+                            placeholder="Search by name, MRN, ID..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-8 pr-3 py-1.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-[10px] font-bold outline-none focus:ring-1 focus:ring-emerald-500 transition-all text-gray-900 dark:text-white placeholder-gray-400"
+                        />
+                    </div>
+
+                    {/* Filters Group */}
+                    <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0">
                         <select
-                            className="px-2 py-2 bg-card border border-border-theme rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest outline-none focus:border-emerald-500 transition-all cursor-pointer"
+                            className="w-full sm:w-auto px-3 py-1.5 bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 font-bold rounded-lg text-[9px] uppercase tracking-widest border border-gray-200 dark:border-gray-700 outline-none focus:ring-1 focus:ring-emerald-500 appearance-none cursor-pointer"
                             value={filters.type}
                             onChange={(e) => setFilters(prev => ({ ...prev, type: e.target.value, room: '' }))}
                         >
@@ -269,7 +334,7 @@ export default function DoctorInpatientsPage() {
                         </select>
 
                         <select
-                            className="px-2 py-2 bg-card border border-border-theme rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest outline-none focus:border-emerald-500 transition-all cursor-pointer"
+                            className="w-full sm:w-auto px-3 py-1.5 bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 font-bold rounded-lg text-[9px] uppercase tracking-widest border border-gray-200 dark:border-gray-700 outline-none focus:ring-1 focus:ring-emerald-500 appearance-none cursor-pointer"
                             value={filters.room}
                             onChange={(e) => setFilters(prev => ({ ...prev, room: e.target.value }))}
                         >
@@ -278,48 +343,6 @@ export default function DoctorInpatientsPage() {
                                 <option key={room} value={room}>{room}</option>
                             ))}
                         </select>
-
-                        {/* Pagination - Inline with filters at the TOP */}
-                        {!loading && filteredAdmissions.length > 0 && (
-                            <div className="flex items-center gap-1 bg-card border border-border-theme rounded-lg p-1 shadow-sm shrink-0">
-                                <button
-                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                    disabled={currentPage === 1}
-                                    className="p-1.5 text-muted hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-md disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                                    title="Prev"
-                                >
-                                    <ChevronLeft size={14} />
-                                </button>
-                                <div className="px-1.5 text-[10px] font-black text-gray-500 dark:text-gray-400 whitespace-nowrap uppercase tracking-tighter flex items-center gap-1">
-                                    <span className="text-emerald-600">{currentPage}</span>
-                                    <span className="mx-0.5 text-border-theme font-normal">/</span>
-                                    {totalPages}
-                                    <span className="ml-1 px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded text-[9px] font-bold">
-                                        {filteredAdmissions.length} TOTAL
-                                    </span>
-                                </div>
-                                <button
-                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                    disabled={currentPage === totalPages}
-                                    className="p-1.5 text-muted hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-md disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                                    title="Next"
-                                >
-                                    <ChevronRight size={14} />
-                                </button>
-                            </div>
-                        )}
-
-                        {/* Search */}
-                        <div className="relative flex-1 min-w-[200px] lg:min-w-[250px] xl:w-[350px]">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={14} />
-                            <input
-                                type="text"
-                                placeholder="Search by name, MRN, ID..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-9 pr-4 py-2 sm:py-2.5 bg-card border border-border-theme focus:border-emerald-500 outline-none text-[10px] sm:text-[11px] font-bold transition-all shadow-sm rounded-lg sm:rounded-xl"
-                            />
-                        </div>
                     </div>
                 </div>
             </div>
@@ -334,13 +357,12 @@ export default function DoctorInpatientsPage() {
                     color="blue"
                     icon={<Users className="w-3.5 h-3.5 sm:w-5 sm:h-5" />}
                 />
-                <div 
+                <div
                     onClick={() => setRoundingFilter(roundingFilter === 'pending' ? 'all' : 'pending')}
-                    className={`p-3 sm:p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
-                        roundingFilter === 'pending'
+                    className={`p-3 sm:p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${roundingFilter === 'pending'
                             ? 'bg-emerald-500 text-white border-emerald-600 shadow-lg scale-[1.02]'
                             : 'bg-white dark:bg-[#111] border-gray-200 dark:border-gray-800 hover:border-emerald-500/50 shadow-sm'
-                    }`}
+                        }`}
                 >
                     <div>
                         <span className={`text-[9px] sm:text-[10px] font-black uppercase tracking-wider block ${roundingFilter === 'pending' ? 'text-emerald-100' : 'text-gray-400'}`}>
@@ -385,11 +407,10 @@ export default function DoctorInpatientsPage() {
                         <button
                             key={tab.id}
                             onClick={() => setRoundingFilter(tab.id as any)}
-                            className={`px-3.5 py-1.5 rounded-lg font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 ${
-                                roundingFilter === tab.id
+                            className={`px-3.5 py-1.5 rounded-lg font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 ${roundingFilter === tab.id
                                     ? 'bg-emerald-600 text-white shadow-sm'
                                     : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300'
-                            }`}
+                                }`}
                         >
                             <span>{tab.label}</span>
                             {tab.alert && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />}
@@ -432,8 +453,8 @@ export default function DoctorInpatientsPage() {
                                         const news = calculateNEWS(adm.vitals);
 
                                         return (
-                                            <tr 
-                                                key={adm._id} 
+                                            <tr
+                                                key={adm._id}
                                                 onClick={() => setSelectedAdmissionForRounding(adm)}
                                                 className="hover:bg-emerald-50/30 dark:hover:bg-emerald-950/20 transition-all group cursor-pointer"
                                             >

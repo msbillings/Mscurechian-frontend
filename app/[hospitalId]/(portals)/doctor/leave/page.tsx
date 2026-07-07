@@ -174,12 +174,30 @@ function DoctorLeaveRequest() {
 
   return (
     <div className="max-w-7xl mx-auto pb-12">
-      <div className="pt-4 sm:pt-8">
-        <PageHeader
-          icon={<Calendar className="text-blue-500" />}
-          title="Request Leave"
-          subtitle="Submit a leave application for approval"
-        />
+      <div className="pt-2 sm:pt-4">
+        {/* Ultra Compact Dynamic Header */}
+        <div className="flex flex-col gap-3 bg-white dark:bg-[#111] py-3 px-3 md:py-3 md:px-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm shrink-0 mx-1 sm:mx-0 relative overflow-hidden z-20">
+            <div className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none"></div>
+            </div>
+            
+            <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 w-full relative z-10">
+                <div className="flex items-center gap-3 shrink-0">
+                    <div className="p-1.5 md:p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-600 dark:text-blue-400">
+                        <Calendar className="w-4 h-4 md:w-5 md:h-5" />
+                    </div>
+                    <div className="flex flex-col justify-center">
+                        <h1 className="text-sm md:text-base font-bold text-gray-900 dark:text-white tracking-tight leading-none uppercase">
+                            Request Leave
+                        </h1>
+                        <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 hidden sm:flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
+                            Submit a leave application for approval
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6" noValidate>

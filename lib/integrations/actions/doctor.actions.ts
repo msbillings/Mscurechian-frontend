@@ -95,6 +95,8 @@ export async function getAllAppointmentsAction(params?: {
   search?: string;
   status?: string;
   date?: string;
+  startDate?: string;
+  endDate?: string;
   type?: string;
 }): Promise<{ success: boolean; data?: any[]; pagination?: PaginationData; error?: string }> {
   try {
@@ -106,6 +108,8 @@ export async function getAllAppointmentsAction(params?: {
       if (params.search) queryParams.append('search', params.search);
       if (params.status) queryParams.append('status', params.status);
       if (params.date) queryParams.append('date', params.date);
+      if (params.startDate) queryParams.append('startDate', params.startDate);
+      if (params.endDate) queryParams.append('endDate', params.endDate);
       if (params.type) queryParams.append('type', params.type);
     }
 

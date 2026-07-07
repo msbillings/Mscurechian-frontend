@@ -571,7 +571,7 @@ function CreateLabTokenPage({ params }: { params: Promise<{ hospitalId: string }
 
             <div className="space-y-4 sm:space-y-6">
               {tests.map((test, index) => (
-                <div key={index} className="group relative bg-gray-50 dark:bg-gray-900/50 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-gray-800 hover:border-purple-200 dark:hover:border-purple-900/50 transition-all">
+                <div key={index} className={`group relative bg-gray-50 dark:bg-gray-900/50 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-gray-100 dark:border-gray-800 hover:border-purple-200 dark:hover:border-purple-900/50 transition-all ${activeSearchIndex === index ? 'z-50' : 'z-10'}`}>
                   <div className="flex flex-col gap-4">
                     <div className="flex-1 space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

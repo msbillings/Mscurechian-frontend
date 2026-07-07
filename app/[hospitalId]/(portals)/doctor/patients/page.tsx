@@ -65,43 +65,77 @@ function PatientsPage() {
    const endIndex = Math.min(currentPage * pagination.limit, pagination.total);
 
    return (
-      <div className="space-y-4 sm:space-y-6 pt-3 md:pt-0 lg:pt-0 translate-y-[-10px] sm:translate-y-0">
-         {/* Header */}
-         <div className="bg-card p-4 sm:p-6 sm:pt-3 rounded-2xl sm:rounded-3xl shadow-sm border border-border-theme flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-all">
-            <div className="flex items-center gap-3">
-               <div className="p-2 bg-primary-theme/10 rounded-xl">
-                  <Users className="text-primary-theme" size={20} />
+      <div className="space-y-4 pt-2 pb-16">
+         {/* Dynamic Header */}
+         <div className="flex flex-col gap-3 bg-white dark:bg-[#111] py-3 px-3 md:py-3 md:px-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm shrink-0 mx-1 sm:mx-0 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none"></div>
+            
+            {/* Top Row: Title, Pagination */}
+            <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 w-full relative z-10">
+               <div className="flex items-center gap-3 shrink-0">
+                  <div className="p-1.5 md:p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-indigo-600 dark:text-indigo-400">
+                     <Users className="w-4 h-4 md:w-5 md:h-5" />
+                  </div>
+                  <div className="flex flex-col justify-center">
+                     <h1 className="text-sm md:text-base font-bold text-gray-900 dark:text-white tracking-tight leading-none uppercase">
+                        My Patients
+                     </h1>
+                     <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 hidden sm:flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
+                        Clinical Registry & Archives
+                     </p>
+                  </div>
                </div>
-               <div>
-                  <h1 className="text-lg md:text-xl lg:text-xl font-bold text-foreground uppercase tracking-tight">My Patients</h1>
-                  <p className="text-muted font-bold uppercase tracking-[0.2em] text-[8px] sm:text-[9px] mt-0.5">Clinical Registry & Archives</p>
-               </div>
-            </div>
-            <div className="text-right hidden sm:block">
-               <p className="text-[10px] font-black text-muted uppercase tracking-widest leading-none">Total Patients</p>
-               <p className="text-2xl font-black text-foreground tracking-tighter">{pagination.total}</p>
-            </div>
-         </div>
 
-         {/* Filters & Search - Mobile Compact */}
-         <div className="bg-card p-3 sm:p-4 rounded-2xl sm:rounded-3xl shadow-sm border border-border-theme flex flex-col lg:flex-row gap-3 sm:gap-4 items-center justify-between">
-            <div className="flex flex-col md:flex-row items-center gap-3 sm:gap-4 flex-1 w-full">
-               <div className="relative flex-1 w-full group">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted transition-colors group-focus-within:text-primary-theme" size={16} />
+               <div className="flex items-center gap-2 w-full xl:w-auto shrink-0 justify-between xl:justify-end">
+                  {/* Pagination Controls */}
+                  {patients.length > 0 && (
+                     <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 p-1 px-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                        <div className="text-[9px] text-gray-500 dark:text-gray-400 font-black uppercase tracking-widest whitespace-nowrap hidden sm:block px-1">
+                           <span className="text-gray-900 dark:text-white">{startIndex}-{endIndex}</span> / {pagination.total}
+                        </div>
+                        <div className="flex items-center gap-1">
+                           <button
+                              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                              disabled={currentPage === 1}
+                              className="p-1 rounded bg-white dark:bg-[#111] text-gray-600 dark:text-gray-400 hover:text-indigo-600 disabled:opacity-30 border border-gray-200 dark:border-gray-700 transition-colors shadow-sm"
+                           >
+                              <ChevronLeft size={12} />
+                           </button>
+                           <button
+                              onClick={() => setCurrentPage(prev => Math.min(prev + 1, pagination.totalPages))}
+                              disabled={currentPage === pagination.totalPages || pagination.totalPages === 0}
+                              className="p-1 rounded bg-white dark:bg-[#111] text-gray-600 dark:text-gray-400 hover:text-indigo-600 disabled:opacity-30 border border-gray-200 dark:border-gray-700 transition-colors shadow-sm"
+                           >
+                              <ChevronRight size={12} />
+                           </button>
+                        </div>
+                     </div>
+                  )}
+               </div>
+            </div>
+
+            {/* Bottom Row: Control Center (Search, Filters) */}
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 border-t border-gray-50 dark:border-gray-800 pt-3 relative z-10">
+               
+               {/* Search Bar */}
+               <div className="relative flex-1 w-full min-w-0">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={12} />
                   <input
                      type="text"
-                     placeholder="ID, Name or Mobile..."
+                     placeholder="Search ID, Name or Mobile..."
                      value={searchQuery}
                      onChange={(e) => setSearchQuery(e.target.value)}
-                     className="w-full pl-11 pr-4 py-3 sm:py-3 bg-secondary-theme border border-transparent focus:border-primary-theme/30 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold uppercase tracking-widest placeholder:text-muted/50 focus:ring-4 focus:ring-primary-theme/5 outline-none transition-all"
+                     className="w-full pl-8 pr-3 py-1.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-[10px] font-bold outline-none focus:ring-1 focus:ring-indigo-500 transition-all text-gray-900 dark:text-white placeholder-gray-400"
                   />
                </div>
 
-               <div className="flex items-center gap-2 w-full md:w-auto">
-                  <div className="flex-1 md:flex-none flex items-center gap-2 bg-secondary-theme border border-transparent rounded-xl sm:rounded-2xl px-3 sm:px-4 py-3 sm:py-3 transition-all">
-                     <Filter size={14} className="text-muted" />
+               {/* Filters Group */}
+               <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0">
+                  <div className="relative w-full sm:w-32 group">
+                     <Filter size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                      <select
-                        className="bg-transparent text-[10px] sm:text-[11px] font-black uppercase tracking-widest focus:outline-none text-foreground cursor-pointer w-full"
+                        className="w-full pl-7 pr-6 py-1.5 bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 font-bold rounded-lg text-[9px] uppercase tracking-widest border border-gray-200 dark:border-gray-700 outline-none focus:ring-1 focus:ring-indigo-500 appearance-none cursor-pointer"
                         value={sortBy}
                         onChange={(e) => {
                            setSortBy(e.target.value);
@@ -111,12 +145,13 @@ function PatientsPage() {
                         <option value="newest">Recent</option>
                         <option value="oldest">Historical</option>
                      </select>
+                     <ChevronRight size={10} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none rotate-90" />
                   </div>
 
-                  <div className="flex-1 md:flex-none flex items-center gap-2 bg-secondary-theme border border-transparent rounded-xl sm:rounded-2xl px-3 sm:px-4 py-3 sm:py-3 min-w-[120px] sm:min-w-[140px] transition-all">
-                     <Activity size={14} className="text-muted" />
+                  <div className="relative w-full sm:w-36 group">
+                     <Activity size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                      <select
-                        className="bg-transparent text-[10px] sm:text-[11px] font-black uppercase tracking-widest focus:outline-none text-foreground cursor-pointer w-full"
+                        className="w-full pl-7 pr-6 py-1.5 bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 font-bold rounded-lg text-[9px] uppercase tracking-widest border border-gray-200 dark:border-gray-700 outline-none focus:ring-1 focus:ring-indigo-500 appearance-none cursor-pointer"
                         value={patientTypeFilter}
                         onChange={(e) => {
                            setPatientTypeFilter(e.target.value);
@@ -127,41 +162,10 @@ function PatientsPage() {
                         <option value="OPD">Outpatient</option>
                         <option value="IPD">Inpatient</option>
                      </select>
+                     <ChevronRight size={10} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none rotate-90" />
                   </div>
                </div>
             </div>
-
-            {/* Pagination Controls in Header */}
-            {patients.length > 0 && (
-               <div className="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-end border-t lg:border-t-0 pt-3 lg:pt-0 border-border-theme/30">
-                  <div className="hidden xl:block text-[10px] text-muted font-black uppercase tracking-widest mr-2">
-                     <span className="text-foreground">{startIndex}-{endIndex}</span> / {pagination.total}
-                  </div>
-                  <div className="flex items-center gap-2">
-                     <button
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                        className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl border border-border-theme bg-secondary-theme text-foreground hover:bg-primary-theme hover:text-white disabled:opacity-30 transition-all active:scale-95 shadow-sm"
-                     >
-                        <ChevronLeft size={16} />
-                     </button>
-
-                     <div className="flex items-center gap-1.5 px-2 text-[10px] font-black text-foreground lg:hidden xl:flex">
-                        <span>{currentPage}</span>
-                        <span className="text-muted">/</span>
-                        <span className="text-muted">{pagination.totalPages}</span>
-                     </div>
-
-                     <button
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, pagination.totalPages))}
-                        disabled={currentPage === pagination.totalPages}
-                        className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl border border-border-theme bg-secondary-theme text-foreground hover:bg-primary-theme hover:text-white disabled:opacity-30 transition-all active:scale-95 shadow-sm"
-                     >
-                        <ChevronRight size={16} />
-                     </button>
-                  </div>
-               </div>
-            )}
          </div>
 
          {/* Patients List */}

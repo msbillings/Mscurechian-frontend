@@ -3,7 +3,7 @@
 import React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { sopService, SOP } from '@/lib/integrations/services/sop.service';
-import { ShieldCheck, Search, X } from 'lucide-react';
+import { ShieldCheck, Search, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { SOPTable } from '@/components/sop/SOPTable';
 import { toast } from 'react-hot-toast';
 import { useState } from 'react';
@@ -129,91 +129,118 @@ export default function StaffSOPPage() {
         setShowFilters(false);
     };
 
+    const ITEMS_PER_PAGE = 7; // Matches SOPTable internal default
+    const totalPages = Math.ceil(filteredSops.length / ITEMS_PER_PAGE);
+
     return (
         <div className="min-h-screen space-y-4 sm:space-y-6 pt-2 sm:pt-4 pb-16 max-w-7xl mx-auto">
-            {/* Header Tier */}
-            <div className="bg-card rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-border-theme shadow-sm relative z-20">
-                <div className="absolute inset-0 rounded-xl sm:rounded-2xl overflow-hidden pointer-events-none">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
-                </div>
-                
-                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 relative z-10">
-                    <div className="flex items-center gap-6 sm:gap-10">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-xl shadow-emerald-500/10 rotate-3 transition-transform hover:rotate-0 duration-500">
-                            <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-lg md:text-xl lg:text-xl font-bold text-foreground uppercase tracking-tight">SOP Registry</h1>
-                            <div className="flex items-center gap-4 mt-2">
-                                <div className="text-muted font-bold uppercase tracking-[0.4em] text-[10px] sm:text-xs opacity-60 flex items-center gap-3 text-emerald-600/70">
-                                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                    Active Institutional Standards Network
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+         {/* Dynamic Header */}
+         <div className="flex flex-col gap-3 bg-white dark:bg-[#111] py-3 px-3 md:py-3 md:px-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm shrink-0 mx-1 sm:mx-0 relative overflow-hidden mb-4 z-20">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none"></div>
+            
+            {/* Top Row: Title, Pagination */}
+            <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 w-full relative z-10">
+               <div className="flex items-center gap-3 shrink-0">
+                  <div className="p-1.5 md:p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg text-emerald-600 dark:text-emerald-400">
+                     <ShieldCheck className="w-4 h-4 md:w-5 md:h-5" />
+                  </div>
+                  <div className="flex flex-col justify-center">
+                     <h1 className="text-sm md:text-base font-bold text-gray-900 dark:text-white tracking-tight leading-none uppercase">
+                        SOP Registry
+                     </h1>
+                     <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 hidden sm:flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                        Active Institutional Standards Network
+                     </p>
+                  </div>
+               </div>
 
-                    <div className="flex gap-4 w-full lg:w-auto">
-                        <div className="relative w-full lg:min-w-[280px]">
-                            <button
-                                onClick={() => setShowFilters(!showFilters)}
-                                className={`w-full flex items-center justify-between gap-3 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] border transition-all active:scale-95 shadow-lg ${showFilters
-                                    ? 'bg-secondary-theme border-primary-theme/30 text-primary-theme shadow-none'
-                                    : 'bg-card border-border-theme text-muted hover:border-emerald-500/50 hover:text-emerald-600 shadow-black/5'
-                                    }`}
-                            >
-                                <div className="flex items-center gap-2">
-                                    <Search size={16} />
-                                    <span className="truncate">{activeCategory === 'all' ? 'Protocol Analytics' : activeCategory}</span>
-                                </div>
-                                <motion.div
-                                    animate={{ rotate: showFilters ? 180 : 0 }}
-                                    className="shrink-0"
-                                >
-                                    <X size={14} className={showFilters ? 'opacity-100' : 'opacity-40'} />
-                                </motion.div>
-                            </button>
-
-                            <AnimatePresence>
-                                {showFilters && (
-                                    <motion.div
-                                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                                        className="absolute right-0 mt-4 w-full sm:w-80 bg-card border border-border-theme rounded-[2.5rem] shadow-2xl z-[50] overflow-hidden p-3"
-                                    >
-                                        <div className="relative mb-3">
-                                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted/40" size={16} />
-                                            <input
-                                                type="text"
-                                                placeholder="SEARCH DOMAINS..."
-                                                value={searchTerm}
-                                                onChange={(e) => updateSearch(e.target.value)}
-                                                className="w-full pl-12 pr-6 py-4 bg-secondary-theme/50 border border-transparent focus:border-primary-theme/20 rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-widest outline-none transition-all"
-                                            />
-                                        </div>
-                                        <div className="max-h-[50vh] overflow-y-auto custom-scrollbar pr-1 grid grid-cols-1 gap-1">
-                                            {categories.map(cat => (
-                                                <button
-                                                    key={cat}
-                                                    onClick={() => updateCategory(cat)}
-                                                    className={`w-full text-left px-5 py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all flex items-center justify-between group ${activeCategory === cat
-                                                        ? 'bg-primary-theme text-white shadow-xl shadow-primary-theme/20'
-                                                        : 'bg-transparent text-muted hover:bg-primary-theme/5 hover:text-primary-theme'
-                                                        }`}
-                                                >
-                                                    {cat}
-                                                    <div className={`w-1.5 h-1.5 rounded-full transition-all ${activeCategory === cat ? 'bg-white scale-125' : 'bg-transparent group-hover:bg-primary-theme/30'}`} />
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
+               <div className="flex items-center gap-2 w-full xl:w-auto shrink-0 justify-between xl:justify-end">
+                  {/* Pagination Controls */}
+                  {totalPages > 0 && (
+                     <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 p-1 px-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                        <div className="text-[9px] text-gray-500 dark:text-gray-400 font-black uppercase tracking-widest whitespace-nowrap hidden sm:block px-1">
+                           <span className="text-gray-900 dark:text-white">Page {currentPage}</span> / {totalPages}
                         </div>
-                    </div>
-                </div>
+                        <div className="flex items-center gap-1">
+                           <button
+                              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                              disabled={currentPage === 1}
+                              className="p-1 rounded bg-white dark:bg-[#111] text-gray-600 dark:text-gray-400 hover:text-emerald-600 disabled:opacity-30 border border-gray-200 dark:border-gray-700 transition-colors shadow-sm"
+                           >
+                              <ChevronLeft size={12} />
+                           </button>
+                           <button
+                              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                              disabled={currentPage === totalPages || totalPages === 0}
+                              className="p-1 rounded bg-white dark:bg-[#111] text-gray-600 dark:text-gray-400 hover:text-emerald-600 disabled:opacity-30 border border-gray-200 dark:border-gray-700 transition-colors shadow-sm"
+                           >
+                              <ChevronRight size={12} />
+                           </button>
+                        </div>
+                     </div>
+                  )}
+               </div>
             </div>
+
+            {/* Bottom Row: Control Center (Category Button, Search) */}
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 border-t border-gray-50 dark:border-gray-800 pt-3 relative z-10">
+               <div className="relative w-full lg:w-64 shrink-0">
+                  <button
+                     onClick={() => setShowFilters(!showFilters)}
+                     className={`w-full flex items-center justify-between gap-3 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest border transition-all ${showFilters
+                        ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white shadow-none'
+                        : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400'
+                        }`}
+                  >
+                     <div className="flex items-center gap-2 truncate">
+                        <Search size={12} />
+                        <span className="truncate">{activeCategory === 'all' ? 'Protocol Analytics' : activeCategory}</span>
+                     </div>
+                     <motion.div animate={{ rotate: showFilters ? 180 : 0 }} className="shrink-0">
+                        <X size={12} className={showFilters ? 'opacity-100' : 'opacity-40'} />
+                     </motion.div>
+                  </button>
+
+                  <AnimatePresence>
+                     {showFilters && (
+                        <motion.div
+                           initial={{ opacity: 0, scale: 0.95, y: 5 }}
+                           animate={{ opacity: 1, scale: 1, y: 0 }}
+                           exit={{ opacity: 0, scale: 0.95, y: 5 }}
+                           className="absolute left-0 mt-2 w-full sm:w-80 bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl z-50 overflow-hidden p-2"
+                        >
+                           <div className="relative mb-2">
+                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={12} />
+                              <input
+                                 type="text"
+                                 placeholder="SEARCH DOMAINS..."
+                                 value={searchTerm}
+                                 onChange={(e) => updateSearch(e.target.value)}
+                                 className="w-full pl-8 pr-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-transparent focus:border-emerald-500/30 rounded-lg text-[10px] font-bold uppercase tracking-widest outline-none transition-all text-gray-900 dark:text-white placeholder-gray-400"
+                              />
+                           </div>
+                           <div className="max-h-48 overflow-y-auto custom-scrollbar flex flex-col gap-1">
+                              {categories.map(cat => (
+                                 <button
+                                    key={cat}
+                                    onClick={() => updateCategory(cat)}
+                                    className={`w-full text-left px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-between group ${activeCategory === cat
+                                       ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400'
+                                       : 'bg-transparent text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white'
+                                       }`}
+                                 >
+                                    <span className="truncate pr-2">{cat}</span>
+                                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 transition-all ${activeCategory === cat ? 'bg-emerald-500' : 'bg-transparent group-hover:bg-gray-300 dark:group-hover:bg-gray-600'}`} />
+                                 </button>
+                              ))}
+                           </div>
+                        </motion.div>
+                     )}
+                  </AnimatePresence>
+               </div>
+            </div>
+         </div>
 
             {/* Table View */}
             <div className="bg-card rounded-xl sm:rounded-2xl p-2 sm:p-4 border border-border-theme shadow-sm overflow-hidden relative">
@@ -229,6 +256,7 @@ export default function StaffSOPPage() {
                         showInternalFilters={false}
                         currentPage={currentPage}
                         onPageChange={setCurrentPage}
+                        hidePagination={true}
                     />
                 </div>
             </div>

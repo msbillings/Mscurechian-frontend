@@ -130,38 +130,72 @@ export default function PausedAppointmentsPage() {
 
   return (
     <div className="space-y-3 sm:space-y-4 pt-2 sm:pt-4 pb-10">
-      {/* Header Section */}
-      <div className="bg-white border border-border-theme rounded-xl py-3 px-4 mb-4 shadow-sm">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <button onClick={() => router.back()} className="p-2 hover:bg-secondary-theme rounded-full text-muted hover:text-foreground transition-colors shrink-0">
-              <ArrowLeft size={18} />
-            </button>
-            <div className="w-9 h-9 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center shadow-md shadow-amber-500/20 rotate-3 shrink-0">
-              <Pause size={16} className="text-white fill-current" />
+      {/* Dynamic Header */}
+      <div className="flex flex-col gap-3 bg-white dark:bg-[#111] py-3 px-3 md:py-3 md:px-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm shrink-0 mx-1 sm:mx-0 relative overflow-hidden mb-4">
+         <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none"></div>
+         
+         {/* Top Row: Title, Action Button, Pagination */}
+         <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 w-full relative z-10">
+            <div className="flex items-center gap-3 shrink-0">
+               <button onClick={() => router.back()} className="p-1.5 md:p-2 bg-gray-50 dark:bg-gray-800 rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors border border-gray-200 dark:border-gray-700 shrink-0">
+                  <ArrowLeft size={16} />
+               </button>
+               <div className="p-1.5 md:p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-amber-600 dark:text-amber-400">
+                  <Pause className="w-4 h-4 md:w-5 md:h-5 fill-current" />
+               </div>
+               <div className="flex flex-col justify-center">
+                  <h1 className="text-sm md:text-base font-bold text-gray-900 dark:text-white tracking-tight leading-none uppercase">
+                     Paused Sessions
+                  </h1>
+                  <p className="text-[9px] md:text-[10px] font-semibold text-gray-500 uppercase tracking-widest mt-1 hidden sm:flex items-center gap-1.5">
+                     <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
+                     {pausedAppointments.length} Clinically Pended Node{pausedAppointments.length !== 1 ? 's' : ''}
+                  </p>
+               </div>
             </div>
-            <div className="min-w-0">
-              <h1 className="text-lg md:text-xl lg:text-xl font-black text-foreground flex items-center gap-2 truncate uppercase tracking-tight">
-                Paused Sessions
-              </h1>
-              <p className="text-[10px] text-muted font-bold uppercase tracking-widest leading-tight opacity-60">
-                {pausedAppointments.length} Clinically Pended Node{pausedAppointments.length !== 1 ? 's' : ''}
-              </p>
+
+            <div className="flex items-center gap-2 w-full xl:w-auto shrink-0 justify-between xl:justify-end">
+               {/* Pagination Controls */}
+               {totalPages > 0 && (
+                  <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 p-1 px-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                     <div className="text-[9px] text-gray-500 dark:text-gray-400 font-black uppercase tracking-widest whitespace-nowrap hidden sm:block px-1">
+                        <span className="text-gray-900 dark:text-white">Page {currentPage}</span> / {totalPages}
+                     </div>
+                     <div className="flex items-center gap-1">
+                        <button
+                           onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                           disabled={currentPage === 1}
+                           className="p-1 rounded bg-white dark:bg-[#111] text-gray-600 dark:text-gray-400 hover:text-amber-600 disabled:opacity-30 border border-gray-200 dark:border-gray-700 transition-colors shadow-sm"
+                        >
+                           <ChevronLeft size={12} />
+                        </button>
+                        <button
+                           onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                           disabled={currentPage === totalPages}
+                           className="p-1 rounded bg-white dark:bg-[#111] text-gray-600 dark:text-gray-400 hover:text-amber-600 disabled:opacity-30 border border-gray-200 dark:border-gray-700 transition-colors shadow-sm"
+                        >
+                           <ChevronRight size={12} />
+                        </button>
+                     </div>
+                  </div>
+               )}
             </div>
-          </div>
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="relative flex-1 sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={14} />
-              <input
-                type="text"
-                placeholder="Search Patient or MRN..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-border-theme rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-amber-500/10 placeholder:text-muted/50 uppercase tracking-widest"
-              />
+         </div>
+
+         {/* Bottom Row: Control Center (Search, Filters) */}
+         <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 border-t border-gray-50 dark:border-gray-800 pt-3 relative z-10">
+            {/* Search Bar */}
+            <div className="relative flex-1 w-full min-w-0">
+               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={12} />
+               <input
+                  type="text"
+                  placeholder="Search Patient or MRN..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-[10px] font-bold outline-none focus:ring-1 focus:ring-amber-500 transition-all text-gray-900 dark:text-white placeholder-gray-400"
+               />
             </div>
-          </div>
-        </div>
+         </div>
       </div>
 
       {/* Main Content Area */}
@@ -349,47 +383,6 @@ export default function PausedAppointmentsPage() {
           </div>
         </div>
 
-        {/* Pagination Footer */}
-        {totalPages > 1 && (
-          <div className="bg-card rounded-2xl sm:rounded-3xl p-3 sm:p-4 border border-border-theme shadow-sm mt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-[9px] sm:text-[10px] font-black text-muted uppercase tracking-[0.3em] italic opacity-40">
-              Registry Page {currentPage} / {totalPages}
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl border border-border-theme bg-white dark:bg-card hover:bg-primary-theme/5 hover:border-primary-theme/30 disabled:opacity-20 transition-all font-black"
-              >
-                <ChevronLeft size={16} className="text-primary-theme" />
-              </button>
-              
-              <div className="hidden sm:flex items-center gap-2">
-                {[...Array(totalPages)].map((_, i) => (
-                  <button
-                    key={i + 1}
-                    onClick={() => setCurrentPage(i + 1)}
-                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl text-[9px] font-black uppercase transition-all flex items-center justify-center border ${
-                      currentPage === i + 1
-                        ? 'bg-primary-theme text-white border-primary-theme shadow-lg shadow-primary-theme/10 scale-105 z-10'
-                        : 'bg-white dark:bg-card border-border-theme text-muted hover:border-primary-theme/30'
-                    }`}
-                  >
-                    {(i + 1).toString().padStart(2, '0')}
-                  </button>
-                )).slice(Math.max(0, currentPage - 3), Math.min(totalPages, currentPage + 2))}
-              </div>
-
-              <button
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-                className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl border border-border-theme bg-white dark:bg-card hover:bg-primary-theme/5 hover:border-primary-theme/30 disabled:opacity-20 transition-all font-black"
-              >
-                <ChevronRight size={16} className="text-primary-theme" />
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

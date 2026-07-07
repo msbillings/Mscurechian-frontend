@@ -26,6 +26,7 @@ interface SOPTableProps {
   currentPage?: number;
   onPageChange?: (page: number) => void;
   itemsPerPage?: number;
+  hidePagination?: boolean;
 }
 
 export const SOPTable: React.FC<SOPTableProps> = ({
@@ -38,7 +39,8 @@ export const SOPTable: React.FC<SOPTableProps> = ({
   showInternalFilters = true,
   currentPage: externalPage,
   onPageChange: externalOnPageChange,
-  itemsPerPage = 7
+  itemsPerPage = 7,
+  hidePagination = false
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
@@ -249,7 +251,7 @@ export const SOPTable: React.FC<SOPTableProps> = ({
         </>
       )}
 
-      {totalPages > 1 && (
+      {!hidePagination && totalPages > 1 && (
         <div className="px-1.5 py-1 bg-gray-50/50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between rounded-lg">
           <p className=" hidden md:block text-[8px] font-black text-gray-400 uppercase tracking-widest leading-none">
             Page {currentPage} of {totalPages}
