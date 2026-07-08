@@ -3506,28 +3506,28 @@ function CreatePrescriptionPage() {
             {/* Medical History Drawer Modal */}
             {showHistoryModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-end bg-slate-900/60 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-gray-900 h-full w-full max-w-2xl shadow-2xl flex flex-col animate-in slide-in-from-right duration-300 border-l border-border-theme">
+                    <div className="bg-white dark:bg-gray-900 h-full w-full sm:max-w-2xl sm:ml-auto shadow-2xl flex flex-col animate-in slide-in-from-right duration-300 border-l border-border-theme">
                         {/* Drawer Header */}
-                        <div className="p-6 border-b border-border-theme flex items-center justify-between bg-gray-50 dark:bg-gray-800/50">
+                        <div className="p-4 sm:p-6 border-b border-border-theme flex items-center justify-between bg-gray-50 dark:bg-gray-800/50">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-400 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+                                <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-400 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20 shrink-0">
                                     <History size={20} className="text-white" />
                                 </div>
                                 <div>
-                                    <h3 className="text-base font-black uppercase tracking-wider text-gray-900 dark:text-white">Medical History</h3>
-                                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Past visits, prescriptions & lab reports</p>
+                                    <h3 className="text-sm sm:text-base font-black uppercase tracking-wider text-gray-900 dark:text-white">Medical History</h3>
+                                    <p className="text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Past visits, prescriptions & lab reports</p>
                                 </div>
                             </div>
                             <button
                                 onClick={() => setShowHistoryModal(false)}
-                                className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors text-muted-foreground"
+                                className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors text-muted-foreground shrink-0"
                             >
                                 <X size={20} />
                             </button>
                         </div>
 
                         {/* Full History Toggle Pill Inside Modal */}
-                        <div className="p-4 border-b border-border-theme bg-amber-50/50 dark:bg-amber-950/10">
+                        <div className="p-3 sm:p-4 border-b border-border-theme bg-amber-50/50 dark:bg-amber-950/10">
                             <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-900 rounded-2xl border border-amber-200 dark:border-amber-900/40 shadow-sm">
                                 <div className="flex items-center gap-3">
                                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${showFullHistory ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-400'}`}>
@@ -3550,29 +3550,29 @@ function CreatePrescriptionPage() {
                         </div>
 
                         {/* Tabs */}
-                        <div className="flex border-b border-border-theme px-6 bg-white dark:bg-gray-900">
+                        <div className="flex border-b border-border-theme px-3 sm:px-6 bg-white dark:bg-gray-900 overflow-x-auto no-scrollbar">
                             <button
                                 onClick={() => setHistoryTab('visits')}
-                                className={`py-3.5 px-4 font-bold text-xs uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 ${historyTab === 'visits' ? 'border-amber-500 text-amber-600' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                                className={`py-3.5 px-3 sm:px-4 font-bold text-[10px] sm:text-xs uppercase tracking-wider border-b-2 transition-all flex items-center gap-1.5 shrink-0 ${historyTab === 'visits' ? 'border-amber-500 text-amber-600' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
                             >
                                 <Stethoscope size={14} /> Visits ({patientHistoryData.visits.length})
                             </button>
                             <button
                                 onClick={() => setHistoryTab('prescriptions')}
-                                className={`py-3.5 px-4 font-bold text-xs uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 ${historyTab === 'prescriptions' ? 'border-amber-500 text-amber-600' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                                className={`py-3.5 px-3 sm:px-4 font-bold text-[10px] sm:text-xs uppercase tracking-wider border-b-2 transition-all flex items-center gap-1.5 shrink-0 ${historyTab === 'prescriptions' ? 'border-amber-500 text-amber-600' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
                             >
                                 <FileText size={14} /> Prescriptions ({patientHistoryData.prescriptions.length})
                             </button>
                             <button
                                 onClick={() => setHistoryTab('reports')}
-                                className={`py-3.5 px-4 font-bold text-xs uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 ${historyTab === 'reports' ? 'border-amber-500 text-amber-600' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                                className={`py-3.5 px-3 sm:px-4 font-bold text-[10px] sm:text-xs uppercase tracking-wider border-b-2 transition-all flex items-center gap-1.5 shrink-0 ${historyTab === 'reports' ? 'border-amber-500 text-amber-600' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
                             >
                                 <FlaskConical size={14} /> Lab Reports ({patientHistoryData.reports.length})
                             </button>
                         </div>
 
                         {/* Drawer Content */}
-                        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
                             {loadingHistory ? (
                                 <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
                                     <Loader2 size={32} className="animate-spin text-amber-500 mb-3" />
@@ -3587,11 +3587,38 @@ function CreatePrescriptionPage() {
                                             patientHistoryData.visits.map((visit: any, idx: number) => (
                                                 <div key={idx} className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-border-theme space-y-2">
                                                     <div className="flex justify-between items-start">
-                                                        <span className="text-xs font-black text-foreground">{visit.diagnosis || 'General Consultation'}</span>
-                                                        <span className="text-[10px] font-bold text-muted-foreground">{new Date(visit.consultationStartTime || visit.createdAt).toLocaleDateString()}</span>
+                                                        <span className="text-xs font-black text-foreground">{visit.diagnosis || visit.reason || 'General Consultation'}</span>
+                                                        <span className="text-[10px] font-bold text-muted-foreground">
+                                                            {(visit.consultationStartTime || visit.createdAt || visit.date) ? new Date(visit.consultationStartTime || visit.createdAt || visit.date).toLocaleDateString('en-GB') : 'N/A'}
+                                                            {visit.time && ` at ${visit.time}`}
+                                                        </span>
                                                     </div>
-                                                    {visit.clinicalNotes && <p className="text-xs text-muted-foreground line-clamp-2">{visit.clinicalNotes}</p>}
-                                                    {visit.doctor?.name && <div className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mt-2">Dr. {visit.doctor.name}</div>}
+                                                    <div className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mt-1 flex flex-wrap items-center gap-1">
+                                                        <Stethoscope size={10} /> {(() => {
+                                                            const dName = visit.doctor?.user?.name || visit.doctor?.name || visit.doctorName || 'Unknown';
+                                                            return dName.toLowerCase().startsWith('dr') ? dName : `Dr. ${dName}`;
+                                                        })()} {visit.department && `(${visit.department})`}
+                                                        {(visit.hospital?.name || visit.hospitalName) && (
+                                                            <>
+                                                                <span className="mx-1 text-gray-300">•</span>
+                                                                <Building size={10} className="text-gray-400" />
+                                                                <span className="text-gray-500">{visit.hospital?.name || visit.hospitalName}</span>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                    {visit.symptoms && (
+                                                        <div className="mt-2 text-[10px] text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-800 p-2 rounded-lg bg-white dark:bg-slate-900/50">
+                                                            <span className="font-bold text-slate-800 dark:text-slate-300">SYMPTOMS:</span> {Array.isArray(visit.symptoms) ? visit.symptoms.join(', ') : visit.symptoms}
+                                                        </div>
+                                                    )}
+                                                    {visit.vitals && Object.keys(visit.vitals).length > 0 && (
+                                                        <div className="flex flex-wrap gap-2 mt-2">
+                                                            {Object.entries(visit.vitals).map(([k, v]) => (
+                                                                v ? <span key={k} className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-[9px] font-semibold text-slate-500 uppercase">{k}: {v as string}</span> : null
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    {visit.clinicalNotes && <p className="text-xs text-muted-foreground line-clamp-2 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">{visit.clinicalNotes}</p>}
                                                 </div>
                                             ))
                                         )
@@ -3604,14 +3631,43 @@ function CreatePrescriptionPage() {
                                                 <div key={idx} className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-border-theme space-y-2">
                                                     <div className="flex justify-between items-start">
                                                         <span className="text-xs font-black text-foreground">{rx.diagnosis || 'Prescription'}</span>
-                                                        <span className="text-[10px] font-bold text-muted-foreground">{new Date(rx.createdAt).toLocaleDateString()}</span>
+                                                        <span className="text-[10px] font-bold text-muted-foreground">{(rx.createdAt || rx.date) ? new Date(rx.createdAt || rx.date).toLocaleDateString('en-GB') : 'N/A'}</span>
                                                     </div>
-                                                    <div className="flex flex-wrap gap-1.5 mt-2">
-                                                        {(rx.medicines || []).map((m: any, mIdx: number) => (
-                                                            <span key={mIdx} className="px-2 py-1 bg-white dark:bg-gray-900 border border-border-theme rounded-lg text-[10px] font-bold text-foreground">
-                                                                {m.name} ({m.dosage})
-                                                            </span>
-                                                        ))}
+                                                    <div className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mt-1 flex flex-wrap items-center gap-1">
+                                                        <Stethoscope size={10} /> {(() => {
+                                                            const dName = rx.doctor?.user?.name || rx.doctor?.name || rx.doctorName || 'Unknown';
+                                                            return dName.toLowerCase().startsWith('dr') ? dName : `Dr. ${dName}`;
+                                                        })()}
+                                                        {(rx.hospital?.name || rx.hospitalName) && (
+                                                            <>
+                                                                <span className="mx-1 text-gray-300">•</span>
+                                                                <Building size={10} className="text-gray-400" />
+                                                                <span className="text-gray-500">{rx.hospital?.name || rx.hospitalName}</span>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
+                                                        {(rx.medicines || []).map((m: any, mIdx: number) => {
+                                                            let freqDisplay = 'Directed';
+                                                            if (m.freq) {
+                                                                if (typeof m.freq === 'string') freqDisplay = m.freq;
+                                                                else if (m.freq.type === 'custom') freqDisplay = `Every ${m.freq.custom?.interval} hrs`;
+                                                                else if (m.freq.standard) freqDisplay = Object.values(m.freq.standard).filter(v => v !== 'off').length + ' times/day';
+                                                            }
+                                                            return (
+                                                                <div key={mIdx} className="flex flex-col p-2 bg-white dark:bg-gray-900 border border-border-theme rounded-lg">
+                                                                    <span className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
+                                                                        <Pill size={12} className="text-amber-500 shrink-0" />
+                                                                        <span className="truncate">{m.name}</span> <span className="text-muted-foreground font-medium text-[10px] whitespace-nowrap">({m.dosage})</span>
+                                                                    </span>
+                                                                    <div className="flex flex-wrap items-center gap-1.5 mt-2 text-[9px] font-semibold text-muted-foreground uppercase tracking-widest">
+                                                                        <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded truncate">{m.form || 'Tab'}</span>
+                                                                        <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 rounded truncate">{freqDisplay}</span>
+                                                                        <span className="px-1.5 py-0.5 bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400 rounded truncate">{m.duration}</span>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
                                                     </div>
                                                 </div>
                                             ))
@@ -3622,12 +3678,56 @@ function CreatePrescriptionPage() {
                                             <div className="text-center py-16 text-muted-foreground text-xs font-bold uppercase tracking-widest">No lab reports found</div>
                                         ) : (
                                             patientHistoryData.reports.map((rep: any, idx: number) => (
-                                                <div key={idx} className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-border-theme space-y-2">
-                                                    <div className="flex justify-between items-start">
-                                                        <span className="text-xs font-black text-foreground">{rep.testName || 'Lab Investigation'}</span>
-                                                        <span className="text-[10px] font-bold text-muted-foreground">{new Date(rep.createdAt).toLocaleDateString()}</span>
+                                                <div key={idx} className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-border-theme flex flex-col">
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <div>
+                                                            <span className="text-xs font-black text-foreground">{rep.testName || 'Lab Investigation Order'}</span>
+                                                            <div className="flex items-center gap-2 mt-1">
+                                                                <span className={`px-2 py-0.5 text-[8px] font-black uppercase tracking-widest rounded-full ${rep.status?.toLowerCase() === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                                                    {rep.status || 'Pending'}
+                                                                </span>
+                                                                <span className="text-[9px] font-mono text-muted-foreground">#{rep.tokenNumber || rep._id?.slice(-6).toUpperCase()}</span>
+                                                            </div>
+                                                        </div>
+                                                        <span className="text-[10px] font-bold text-muted-foreground">{(rep.createdAt || rep.date) ? new Date(rep.createdAt || rep.date).toLocaleDateString('en-GB') : 'N/A'}</span>
                                                     </div>
-                                                    <div className="text-[10px] font-bold text-teal-600 uppercase tracking-wider">Status: {rep.status || 'Reported'}</div>
+                                                    <div className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mt-0 flex flex-wrap items-center gap-1 mb-2">
+                                                        <Stethoscope size={10} /> {(() => {
+                                                            const dName = rep.doctor?.user?.name || rep.doctor?.name || rep.doctorName || 'Unknown';
+                                                            return dName.toLowerCase().startsWith('dr') ? dName : `Dr. ${dName}`;
+                                                        })()}
+                                                        {(rep.hospital?.name || rep.hospitalName) && (
+                                                            <>
+                                                                <span className="mx-1 text-gray-300">•</span>
+                                                                <Building size={10} className="text-gray-400" />
+                                                                <span className="text-gray-500">{rep.hospital?.name || rep.hospitalName}</span>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    {rep.tests && rep.tests.length > 0 && (
+                                                        <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-border-theme">
+                                                            {rep.tests.map((test: any, tIdx: number) => (
+                                                                <span key={tIdx} className={`px-2 py-1 border rounded-md text-[9px] font-bold flex items-center gap-1 ${test.status?.toLowerCase() === 'completed' ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20' : 'bg-white dark:bg-gray-900 border-border-theme text-foreground'}`}>
+                                                                    <FlaskConical size={10} className={test.status?.toLowerCase() === 'completed' ? 'text-emerald-500' : 'text-gray-400'} />
+                                                                    {test.name || test.testName}
+                                                                    {test.status?.toLowerCase() === 'completed' && test.result && (
+                                                                        <span className="ml-1 pl-1 border-l border-emerald-200 text-emerald-800 dark:text-emerald-400">{test.result} {test.unit || ''}</span>
+                                                                    )}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    {rep.status?.toLowerCase() === 'completed' && (
+                                                        <div className="mt-3 flex justify-end">
+                                                            <button 
+                                                                onClick={() => window.open(`/${hospitalId}/doctor/lab-results/${rep._id || rep.id}`, '_blank')}
+                                                                className="px-3 py-1.5 bg-teal-50 text-teal-600 hover:bg-teal-100 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center gap-1.5"
+                                                            >
+                                                                <FileText size={12} /> View Report
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ))
                                         )

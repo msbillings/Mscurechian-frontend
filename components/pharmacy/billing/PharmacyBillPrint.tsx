@@ -402,9 +402,7 @@ const PharmacyBillPrint: React.FC<PharmacyBillPrintProps> = ({ billData, shopDet
                     <tr>
                         <th style={{ ...styles.th, width: '40px' }}>S.No</th>
                         <th style={{ ...styles.th, textAlign: 'left' }}>Item Name</th>
-                        <th style={{ ...styles.th, width: '80px' }}>Batch No.</th>
                         <th style={{ ...styles.th, width: '75px' }}>Expiry</th>
-                        <th style={{ ...styles.th, width: '60px' }}>HSN</th>
                         <th style={{ ...styles.th, width: '40px' }}>Qty</th>
                         <th style={{ ...styles.th, width: '70px' }}>MRP</th>
                         <th style={{ ...styles.th, width: '50px' }}>Disc%</th>
@@ -448,9 +446,7 @@ const PharmacyBillPrint: React.FC<PharmacyBillPrintProps> = ({ billData, shopDet
                                         </div>
                                     )}
                                 </td>
-                                <td style={styles.td}>{batch}</td>
                                 <td style={styles.td}>{expiry}</td>
-                                <td style={styles.td}>{hsn}</td>
                                 <td style={{ ...styles.td, fontWeight: 700 }}>{qty}</td>
                                 <td style={styles.td}>₹{mrp.toFixed(2)}</td>
                                 <td style={styles.td}>{disc}%</td>

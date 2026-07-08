@@ -160,33 +160,189 @@ export default function MasterPatientsPage() {
     // Select appointment & generate receipt
     const handleSelectAppointment = async (appt: any) => {
         try {
+'use client';
+
+import React, { useMemo, useState, useEffect } from "react";
+import {
+    Search,
+    Calendar,
+    ChevronRight,
+    ChevronLeft,
+    Activity,
+    Edit3,
+    RefreshCw,
+    History,
+} from "lucide-react";
+import { helpdeskService, useMasterPatients, useMasterDeleteAppointment } from "@/lib/integrations";
+import toast from "react-hot-toast";
+import { useRouter, useParams } from "next/navigation";
+import ClinicalReceipt from "@/components/helpdesk/ClinicalReceipt";
+import AppointmentHistoryModal from "@/components/helpdesk/AppointmentHistoryModal";
+import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
+import { sanitizePatientName } from "@/lib/utils/name-utils";
+import { calculateAge } from "@/lib/utils/date-utils";
+
+function useDebouncedValue<T>(value: T, delayMs: number): T {
+    const [debounced, setDebounced] = useState(value);
+    useEffect(() => {
+        const t = setTimeout(() => setDebounced(value), delayMs);
+        return () => clearTimeout(t);
+    }, [value, delayMs]);
+    return debounced;
+}
+
+export default function MasterPatientsPage() {
+    const router = useRouter();
+    const params = useParams();
+    const hospitalId = params.hospitalId as string;
+
+    const [searchTerm, setSearchTerm] = useState("");
+    const [page, setPage] = useState(1);
+    const limit = 10;
+
+    // Receipt State
+    const [showReceipt, setShowReceipt] = useState(false);
+    const [receiptData, setReceiptData] = useState<any>(null);
+    const [hospitalInfo, setHospitalInfo] = useState<any>(null);
+
+    // History Modal State (OPD only for masterhelpdesk)
+    const [showHistoryModal, setShowHistoryModal] = useState(false);
+    const [appointmentHistory, setAppointmentHistory] = useState<any[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const [selectedPatientForHistory, setSelectedPatientForHistory] = useState<any>(null);
+
+    // Doctor Lookup State
+    const [doctorMap, setDoctorMap] = useState<Record<string, string>>({});
+
+    // Fetch doctors once on mount
+    useEffect(() => {
+        const fetchDoctors = async () => {
+            try {
+                const doctors = await helpdeskService.getDoctors();
+                const map: Record<string, string> = {};
+                const docList = Array.isArray(doctors) ? doctors : (doctors as any)?.doctors || (doctors as any)?.data || [];
+                docList.forEach((doc: any) => {
+                    const id = doc._id || doc.id;
+                    const name = doc.name || doc.user?.name;
+                    if (id && name) map[id] = name;
+                });
+                setDoctorMap(map);
+            } catch (error) {
+                console.error("Failed to fetch doctors map", error);
+            }
+        };
+        fetchDoctors();
+    }, []);
+
+    // Fetch hospital branding info
+    useEffect(() => {
+        const fetchBranding = async () => {
+            try {
+                const res = await hospitalAdminService.getHospital();
+                if (res?.hospital) setHospitalInfo(res.hospital);
+            } catch (err) {
+                console.error("Failed to fetch hospital branding", err);
+            }
+        };
+        fetchBranding();
+    }, []);
+
+    const debouncedSearch = useDebouncedValue(searchTerm, 300);
+
+    const { data: patientsRaw, isLoading, isFetching, refetch } = useMasterPatients(
+        page,
+        limit,
+        debouncedSearch,
+        hospitalId
+    );
+    const deleteMutation = useMasterDeleteAppointment();
+
+    const { patients, total } = useMemo(() => {
+        const raw: any = patientsRaw;
+        if (!raw) return { patients: [] as any[], total: 0 };
+        if (Array.isArray(raw)) return { patients: raw, total: raw.length };
+        return {
+            patients: raw.data || [],
+            total: raw.pagination?.total || (raw.data?.length || 0),
+        };
+    }, [patientsRaw]);
+
+    const showSkeleton = isLoading && !patientsRaw;
+    const showRefreshing = isFetching && !isLoading && patientsRaw;
+    const totalPages = Math.ceil(total / limit);
+
+    // Resolve doctor name from map
+    const resolveDoctorName = (appt: any) => {
+        if (appt.doctor?.name) return appt.doctor.name;
+        if (appt.doctorName) return appt.doctorName;
+        const docId = appt.doctor?._id || appt.doctor?.id || (typeof appt.doctor === 'string' ? appt.doctor : null);
+        if (docId && doctorMap[docId]) return doctorMap[docId];
+        return "N/A";
+    };
+
+    // Fetch OPD-only history (masterhelpdesk has no IPD)
+    const handleFetchHistory = async (patient: any) => {
+        try {
+            setSelectedPatientForHistory(patient);
+            setShowHistoryModal(true);
+            setHistoryLoading(true);
+
+            const patientId = patient._id || patient.id;
+            const visitRes = await helpdeskService.getMasterPatientVisitHistory(patientId).catch(() => []);
+            const opdAppointments = Array.isArray(visitRes) ? visitRes : (visitRes.appointments || visitRes.data || []);
+
+            // Sort by date descending
+            const sorted = [...opdAppointments].sort((a, b) =>
+                new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime()
+            );
+
+            setAppointmentHistory(sorted);
+            setHistoryLoading(false);
+        } catch (error) {
+            console.error("Error fetching patient history:", error);
+            setHistoryLoading(false);
+            toast.error("Failed to retrieve patient history.");
+        }
+    };
+
+    const handleDeleteAppointment = async (appointmentId: string) => {
+        if (!window.confirm("Are you sure you want to delete this appointment and its related transaction?")) return;
+        try {
+            await deleteMutation.mutateAsync(appointmentId);
+            toast.success("Appointment deleted successfully");
+            // Refresh history
+            if (selectedPatientForHistory) {
+                handleFetchHistory(selectedPatientForHistory);
+            }
+        } catch (err) {
+            toast.error("Failed to delete appointment");
+        }
+    };
+
+    // Select appointment & generate receipt
+    const handleSelectAppointment = async (appt: any) => {
+        try {
             const patient = selectedPatientForHistory;
             if (!patient || !appt) return;
 
             setShowHistoryModal(false);
 
             const doctorName = resolveDoctorName(appt);
+            
+            // Refetch fresh hospital info to ensure opdFollowUpDays is up-to-date!
+            let freshHospitalInfo = hospitalInfo;
+            try {
+                const hRes = await hospitalAdminService.getHospital();
+                if (hRes?.hospital) {
+                    freshHospitalInfo = hRes.hospital;
+                    setHospitalInfo(hRes.hospital);
+                }
+            } catch (e) {
+                console.error("Failed to refetch fresh hospital info", e);
+            }
 
             const data = {
                 hospital: {
-                    name: hospitalInfo?.name || "Hospital",
-                    address: hospitalInfo?.address || "",
-                    contact: hospitalInfo?.phone || "",
-                    email: hospitalInfo?.email || "",
-                    logo: hospitalInfo?.logo
-                },
-                patient: {
-                    name: sanitizePatientName(patient.name || patient.user?.name),
-                    mrn: patient.profile?.mrn || patient.mrn || appt.patient?.mrn || "N/A",
-                    age: patient.profile?.age || patient.age || appt.patientDetails?.age || appt.patient?.age,
-                    gender: patient.profile?.gender || patient.gender || appt.patientDetails?.gender || appt.patient?.gender,
-                    mobile: patient.mobile || patient.user?.mobile || appt.patient?.mobile,
-                    bloodGroup: patient.profile?.bloodGroup || patient.bloodGroup,
-                    address: patient.address || patient.profile?.address,
-                    email: patient.profile?.emergencyContactEmail || patient.email || patient.user?.email,
-                    dateOfBirth: patient.profile?.dob || appt.patient?.dob,
-                    emergencyContact: patient.profile?.alternateNumber || appt.patient?.emergencyContact,
-                    medicalHistory: patient.profile?.medicalHistory || patient.profile?.conditions || "None",
                     allergies: patient.profile?.allergies || "None",
                     symptoms: appt.symptoms || appt.reason || appt.notes || appt.chiefComplaint || "None",
                     vitals: {

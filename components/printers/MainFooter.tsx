@@ -50,8 +50,13 @@ const MainFooter: React.FC<MainFooterProps> = ({ initialDetails, instructions })
         '* non-NABL accredited'
     ];
 
-    const displayInstructions = instructions || defaultInstructions;
-    const { printWithHeader } = usePrintStore();
+    const { printWithHeader, footerTerms } = usePrintStore.getState();
+    
+    // Parse footerTerms into an array of lines, falling back to instructions prop or defaultInstructions
+    const customInstructions = footerTerms 
+        ? footerTerms.split('\n').filter(t => t.trim() !== '') 
+        : null;
+    const displayInstructions = customInstructions || instructions || defaultInstructions;
 
     if (!printWithHeader) {
         return <div style={{ height: '80px', width: '100%' }}></div>;
@@ -127,7 +132,9 @@ const MainFooter: React.FC<MainFooterProps> = ({ initialDetails, instructions })
                 alignItems: 'flex-start',
                 width: '100%',
                 gap: '40px',
-                marginTop: '10px'
+                marginTop: '10px',
+                padding: '0 15px',
+                boxSizing: 'border-box'
             }}>
                 {/* Left: Instructions - Grow dynamically to take remaining space */}
                 <div style={{ flex: '1 1 auto', minWidth: '0' }}>
@@ -147,7 +154,7 @@ const MainFooter: React.FC<MainFooterProps> = ({ initialDetails, instructions })
                 </div>
 
                 {/* Right: Address - Fixed width to allow instructions to take up remaining space */}
-                <div style={{ flex: '0 0 250px', textAlign: 'left', minWidth: '0' }}>
+                <div style={{ flex: '0 0 350px', textAlign: 'left', minWidth: '0' }}>
                     <p style={{
                         margin: 0,
                         fontSize: '10px',

@@ -15,6 +15,9 @@ interface ReceiptProps {
     contact?: string;
     email?: string;
     logo?: string;
+    opdFollowUpDays?: number;
+    ipdFollowUpDays?: number;
+    enableFollowUpExpiry?: boolean;
   };
   patient: {
     name: string;

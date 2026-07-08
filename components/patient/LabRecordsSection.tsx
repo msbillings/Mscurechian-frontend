@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
 import { FlaskConical, User,  ChevronDown, ChevronUp } from 'lucide-react';
@@ -126,17 +126,18 @@ export default function LabRecordsSection({
                                         </h3>
                                         <div className="flex items-center gap-1.5 text-[8px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
                                             <User className="w-2.5 h-2.5 text-blue-600" />
-                                            Dr. {record.doctor?.user?.name || record.doctor?.name?.split(' ')[0] || 'Specialist'}
+                                            Dr. {record.doctor?.user?.name?.replace(/^Dr\.\s*/i, '') || record.doctor?.name?.replace(/^Dr\.\s*/i, '') || 'Specialist'}
                                         </div>
                                     </div>
 
                                     <div className="flex items-center gap-2 shrink-0">
                                         <button
-                                            onClick={() => toggleResults(record._id)}
-                                            className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-[8px] sm:text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 ${isCompleted ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:scale-105'} shrink-0`}
+                                            onClick={() => isCompleted && toggleResults(record._id)}
+                                            className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-[8px] sm:text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 ${isCompleted ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 cursor-not-allowed'} shrink-0`}
+                                            disabled={!isCompleted}
                                         >
-                                            {isCompleted ? (isExpanded ? <ChevronUp className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> : <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3" />) : null}
-                                            {isCompleted ? (isExpanded ? 'Close' : 'View Report') : 'In Progress'}
+                                            {isCompleted && (isExpanded ? <ChevronUp className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> : <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3" />)}
+                                            {isCompleted ? (isExpanded ? 'Close Report' : 'View Report') : 'Pending Report'}
                                         </button>
 
                                         {/* Date Badge shifted to RIGHT */}
@@ -161,6 +162,18 @@ export default function LabRecordsSection({
                                         <p className="text-[6px] sm:text-[7px] font-black uppercase text-gray-400 tracking-widest mb-0.5">Parameters</p>
                                         <p className="text-[9px] sm:text-[10px] font-black text-gray-800 dark:text-gray-200 uppercase">{record.tests.length} Count</p>
                                     </div>
+                                </div>
+
+                                {/* Tests List with Status */}
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    {record.tests.map((t, idx) => (
+                                        <div key={idx} className="px-2 py-1.5 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-lg flex items-center gap-2 shadow-sm">
+                                            <span className="text-[9px] sm:text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase">{t.name || t.testName || 'Test'}</span>
+                                            <span className={`text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${getStatusColor(t.status || record.status)}`}>
+                                                {t.status || record.status || 'PENDING'}
+                                            </span>
+                                        </div>
+                                    ))}
                                 </div>
 
                                 {/* Expanded Content */}

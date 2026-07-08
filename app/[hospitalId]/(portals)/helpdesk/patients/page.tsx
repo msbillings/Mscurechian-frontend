@@ -189,14 +189,14 @@ export default function PatientsPage() {
 
             // 3. De-duplicate IPD records (Hide the "Appointment" row if an "Admission" row exists for the same ID)
             const admissionIds = new Set(transformedIPD.map((a: any) => a.appointmentId || a.admissionId || a._id));
-            
+
             const filteredOPD = opdAppointments.filter((apt: any) => {
                 if (apt.type === 'IPD' || apt.registrationType === 'IPD') {
                     // Check both the professional ID and the internal admission ID/Object ID
                     const aptId = apt.appointmentId;
                     const admId = apt.admissionId;
                     const objId = apt._id;
-                    
+
                     // If we find a match in the admission list for ANY of these identifiers, skip this row
                     return !admissionIds.has(aptId) && !admissionIds.has(admId) && !admissionIds.has(objId);
                 }
@@ -242,14 +242,29 @@ export default function PatientsPage() {
             // Resolve Doctor Name
             const doctorName = resolveDoctorName(appt);
 
+            // Refetch fresh hospital info to ensure opdFollowUpDays is up-to-date!
+            let freshHospitalInfo = hospitalInfo;
+            try {
+                const hRes = await hospitalAdminService.getHospital();
+                if (hRes?.hospital) {
+                    freshHospitalInfo = hRes.hospital;
+                    setHospitalInfo(hRes.hospital);
+                }
+            } catch (e) {
+                console.error("Failed to refetch fresh hospital info", e);
+            }
+
             // Construct Receipt Data using the SELECTED appointment
             const data = {
                 hospital: {
-                    name: hospitalInfo?.name || appt.hospitalInfo?.name || appt.hospital?.name || "CureChain Hospital",
-                    address: hospitalInfo?.address || appt.hospitalInfo?.address || appt.hospital?.address || "",
-                    contact: hospitalInfo?.phone || appt.hospitalInfo?.phone || appt.hospital?.phone || "",
-                    email: hospitalInfo?.email || appt.hospitalInfo?.email || appt.hospital?.email || "",
-                    logo: hospitalInfo?.logo
+                    name: freshHospitalInfo?.name || appt.hospitalInfo?.name || appt.hospital?.name || "CureChain Hospital",
+                    address: freshHospitalInfo?.address || appt.hospitalInfo?.address || appt.hospital?.address || "",
+                    contact: freshHospitalInfo?.phone || appt.hospitalInfo?.phone || appt.hospital?.phone || "",
+                    email: freshHospitalInfo?.email || appt.hospitalInfo?.email || appt.hospital?.email || "",
+                    logo: freshHospitalInfo?.logo,
+                    opdFollowUpDays: freshHospitalInfo?.opdFollowUpDays ?? appt.hospitalInfo?.opdFollowUpDays ?? appt.hospital?.opdFollowUpDays,
+                    ipdFollowUpDays: freshHospitalInfo?.ipdFollowUpDays ?? appt.hospitalInfo?.ipdFollowUpDays ?? appt.hospital?.ipdFollowUpDays,
+                    enableFollowUpExpiry: freshHospitalInfo?.enableFollowUpExpiry ?? appt.hospitalInfo?.enableFollowUpExpiry ?? appt.hospital?.enableFollowUpExpiry
                 },
                 patient: {
                     name: sanitizePatientName(patient.name || patient.user?.name),
@@ -346,11 +361,11 @@ export default function PatientsPage() {
 
                             <button
                                 onClick={() => {
-                    toast.loading('Refreshing page...', { duration: 1000 });
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 800);
-                  }}
+                                    toast.loading('Refreshing page...', { duration: 1000 });
+                                    setTimeout(() => {
+                                        window.location.reload();
+                                    }, 800);
+                                }}
                                 disabled={isFetching}
                                 className="p-2 sm:p-2.5 bg-white border border-slate-200 text-slate-400 rounded-lg sm:rounded-xl hover:text-teal-600 shadow-sm active:scale-95 disabled:opacity-50"
                                 aria-label="Refresh Patients"
@@ -460,17 +475,17 @@ export default function PatientsPage() {
                                                     </td>
                                                     <td className="px-4 sm:px-6 py-4">
                                                         <div className="flex items-center gap-3">
-                                                                <div className={`w-9 h-9 lg:w-10 lg:h-10 rounded-lg lg:rounded-xl transition-all flex items-center justify-center font-bold text-sm shadow-sm border shrink-0 ${isIPD
-                                                                    ? 'bg-rose-50 text-rose-300 group-hover:bg-rose-600 group-hover:text-white border-rose-100'
-                                                                    : 'bg-slate-50 text-slate-300 group-hover:bg-teal-600 group-hover:text-white border-slate-100'
-                                                                    }`}>
-                                                                    {sanitizePatientName(patient.name || patient.user?.name).charAt(0).toUpperCase()}
-                                                                </div>
-                                                                <div className="min-w-0">
-                                                                    <span className="text-[13px] lg:text-[15px] font-[550] text-slate-700 uppercase tracking-tight truncate block">
-                                                                        {sanitizePatientName(patient.name || patient.user?.name)}
-                                                                    </span>
-                                                                </div>
+                                                            <div className={`w-9 h-9 lg:w-10 lg:h-10 rounded-lg lg:rounded-xl transition-all flex items-center justify-center font-bold text-sm shadow-sm border shrink-0 ${isIPD
+                                                                ? 'bg-rose-50 text-rose-300 group-hover:bg-rose-600 group-hover:text-white border-rose-100'
+                                                                : 'bg-slate-50 text-slate-300 group-hover:bg-teal-600 group-hover:text-white border-slate-100'
+                                                                }`}>
+                                                                {sanitizePatientName(patient.name || patient.user?.name).charAt(0).toUpperCase()}
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <span className="text-[13px] lg:text-[15px] font-[550] text-slate-700 uppercase tracking-tight truncate block">
+                                                                    {sanitizePatientName(patient.name || patient.user?.name)}
+                                                                </span>
+                                                            </div>
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-4 text-center">

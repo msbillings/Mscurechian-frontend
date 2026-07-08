@@ -720,7 +720,10 @@ export default function AppointmentBooking() {
                 address: latestHospital?.address || "Main Medical Node",
                 contact: latestHospital?.phone || latestHospital?.mobile || "System Support",
                 email: latestHospital?.email || "healthcare@curechain.io",
-                logo: latestHospital?.logo
+                logo: latestHospital?.logo,
+                opdFollowUpDays: latestHospital?.opdFollowUpDays,
+                ipdFollowUpDays: latestHospital?.ipdFollowUpDays,
+                enableFollowUpExpiry: latestHospital?.enableFollowUpExpiry
             },
             patient: {
                 name: selectedPatient.name,
@@ -942,7 +945,7 @@ export default function AppointmentBooking() {
             });
             const aptId = appointment._id || appointment.id || appointment.appointmentId;
             let exactTokenNo = activeToday.findIndex((a: any) => (a._id === aptId || a.id === aptId || a.appointmentId === aptId)) + 1;
-            if (exactTokenNo <= 0) exactTokenNo = activeToday.length > 0 ? activeToday.length : 1;
+            if (exactTokenNo <= 0) exactTokenNo = activeToday.length + 1;
 
             const latestHospital: any = hospitalBranding || profile?.hospital;
 

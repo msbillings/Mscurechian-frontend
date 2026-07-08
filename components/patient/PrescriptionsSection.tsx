@@ -43,6 +43,7 @@ interface Prescription {
         appointmentId: string;
         date: string;
     };
+    status?: string;
 }
 
 interface PrescriptionsSectionProps {
@@ -57,6 +58,14 @@ export default function PrescriptionsSection({
     patientEmail = ''
 }: PrescriptionsSectionProps) {
     const [selectedPrescription, setSelectedPrescription] = useState<Prescription | null>(null);
+
+    const getStatusColor = (status?: string) => {
+        if (!status) return 'hidden';
+        const s = status.toLowerCase();
+        if (s.includes('billed') || s.includes('paid')) return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
+        if (s.includes('pharma') || s.includes('processing')) return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
+        return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+    };
 
     const handleDownloadPDF = async (prescription: Prescription) => {
         try {
@@ -238,6 +247,11 @@ export default function PrescriptionsSection({
                                         <span className="px-1.5 py-0.5 bg-blue-600 text-white text-[7px] font-black uppercase rounded tracking-widest shrink-0">
                                             {prescription.displayType || 'Prescription'}
                                         </span>
+                                        {prescription.status && (
+                                            <span className={`px-1.5 py-0.5 text-[7px] font-black uppercase rounded tracking-widest shrink-0 ${getStatusColor(prescription.status)}`}>
+                                                {prescription.status}
+                                            </span>
+                                        )}
                                         <span className="text-[8px] sm:text-[10px] font-mono text-gray-400">
                                             #{prescription._id.slice(-8).toUpperCase()}
                                         </span>

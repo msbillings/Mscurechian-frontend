@@ -236,7 +236,10 @@ export default function FrontdeskReceiptsPage() {
                     address: hospitalInfo?.address || appt.hospitalInfo?.address || appt.hospital?.address || "",
                     contact: hospitalInfo?.phone || appt.hospitalInfo?.phone || appt.hospital?.phone || "",
                     email: hospitalInfo?.email || appt.hospitalInfo?.email || appt.hospital?.email || "",
-                    logo: hospitalInfo?.logo
+                    logo: hospitalInfo?.logo,
+                    opdFollowUpDays: hospitalInfo?.opdFollowUpDays ?? appt.hospitalInfo?.opdFollowUpDays ?? appt.hospital?.opdFollowUpDays,
+                    ipdFollowUpDays: hospitalInfo?.ipdFollowUpDays ?? appt.hospitalInfo?.ipdFollowUpDays ?? appt.hospital?.ipdFollowUpDays,
+                    enableFollowUpExpiry: hospitalInfo?.enableFollowUpExpiry ?? appt.hospitalInfo?.enableFollowUpExpiry ?? appt.hospital?.enableFollowUpExpiry
                 },
                 patient: {
                     name: sanitizePatientName(patient.name || patient.user?.name),

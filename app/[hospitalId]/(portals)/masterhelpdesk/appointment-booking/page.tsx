@@ -720,7 +720,10 @@ export default function MasterAppointmentBooking() {
                     address: latestHospital.address || "Main Medical Node",
                     contact: latestHospital.phone || latestHospital.mobile || "System Support",
                     email: latestHospital.email || "healthcare@curechain.io",
-                    logo: latestHospital.logo
+                    logo: latestHospital.logo,
+                    opdFollowUpDays: latestHospital.opdFollowUpDays,
+                    ipdFollowUpDays: latestHospital.ipdFollowUpDays,
+                    enableFollowUpExpiry: latestHospital.enableFollowUpExpiry
                 },
                 patient: { name: selectedPatient.name, mrn: selectedPatient.mrn, age: selectedPatient.age, gender: selectedPatient.gender, mobile: selectedPatient.mobile, dob: selectedPatient.dob, address: selectedPatient.address, email: selectedPatient.email, bloodGroup: selectedPatient.bloodGroup, emergencyContact: selectedPatient.emergencyContact, allergies: Array.isArray(selectedPatient.allergies) ? selectedPatient.allergies.join(', ') : selectedPatient.allergies, medicalHistory: selectedPatient.medicalHistory, vitals: { ...vitals } },
                 appointment: {
