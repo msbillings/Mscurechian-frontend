@@ -917,8 +917,22 @@ export default function IPDCenter() {
                                                             <tbody className="divide-y divide-slate-100">
                                                                 {bedDetails.occupancyDetails.bedHistory.map((item: any, idx: number) => {
                                                                     const start = new Date(item.startDate);
-                                                                    const end = item.endDate ? new Date(item.endDate) : new Date();
-                                                                    const stayDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 6 * 60 * 24)) || 1;
+                                                                    let endMs = Date.now();
+                                                                    if (item.endDate && item.endDate !== 'null' && item.endDate !== 'undefined') {
+                                                                        const parsed = new Date(item.endDate).getTime();
+                                                                        if (!isNaN(parsed)) endMs = parsed;
+                                                                    }
+                                                                    
+                                                                    let exactDays = (endMs - start.getTime()) / (1000 * 60 * 60 * 24);
+                                                                    let displayDays = Math.ceil(exactDays);
+                                                                    if (displayDays < 1) displayDays = 1;
+                                                                    
+                                                                    const rate = item.pricePerDay ?? item.rate ?? item.dailyRateAtTime ?? item.bed?.pricePerDay ?? 0;
+                                                                    
+                                                                    // For exact charges matching the backend's Math.floor logic or exact day difference
+                                                                    let billableDays = Math.floor(exactDays);
+                                                                    if (billableDays < 1) billableDays = 1;
+                                                                    const charge = billableDays * rate;
                                                                     
                                                                     return (
                                                                         <tr key={idx} className="hover:bg-white/50 transition-colors">
@@ -927,10 +941,11 @@ export default function IPDCenter() {
                                                                                 <div className="text-[7px] font-medium text-slate-500 uppercase">{item.room} • {item.type}</div>
                                                                             </td>
                                                                             <td className="px-2 py-2">
-                                                                                <div className="font-black text-teal-600 uppercase tracking-tighter">
-                                                                                    {item.endDate ? calculateStayDuration(item.startDate, item.endDate) : `Since ${new Date(item.startDate).toLocaleDateString()}`}
+                                                                                <div className="font-black text-teal-600 uppercase tracking-tighter flex justify-between items-center">
+                                                                                    <span>{calculateStayDuration(item.startDate, item.endDate)}</span>
+                                                                                    {rate > 0 && <span className="text-slate-900">₹ {charge.toLocaleString()}</span>}
                                                                                 </div>
-                                                                                <div className="text-[7px] font-bold text-slate-400 uppercase">Rate: ₹{item.pricePerDay}/day {item.pricePerHalfDay ? `• ₹${item.pricePerHalfDay}/12h` : ''} {item.pricePerHour ? `• ₹${item.pricePerHour}/hr` : ''}</div>
+                                                                                <div className="text-[7px] font-bold text-slate-400 uppercase mt-0.5">Rate: {rate > 0 ? `₹${rate.toLocaleString()}/day` : 'N/A'} {item.pricePerHalfDay ? `• ₹${item.pricePerHalfDay}/12h` : ''} {item.pricePerHour ? `• ₹${item.pricePerHour}/hr` : ''}</div>
                                                                             </td>
                                                                         </tr>
                                                                     );

@@ -6,7 +6,16 @@ export const calculateStayDuration = (admissionDate: string | Date, endDate?: st
     if (!admissionDate) return 'N/A';
 
     const start = new Date(admissionDate).getTime();
-    const end = endDate ? new Date(endDate).getTime() : Date.now();
+    if (isNaN(start)) return 'Unknown';
+
+    let end = Date.now();
+    if (endDate && endDate !== 'null' && endDate !== 'undefined') {
+        const parsed = new Date(endDate).getTime();
+        if (!isNaN(parsed)) {
+            end = parsed;
+        }
+    }
+
     const diffMs = end - start;
 
     if (diffMs < 0) return "0 Days 0 Mins";

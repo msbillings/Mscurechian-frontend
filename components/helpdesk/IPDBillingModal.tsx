@@ -632,7 +632,7 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                     <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center shadow-md"><BedIcon size={18} /></div>
                                                     <div>
                                                         <p className="text-[10px] font-black text-slate-900 uppercase">{item.bedId || "Unknown Bed"} • {item.type}</p>
-                                                        <p className="text-[8px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{item.days < 1 ? `${Math.round(item.days * 24)}h` : item.days === 1 ? '1 Day' : `${Math.ceil(item.days)} Days`} @ ₹ {item.rate}/day</p>
+                                                        <p className="text-[8px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{item.days < 1 ? `${Math.round(item.days * 24)}h` : Math.floor(item.days) === 1 ? '1 Day' : `${Math.floor(item.days)} Days`} @ ₹ {item.rate}/day</p>
                                                     </div>
                                                 </div>
                                                 <p className="font-black text-slate-900">₹ {item.charge.toLocaleString()}</p>
