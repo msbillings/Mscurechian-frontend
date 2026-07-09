@@ -35,7 +35,8 @@ import {
     Wind,
     Beaker,
     History,
-    Building
+    Building,
+    Pause
 } from 'lucide-react';
 import { CardiologyModule } from './modules/CardiologyModule';
 import { DermatologyModule } from './modules/DermatologyModule';
@@ -1026,6 +1027,23 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [showClearConfirm, setShowClearConfirm] = useState(false);
     const [showNoPharmaWarn, setShowNoPharmaWarn] = useState(false);
+    const [isPaused, setIsPaused] = useState(false);
+    const [isPausing, setIsPausing] = useState(false);
+
+    // -- Navigation Guard: block leaving without pausing or completing --
+    useEffect(() => {
+        if (!appointmentId) return; // Only guard when there's an active appointment
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (!isSubmitted && !isPaused) {
+                const msg = 'You have not paused or completed this consultation. Are you sure you want to leave?';
+                e.preventDefault();
+                e.returnValue = msg;
+                return msg;
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [appointmentId, isSubmitted, isPaused]);
 
     // Suggestion State
     const [activeMedIndex, setActiveMedIndex] = useState<number | null>(null);
@@ -1153,6 +1171,14 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
 
     // -- Fetch Appointment Details if ID present --
     useEffect(() => {
+        const normalizeGender = (g: string): string => {
+            if (!g) return 'Male';
+            const lower = g.toLowerCase();
+            if (lower.startsWith('m')) return 'Male';
+            if (lower.startsWith('f')) return 'Female';
+            return 'Other';
+        };
+
         if (appointmentId) {
             const fetchDetails = async () => {
                 try {
@@ -1163,7 +1189,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                         const apt = res.data;
                         const patientName = apt.patient?.name || apt.patientDetails?.name || '';
                         const age = apt.patient?.age || apt.patientDetails?.age || '';
-                        const gender = apt.patient?.gender || apt.patientDetails?.gender || 'Male';
+                        const gender = normalizeGender(apt.patient?.gender || apt.patientDetails?.gender || 'Male');
                         const mrn = apt.patient?.mrn || apt.mrn || '';
                         const symptoms = Array.isArray(apt.symptoms) ? apt.symptoms.join(', ') : (apt.symptoms || '');
                         const diagnosis = apt.reason || symptoms;
@@ -1214,7 +1240,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                         ...prev,
                                         patientName: p.name || '',
                                         age: String(p.age || ''),
-                                        gender: p.gender || 'Male',
+                                        gender: normalizeGender(p.gender || 'Male'),
                                         mrn: p.mrn || '',
                                     };
                                     return applyVitalsToForm(p.vitals, baseForm);
@@ -1237,7 +1263,18 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
         if (saved && !isDraftLoaded) {
             try {
                 const parsed = JSON.parse(saved);
-                setFormData(prev => ({ ...prev, ...parsed }));
+                setFormData(prev => {
+                    // Preserve patient-fetched demographic fields if already populated
+                    // to prevent draft from overwriting freshly loaded patient data (e.g. gender)
+                    const protectedFields: (keyof typeof prev)[] = ['patientName', 'age', 'gender', 'mrn'];
+                    const safeUpdate = { ...parsed };
+                    protectedFields.forEach(field => {
+                        if (prev[field]) {
+                            safeUpdate[field] = prev[field];
+                        }
+                    });
+                    return { ...prev, ...safeUpdate };
+                });
                 hasLoadedDraftRef.current = true;
                 setIsDraftLoaded(true);
                 toast.success("Resumed unsaved draft", { id: 'draft-load', icon: '📝', duration: 2000 });
@@ -3183,6 +3220,23 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
         toast.success("Form cleared");
     };
 
+    const handlePauseConsultation = async () => {
+        if (!appointmentId) return toast.error("No active appointment to pause");
+        try {
+            setIsPausing(true);
+            await doctorService.pauseConsultation(appointmentId);
+            setIsPaused(true);
+            // Clear draft from local storage on pause (server has the state)
+            localStorage.removeItem(`prescription_draft_${appointmentId || patientId || 'default'}`);
+            toast.success('Consultation paused successfully. You can resume from Paused Sessions.');
+            setTimeout(() => router.push(`/${hospitalId}/doctor`), 1200);
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to pause consultation');
+        } finally {
+            setIsPausing(false);
+        }
+    };
+
     const handleSendToPharma = async () => {
         if (!appointmentId && !patientId) return toast.error("Appointment ID or Patient ID is required");
         if (!formData.patientName) return toast.error("Patient Name is required");
@@ -3433,7 +3487,16 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
             <header className="bg-white border-b border-border-theme py-4 mb-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto">
-                        <button onClick={() => router.back()} className="p-2 hover:bg-secondary-theme rounded-full text-muted hover:text-foreground transition-colors shrink-0">
+                        <button
+                            onClick={() => {
+                                if (appointmentId && !isSubmitted && !isPaused) {
+                                    const msg = 'You have not stopped this consultation. Leave without pausing?';
+                                    if (!window.confirm(msg)) return;
+                                }
+                                router.back();
+                            }}
+                            className="p-2 hover:bg-secondary-theme rounded-full text-muted hover:text-foreground transition-colors shrink-0"
+                        >
                             <ArrowLeft size={18} className="sm:size-[20px]" />
                         </button>
                         <div className="min-w-0">
@@ -4031,6 +4094,21 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                         >
                             Reset Form
                         </button>
+                        {appointmentId && !isSubmitted && (
+                            <button
+                                onClick={handlePauseConsultation}
+                                disabled={isPausing || isSaving || isPaused}
+                                className={`flex-[1.5] sm:flex-none px-2 sm:px-10 py-2 sm:py-4 rounded-2xl font-black uppercase text-[8px] sm:text-xs tracking-widest transition-all active:scale-95 flex items-center justify-center gap-1 sm:gap-3 ${
+                                    isPaused
+                                        ? 'bg-amber-100 text-amber-700 border border-amber-200'
+                                        : 'bg-amber-500 text-white hover:bg-amber-600 shadow-lg shadow-amber-500/20'
+                                }`}
+                                title={isPaused ? 'Consultation is paused' : 'Pause and return later'}
+                            >
+                                {isPausing ? <Loader2 className="animate-spin" size={14} /> : <Pause size={14} />}
+                                <span className="truncate">{isPaused ? 'Paused' : 'Pause'}</span>
+                            </button>
+                        )}
                         <button
                             onClick={handleSendToPharma}
                             disabled={isSaving || isSending || sentToPharma}
@@ -4378,8 +4456,14 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                             patientHistoryData.reports.map((rep: any, idx: number) => (
                                                 <div key={idx} className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-border-theme flex flex-col">
                                                     <div className="flex justify-between items-start mb-2">
-                                                        <div>
-                                                            <span className="text-xs font-black text-foreground">{rep.testName || 'Lab Investigation Order'}</span>
+                                                        <div className="min-w-0 flex-1 pr-4">
+                                                            <span className="text-xs font-black text-foreground block break-words">
+                                                                {(() => {
+                                                                    const rawName = rep.name || rep.testName || 'Lab Investigation Order';
+                                                                    const parts = rawName.split(',').map((s: any) => s.trim()).filter(Boolean);
+                                                                    return Array.from(new Set(parts)).join(', ');
+                                                                })()}
+                                                            </span>
                                                             <div className="flex items-center gap-2 mt-1">
                                                                 <span className={`px-2 py-0.5 text-[8px] font-black uppercase tracking-widest rounded-full ${rep.status?.toLowerCase() === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
                                                                     {rep.status || 'Pending'}
@@ -4387,11 +4471,12 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                                                 <span className="text-[9px] font-mono text-muted-foreground">#{rep.tokenNumber || rep._id?.slice(-6).toUpperCase()}</span>
                                                             </div>
                                                         </div>
-                                                        <span className="text-[10px] font-bold text-muted-foreground">{(rep.createdAt || rep.date) ? new Date(rep.createdAt || rep.date).toLocaleDateString('en-GB') : 'N/A'}</span>
+                                                        <span className="text-[10px] font-bold text-muted-foreground shrink-0">{(rep.createdAt || rep.date) ? new Date(rep.createdAt || rep.date).toLocaleDateString('en-GB') : 'N/A'}</span>
                                                     </div>
                                                     <div className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mt-0 flex flex-wrap items-center gap-1 mb-2">
                                                         <Stethoscope size={10} /> {(() => {
-                                                            const dName = rep.doctor?.user?.name || rep.doctor?.name || rep.doctorName || 'Unknown';
+                                                            const dName = rep.suggestedPrimaryDoctor || rep.doctor?.user?.name || rep.doctor?.name || rep.doctorName;
+                                                            if (!dName || dName === 'N/A' || dName === 'Unknown') return 'Ordered Physician';
                                                             return dName.toLowerCase().startsWith('dr') ? dName : `Dr. ${dName}`;
                                                         })()}
                                                         {(rep.hospital?.name || rep.hospitalName) && (
@@ -4403,14 +4488,14 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                                         )}
                                                     </div>
                                                     
-                                                    {rep.tests && rep.tests.length > 0 && (
+                                                    {rep.results && rep.results.length > 0 && (
                                                         <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-border-theme">
-                                                            {rep.tests.map((test: any, tIdx: number) => (
-                                                                <span key={tIdx} className={`px-2 py-1 border rounded-md text-[9px] font-bold flex items-center gap-1 ${test.status?.toLowerCase() === 'completed' ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20' : 'bg-white dark:bg-gray-900 border-border-theme text-foreground'}`}>
-                                                                    <FlaskConical size={10} className={test.status?.toLowerCase() === 'completed' ? 'text-emerald-500' : 'text-gray-400'} />
-                                                                    {test.name || test.testName}
-                                                                    {test.status?.toLowerCase() === 'completed' && test.result && (
-                                                                        <span className="ml-1 pl-1 border-l border-emerald-200 text-emerald-800 dark:text-emerald-400">{test.result} {test.unit || ''}</span>
+                                                            {rep.results.map((test: any, tIdx: number) => (
+                                                                <span key={tIdx} className={`px-2 py-1 border rounded-md text-[9px] font-bold flex items-center gap-1 ${test.result ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20' : 'bg-white dark:bg-gray-900 border-border-theme text-foreground'}`}>
+                                                                    <FlaskConical size={10} className={test.result ? 'text-emerald-500' : 'text-gray-400'} />
+                                                                    {test.testName}
+                                                                    {test.result && (
+                                                                        <span className="ml-1 pl-1 border-l border-emerald-200 text-emerald-800 dark:text-emerald-400">{test.result}</span>
                                                                     )}
                                                                 </span>
                                                             ))}

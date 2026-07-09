@@ -213,6 +213,9 @@ export default function PausedAppointmentsPage() {
                     <div>
                       <h3 className="text-sm font-black text-foreground uppercase tracking-tight">{appointment.patient?.name || 'Unknown Node'}</h3>
                       <p className="text-[10px] font-black text-primary-theme uppercase tracking-wider opacity-70">MRN: {appointment.patient?.mrn || appointment.mrn || 'N/A'}</p>
+                      <p className="text-[9px] font-bold text-amber-600 uppercase tracking-widest mt-1">
+                        Appt: {appointment.date ? new Date(appointment.date).toLocaleDateString('en-GB') : 'N/A'} at {appointment.appointmentTime || 'N/A'}
+                      </p>
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1">
@@ -313,6 +316,9 @@ export default function PausedAppointmentsPage() {
                             </p>
                             <p className="text-[10px] font-bold text-muted uppercase tracking-[0.1em] mt-0.5 opacity-60">
                               MRN: {appointment.patient?.mrn || appointment.mrn || 'N/A'}
+                            </p>
+                            <p className="text-[9px] font-bold text-amber-600 uppercase tracking-widest mt-1">
+                              Appt: {appointment.date ? new Date(appointment.date).toLocaleDateString('en-GB') : 'N/A'} at {appointment.appointmentTime || 'N/A'}
                             </p>
                           </div>
                         </div>

@@ -839,9 +839,110 @@ function CreatePrescriptionPage() {
     // UI states
     const [sentToPharma, setSentToPharma] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [isPaused, setIsPaused] = useState(false);
     const [showClearConfirm, setShowClearConfirm] = useState(false);
     const [showNoPharmaWarn, setShowNoPharmaWarn] = useState(false);
     const [showPharmaConfirm, setShowPharmaConfirm] = useState(false);
+    // Navigation blocker state
+    const [showNavWarn, setShowNavWarn] = useState(false);
+    const pendingNavRef = useRef<string | null>(null);
+
+    // ── Draft Key ───────────────────────────────────────────────────────────
+    const draftKey = appointmentId ? `rx_draft_${appointmentId}` : null;
+
+    // ── Save draft to localStorage on every formData change ─────────────────
+    useEffect(() => {
+        if (!draftKey || isSubmitted || isPaused) return;
+        try {
+            localStorage.setItem(draftKey, JSON.stringify(formData));
+        } catch (_) {}
+    }, [formData, draftKey, isSubmitted, isPaused]);
+
+    // ── Restore draft from localStorage when appointment data arrives ────────
+    const hasMergedDraftRef = useRef(false);
+    useEffect(() => {
+        if (!draftKey || hasMergedDraftRef.current) return;
+        try {
+            const raw = localStorage.getItem(draftKey);
+            if (raw) {
+                const saved = JSON.parse(raw) as Partial<typeof formData>;
+                // Only restore doctor-entered fields; keep patient demographics from API
+                setFormData(prev => ({
+                    ...prev,
+                    symptoms:      saved.symptoms      ?? prev.symptoms,
+                    diagnosis:     saved.diagnosis     ?? prev.diagnosis,
+                    medicines:     saved.medicines     ?? prev.medicines,
+                    dietAdvice:    saved.dietAdvice    ?? prev.dietAdvice,
+                    suggestedTests:saved.suggestedTests?? prev.suggestedTests,
+                    followUp:      saved.followUp      ?? prev.followUp,
+                    followUpDate:  saved.followUpDate  ?? prev.followUpDate,
+                    avoid:         saved.avoid         ?? prev.avoid,
+                    cardiologyData: saved.cardiologyData ?? prev.cardiologyData,
+                    orthopedicData: saved.orthopedicData ?? prev.orthopedicData,
+                    pediatricData:  saved.pediatricData  ?? prev.pediatricData,
+                    entData:        saved.entData        ?? prev.entData,
+                    ophthaData:     saved.ophthaData     ?? prev.ophthaData,
+                    gynaecData:     saved.gynaecData     ?? prev.gynaecData,
+                    neuroData:      saved.neuroData      ?? prev.neuroData,
+                    pulmoData:      saved.pulmoData      ?? prev.pulmoData,
+                    gastroData:     saved.gastroData     ?? prev.gastroData,
+                    nephroData:     saved.nephroData     ?? prev.nephroData,
+                    psychiatryData: saved.psychiatryData ?? prev.psychiatryData,
+                    endocrinologyData: saved.endocrinologyData ?? prev.endocrinologyData,
+                    hematologyData: saved.hematologyData ?? prev.hematologyData,
+                    oncologyData:   saved.oncologyData   ?? prev.oncologyData,
+                    dentistryData:  saved.dentistryData  ?? prev.dentistryData,
+                    urologyData:    saved.urologyData    ?? prev.urologyData,
+                    radiologyOrder: saved.radiologyOrder ?? prev.radiologyOrder,
+                }));
+                hasMergedDraftRef.current = true;
+                toast('📋 Draft restored from last session', { icon: '🔄', duration: 3000 });
+            }
+        } catch (_) {}
+    }, [draftKey]);
+
+    // ── Navigation Guard ─────────────────────────────────────────────────────
+    useEffect(() => {
+        if (!appointmentId) return;
+
+        // 1. Block browser refresh / tab close
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (isSubmitted || isPaused) return;
+            e.preventDefault();
+            e.returnValue = 'You have an active consultation. Please Pause or Complete before leaving.';
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        // 2. Intercept Next.js client-side navigation (pushState / replaceState)
+        const origPush    = history.pushState.bind(history);
+        const origReplace = history.replaceState.bind(history);
+
+        const shouldBlock = () => !isSubmitted && !isPaused;
+
+        history.pushState = function (state, title, url) {
+            if (shouldBlock() && url && !String(url).includes('/prescription')) {
+                pendingNavRef.current = String(url);
+                setShowNavWarn(true);
+                return;
+            }
+            origPush(state, title, url as string);
+        };
+
+        history.replaceState = function (state, title, url) {
+            if (shouldBlock() && url && !String(url).includes('/prescription')) {
+                pendingNavRef.current = String(url);
+                setShowNavWarn(true);
+                return;
+            }
+            origReplace(state, title, url as string);
+        };
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            history.pushState    = origPush;
+            history.replaceState = origReplace;
+        };
+    }, [appointmentId, isSubmitted, isPaused]);
 
     // Suggestion State
     const [activeMedIndex, setActiveMedIndex] = useState<number | null>(null);
@@ -920,6 +1021,9 @@ function CreatePrescriptionPage() {
         if (!appointmentId) return;
         try {
             await doctorService.pauseConsultation(appointmentId);
+            // Clear draft since we're explicitly pausing
+            if (draftKey) localStorage.removeItem(draftKey);
+            setIsPaused(true);
             toast.success('Consultation paused');
             router.push(`/${hospitalId}/doctor/paused-appointments`);
         } catch (error: any) {
@@ -981,8 +1085,8 @@ function CreatePrescriptionPage() {
             const age = apt.patient?.age || apt.patientDetails?.age || '';
             const gender = apt.patient?.gender || apt.patientDetails?.gender || 'Male';
             const mrn = apt.patient?.mrn || apt.mrn || '';
-            const symptoms = Array.isArray(apt.symptoms) ? apt.symptoms.join(', ') : (apt.symptoms || '');
-            const diagnosis = apt.reason || symptoms;
+            const apiSymptoms = Array.isArray(apt.symptoms) ? apt.symptoms.join(', ') : (apt.symptoms || '');
+            const apiDiagnosis = apt.reason || apiSymptoms;
 
             const pId = apt.patient?._id || apt.patient?.id || apt.patientDetails?._id || apt.patientDetails?.id;
             if (pId) {
@@ -1000,13 +1104,14 @@ function CreatePrescriptionPage() {
                 age: String(age),
                 gender: gender,
                 mrn,
-                symptoms,
-                diagnosis,
+                // Only set symptoms/diagnosis from API if draft hasn't already been restored
+                symptoms: hasMergedDraftRef.current ? prev.symptoms : (apiSymptoms || prev.symptoms),
+                diagnosis: hasMergedDraftRef.current ? prev.diagnosis : (apiDiagnosis || prev.diagnosis),
                 cardiologyData: {
                     ...prev.cardiologyData!,
-                    bpSystolic: systolic || frontdeskVitals.systolicBP || '',
-                    bpDiastolic: diastolic || frontdeskVitals.diastolicBP || '',
-                    heartRate: frontdeskVitals.heartRate || frontdeskVitals.pulse || '',
+                    bpSystolic: systolic || frontdeskVitals.systolicBP || prev.cardiologyData?.bpSystolic || '',
+                    bpDiastolic: diastolic || frontdeskVitals.diastolicBP || prev.cardiologyData?.bpDiastolic || '',
+                    heartRate: frontdeskVitals.heartRate || frontdeskVitals.pulse || prev.cardiologyData?.heartRate || '',
                     riskLevel: prev.cardiologyData?.riskLevel || 'Low'
                 }
             }));
@@ -1528,6 +1633,9 @@ function CreatePrescriptionPage() {
             });
 
             setIsSubmitted(true);
+
+            // Clear local draft on successful save
+            if (draftKey) localStorage.removeItem(draftKey);
 
             if (showSuccessModal) {
                 setShowSuccess(true);
@@ -2684,6 +2792,7 @@ function CreatePrescriptionPage() {
     }
 
     return (
+        <>
         <div className="bg-slate-50/50 min-h-screen">
             {/* Dynamic Header */}
             <header className="flex flex-col gap-3 bg-white dark:bg-[#111] py-3 px-3 md:py-3 md:px-4 border-b border-gray-100 dark:border-gray-800 sticky top-0 z-50 shadow-sm transition-all">
@@ -2692,6 +2801,10 @@ function CreatePrescriptionPage() {
                     <div className="flex items-center gap-3 shrink-0">
                         <button
                             onClick={() => {
+                                if (appointmentId && !isSubmitted && !isPaused) {
+                                    const msg = 'You have an active consultation. Leave without pausing?';
+                                    if (!window.confirm(msg)) return;
+                                }
                                 if (appointmentId) {
                                     router.push(`/${hospitalId}/doctor/appointment/${appointmentId}`);
                                 } else {
@@ -3680,8 +3793,14 @@ function CreatePrescriptionPage() {
                                             patientHistoryData.reports.map((rep: any, idx: number) => (
                                                 <div key={idx} className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-border-theme flex flex-col">
                                                     <div className="flex justify-between items-start mb-2">
-                                                        <div>
-                                                            <span className="text-xs font-black text-foreground">{rep.testName || 'Lab Investigation Order'}</span>
+                                                        <div className="min-w-0 flex-1 pr-4">
+                                                            <span className="text-xs font-black text-foreground block break-words">
+                                                                {(() => {
+                                                                    const rawName = rep.name || rep.testName || 'Lab Investigation Order';
+                                                                    const parts = rawName.split(',').map((s: any) => s.trim()).filter(Boolean);
+                                                                    return Array.from(new Set(parts)).join(', ');
+                                                                })()}
+                                                            </span>
                                                             <div className="flex items-center gap-2 mt-1">
                                                                 <span className={`px-2 py-0.5 text-[8px] font-black uppercase tracking-widest rounded-full ${rep.status?.toLowerCase() === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
                                                                     {rep.status || 'Pending'}
@@ -3689,11 +3808,12 @@ function CreatePrescriptionPage() {
                                                                 <span className="text-[9px] font-mono text-muted-foreground">#{rep.tokenNumber || rep._id?.slice(-6).toUpperCase()}</span>
                                                             </div>
                                                         </div>
-                                                        <span className="text-[10px] font-bold text-muted-foreground">{(rep.createdAt || rep.date) ? new Date(rep.createdAt || rep.date).toLocaleDateString('en-GB') : 'N/A'}</span>
+                                                        <span className="text-[10px] font-bold text-muted-foreground shrink-0">{(rep.createdAt || rep.date) ? new Date(rep.createdAt || rep.date).toLocaleDateString('en-GB') : 'N/A'}</span>
                                                     </div>
                                                     <div className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mt-0 flex flex-wrap items-center gap-1 mb-2">
                                                         <Stethoscope size={10} /> {(() => {
-                                                            const dName = rep.doctor?.user?.name || rep.doctor?.name || rep.doctorName || 'Unknown';
+                                                            const dName = rep.suggestedPrimaryDoctor || rep.doctor?.user?.name || rep.doctor?.name || rep.doctorName || 'Unknown';
+                                                            if (dName === 'N/A' || dName === 'Unknown') return 'Dr. Unknown';
                                                             return dName.toLowerCase().startsWith('dr') ? dName : `Dr. ${dName}`;
                                                         })()}
                                                         {(rep.hospital?.name || rep.hospitalName) && (
@@ -3705,14 +3825,14 @@ function CreatePrescriptionPage() {
                                                         )}
                                                     </div>
                                                     
-                                                    {rep.tests && rep.tests.length > 0 && (
+                                                    {rep.results && rep.results.length > 0 && (
                                                         <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-border-theme">
-                                                            {rep.tests.map((test: any, tIdx: number) => (
-                                                                <span key={tIdx} className={`px-2 py-1 border rounded-md text-[9px] font-bold flex items-center gap-1 ${test.status?.toLowerCase() === 'completed' ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20' : 'bg-white dark:bg-gray-900 border-border-theme text-foreground'}`}>
-                                                                    <FlaskConical size={10} className={test.status?.toLowerCase() === 'completed' ? 'text-emerald-500' : 'text-gray-400'} />
-                                                                    {test.name || test.testName}
-                                                                    {test.status?.toLowerCase() === 'completed' && test.result && (
-                                                                        <span className="ml-1 pl-1 border-l border-emerald-200 text-emerald-800 dark:text-emerald-400">{test.result} {test.unit || ''}</span>
+                                                            {rep.results.map((test: any, tIdx: number) => (
+                                                                <span key={tIdx} className={`px-2 py-1 border rounded-md text-[9px] font-bold flex items-center gap-1 ${test.result ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20' : 'bg-white dark:bg-gray-900 border-border-theme text-foreground'}`}>
+                                                                    <FlaskConical size={10} className={test.result ? 'text-emerald-500' : 'text-gray-400'} />
+                                                                    {test.testName}
+                                                                    {test.result && (
+                                                                        <span className="ml-1 pl-1 border-l border-emerald-200 text-emerald-800 dark:text-emerald-400">{test.result}</span>
                                                                     )}
                                                                 </span>
                                                             ))}
@@ -3753,7 +3873,52 @@ function CreatePrescriptionPage() {
                 </div>
             )}
         </div>
+
+            {/* ─── Navigation Guard Modal ───────────────────────────────────────── */}
+            {showNavWarn && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center space-y-5 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500" />
+                        <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto">
+                            <AlertCircle size={32} className="text-amber-500" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Active Consultation!</h3>
+                            <p className="text-sm text-slate-500 font-medium mt-2 leading-relaxed">
+                                You are in the middle of a consultation with <span className="font-black text-slate-700">{formData.patientName || 'this patient'}</span>.
+                                Please <strong>Pause</strong> or <strong>Complete</strong> the session before leaving — your draft is auto-saved locally.
+                            </p>
+                        </div>
+                        <div className="flex flex-col gap-3 pt-2">
+                            <button
+                                onClick={() => { setShowNavWarn(false); pendingNavRef.current = null; }}
+                                className="w-full py-3 bg-teal-600 text-white rounded-xl font-black uppercase text-xs tracking-wider hover:bg-teal-700 active:scale-95 transition-all shadow-lg shadow-teal-600/20"
+                            >
+                                Stay in Consultation
+                            </button>
+                            <button
+                                onClick={async () => { setShowNavWarn(false); await handlePauseConsultation(); }}
+                                className="w-full py-3 bg-amber-500 text-white rounded-xl font-black uppercase text-xs tracking-wider hover:bg-amber-600 active:scale-95 transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2"
+                            >
+                                <Pause size={14} /> Pause &amp; Leave
+                            </button>
+                            <button
+                                onClick={() => {
+                                    const url = pendingNavRef.current;
+                                    setShowNavWarn(false);
+                                    pendingNavRef.current = null;
+                                    if (url) { setIsPaused(true); setTimeout(() => router.push(url), 50); }
+                                }}
+                                className="text-slate-400 hover:text-rose-600 text-xs font-bold uppercase tracking-widest transition-colors py-1"
+                            >
+                                Leave without saving
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 }
- 
+
 export default React.memo(CreatePrescriptionPage);
