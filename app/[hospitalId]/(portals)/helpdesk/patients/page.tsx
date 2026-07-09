@@ -90,11 +90,23 @@ export default function PatientsPage() {
         const fetchBranding = async () => {
             try {
                 const res = await hospitalAdminService.getHospital();
-                if (res?.hospital) {
-                    setHospitalInfo(res.hospital);
+                const hData = (res as any)?.hospital || res;
+                if (hData && (hData._id || hData.id)) {
+                    setHospitalInfo(hData);
+                } else {
+                    throw new Error("Invalid structure from hospitalAdmin API");
                 }
             } catch (err) {
-                console.error("Failed to fetch hospital branding", err);
+                // Fallback for helpdesk users without admin rights
+                try {
+                    const me = await helpdeskService.getMe();
+                    const myHospital = (me as any)?.hospital || me;
+                    if (myHospital && (myHospital._id || myHospital.id)) {
+                        setHospitalInfo(myHospital);
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch hospital branding", e);
+                }
             }
         };
         fetchBranding();
@@ -171,6 +183,8 @@ export default function PatientsPage() {
                 type: 'IPD',
                 registrationType: 'IPD',
                 date: adm.admissionDate || adm.createdAt,
+                // 🗓️ Normalized sort key: updatedAt (discharge/payment time) > createdAt > admissionDate
+                sortDate: adm.updatedAt || adm.createdAt || adm.admissionDate,
                 appointmentId: adm.admissionId,
                 appointmentTime: new Date(adm.admissionDate || adm.createdAt).toLocaleTimeString('en-US', {
                     hour: '2-digit',
@@ -203,9 +217,14 @@ export default function PatientsPage() {
                 return true;
             });
 
-            // Merge and sort by date (most recent first)
+            // Merge and sort by most recent activity (payment/update time), not scheduled date
+            // 🗓️ NORMALIZED SORT: updatedAt > createdAt > date
+            // OPD: updatedAt = when payment was applied; date = old scheduled date (wrong for sort)
+            // IPD: sortDate = updatedAt (discharge time) added during transform above
+            const getSortKey = (r: any) =>
+                new Date(r.sortDate || r.updatedAt || r.createdAt || r.date || 0).getTime();
             const allHistory = [...filteredOPD, ...transformedIPD].sort((a, b) =>
-                new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime()
+                getSortKey(b) - getSortKey(a)
             );
 
             console.log("📋 Total history records:", allHistory.length, "| OPD:", opdAppointments.length, "| IPD:", transformedIPD.length);
@@ -246,12 +265,24 @@ export default function PatientsPage() {
             let freshHospitalInfo = hospitalInfo;
             try {
                 const hRes = await hospitalAdminService.getHospital();
-                if (hRes?.hospital) {
-                    freshHospitalInfo = hRes.hospital;
-                    setHospitalInfo(hRes.hospital);
+                const hData = (hRes as any)?.hospital || hRes;
+                if (hData && (hData._id || hData.id)) {
+                    freshHospitalInfo = hData;
+                    setHospitalInfo(hData);
+                } else {
+                    throw new Error("Invalid structure from hospitalAdmin API");
                 }
             } catch (e) {
-                console.error("Failed to refetch fresh hospital info", e);
+                try {
+                    const me = await helpdeskService.getMe();
+                    const myHospital = (me as any)?.hospital || me;
+                    if (myHospital && (myHospital._id || myHospital.id)) {
+                        freshHospitalInfo = myHospital;
+                        setHospitalInfo(myHospital);
+                    }
+                } catch (err) {
+                    console.error("Failed to refetch fresh hospital info", err);
+                }
             }
 
             // Construct Receipt Data using the SELECTED appointment

@@ -441,7 +441,10 @@ function PatientDashboard({ initialData }: PatientDashboardProps) {
                     />
                 )}
                 {activeTab === 'appointments' && (
-                    <AppointmentsSection appointments={dashboardData?.appointments?.data || []} />
+                    <AppointmentsSection 
+                        appointments={dashboardData?.appointments?.data || []} 
+                        hospitals={hospitals}
+                    />
                 )}
                 {activeTab === 'prescriptions' && (
                     <PrescriptionsSection

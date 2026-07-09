@@ -67,7 +67,7 @@ const MainFooter: React.FC<MainFooterProps> = ({ initialDetails, instructions })
             width: '100%',
             fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
             marginTop: '20px',
-            padding: '0',
+            padding: '0 2px',
             printColorAdjust: 'exact',
             WebkitPrintColorAdjust: 'exact',
         }}>
@@ -131,21 +131,21 @@ const MainFooter: React.FC<MainFooterProps> = ({ initialDetails, instructions })
                 justifyContent: 'space-between',
                 alignItems: 'flex-start',
                 width: '100%',
-                gap: '40px',
+                gap: '20px',
                 marginTop: '10px',
-                padding: '0 15px',
+                padding: '0 4px',
                 boxSizing: 'border-box'
             }}>
                 {/* Left: Instructions - Grow dynamically to take remaining space */}
-                <div style={{ flex: '1 1 auto', minWidth: '0' }}>
+                <div style={{ flex: '2 1 auto', minWidth: '0' }}>
                     <ul style={{
                         margin: 0,
                         padding: 0,
                         listStyle: 'none',
-                        fontSize: '10px',
+                        fontSize: '12px',
                         color: '#1e293b',
                         fontWeight: '700',
-                        lineHeight: '1.5'
+                        lineHeight: '1.6'
                     }}>
                         {displayInstructions.map((inst, index) => (
                             <li key={index} style={{ marginBottom: '2px', wordBreak: 'break-word' }}>• {inst}</li>
@@ -154,14 +154,14 @@ const MainFooter: React.FC<MainFooterProps> = ({ initialDetails, instructions })
                 </div>
 
                 {/* Right: Address - Fixed width to allow instructions to take up remaining space */}
-                <div style={{ flex: '0 0 350px', textAlign: 'left', minWidth: '0' }}>
+                <div style={{ flex: '1 1 250px', textAlign: 'left', minWidth: '0' }}>
                     <p style={{
                         margin: 0,
-                        fontSize: '10px',
+                        fontSize: '12px',
                         fontWeight: '800',
                         color: '#0f172a',
                         textTransform: 'uppercase',
-                        lineHeight: '1.4',
+                        lineHeight: '1.5',
                         maxWidth: 'none',
                         wordBreak: 'break-word'
                     }}>
@@ -170,18 +170,6 @@ const MainFooter: React.FC<MainFooterProps> = ({ initialDetails, instructions })
                 </div>
             </div>
 
-            {/* ── Footer Disclaimer ── */}
-            <div style={{
-                textAlign: 'center',
-                fontSize: '9px',
-                color: '#64748b',
-                marginTop: '25px',
-                paddingTop: '10px',
-                borderTop: '1.5px solid #f1f5f9',
-                fontWeight: '600'
-            }}>
-                This is a computer generated document and does not require a physical signature.
-            </div>
             
             {/* Print spacing */}
             <div style={{ height: '10px' }}></div>

@@ -740,50 +740,63 @@ export const generateOPDRegistrationSlipHtml = (data: any) => {
   const rawToken = appointment.tokenNo || appointment.tokenNumber || appointment.token || appointment.queueNumber || appointment.dailyTokenNumber || (appointment.queuePosition !== undefined ? appointment.queuePosition : "01");
   const tokenNoDisplay = String(rawToken).padStart(2, '0');
   
+  const getSymptomsText = (val: any) => {
+    if (Array.isArray(val)) return val.length > 0 ? val.join(', ') : '';
+    if (typeof val === 'string' && val.trim() !== '') return val.trim();
+    return '';
+  };
+  const symptomDisplay = getSymptomsText(patient.symptoms) || 
+                         getSymptomsText(patient.chiefComplaint) || 
+                         getSymptomsText(appointment.symptoms) || 
+                         getSymptomsText(appointment.reason) || 
+                         getSymptomsText(appointment.notes) || 
+                         getSymptomsText(appointment.chiefComplaint) || 
+                         getSymptomsText(appointment.reasonForVisit) || 
+                         "N/A";
+  
   const isIPD = data.registrationType === 'IPD' || (appointment.type && appointment.type.toUpperCase().includes('IPD'));
   const slipTitle = isIPD ? "IPD Admission Slip" : "OPD Registration Slip";
   const idLabel = isIPD ? "IPD.No." : "OP.No.";
   const tokenLabel = isIPD ? "Admission Token" : "Today's Token No";
   const visitTypeDisplay = appointment.type || (isIPD ? "IPD Admission" : "Registration");
 
-  // Dynamic follow-up range and expiry validation calculations
+  // ── Follow-up validity block ─────────────────────────────────────────────
+  // Priority: stored followUpStatus snapshot (booked values) › live hospital settings
+  // We NEVER use hardcoded numbers (7, 30, etc.) — always the hospital admin's configured value.
   const visitCalculations = appointment.visitType || appointment.visitCalculations || (() => {
-    const count = appointment.visitCount || appointment.doctorVisitCount || appointment.followUpStatus?.doctorVisitCount || appointment.followUpStatus?.visitCount || (appointment.type?.toLowerCase() === 'follow-up' ? 2 : 1);
+    const count = appointment.followUpStatus?.doctorVisitCount || appointment.followUpStatus?.visitCount || (appointment.type?.toLowerCase() === 'follow-up' ? 2 : 1);
     const ordinals = ["First", "Second", "Third", "Fourth", "Fifth", "Sixth", "Seventh", "Eighth", "Ninth", "Tenth"];
     return count >= 1 && count <= ordinals.length ? `${ordinals[count - 1]} Visit` : `Visit #${count}`;
   })();
   const followUpStatus = appointment.followUpStatus;
 
-  const enableExpiry = hospital.enableFollowUpExpiry ?? true;
-  const opdRange = hospital.opdFollowUpDays; // dynamic
-  const ipdRange = hospital.ipdFollowUpDays;
-  const rangeDays = isIPD ? (ipdRange || 30) : (opdRange || 7);
-  
   const formatDDMMYYYY = (dateInput: Date | string | undefined): string => {
     if (!dateInput) return "N/A";
     const d = new Date(dateInput);
     if (isNaN(d.getTime())) return "N/A";
-    const day = String(d.getDate()).padStart(2, "0");
+    const day   = String(d.getDate()).padStart(2, "0");
     const month = String(d.getMonth() + 1).padStart(2, "0");
-    const year = d.getFullYear();
+    const year  = d.getFullYear();
     return `${day}-${month}-${year}`;
   };
 
-  const visitDateRaw = appointment.date || appointment.appointmentDate || new Date();
+  const visitDateRaw  = appointment.date || appointment.appointmentDate || new Date();
   const baseVisitDate = new Date(visitDateRaw);
-  let expiryDate = new Date(baseVisitDate);
-  
-  if (followUpStatus?.expiryDate) {
-      expiryDate = new Date(followUpStatus.expiryDate);
-  } else {
-      expiryDate.setDate(expiryDate.getDate() + rangeDays);
-  }
-  
+
+  // Always use the live hospital admin's currently configured values!
+  // Do not use the stored snapshot because admin might have updated the window duration.
   let followUpExpiryMsg = "";
-  if (!enableExpiry) {
-    followUpExpiryMsg = "Expiry validation disabled (Free follow-up always allowed).";
-  } else {
-    followUpExpiryMsg = `Visit date is ${formatDDMMYYYY(baseVisitDate)} and expiry date is ${formatDDMMYYYY(expiryDate)} total ${rangeDays} days.`;
+  const liveEnableExpiry = hospital.enableFollowUpExpiry ?? true;
+  const liveRangeDays    = isIPD ? hospital.ipdFollowUpDays : hospital.opdFollowUpDays;
+  
+  if (liveRangeDays !== undefined && liveRangeDays !== null) { 
+    const liveExpiryDate = new Date(baseVisitDate);
+    liveExpiryDate.setDate(liveExpiryDate.getDate() + Number(liveRangeDays));
+    if (!liveEnableExpiry) {
+      followUpExpiryMsg = "Expiry validation disabled (Free follow-up always allowed).";
+    } else {
+      followUpExpiryMsg = `Visit date is ${formatDDMMYYYY(baseVisitDate)} and expiry date is ${formatDDMMYYYY(liveExpiryDate)} total ${liveRangeDays} days.`;
+    }
   }
 
   return `
@@ -806,13 +819,13 @@ export const generateOPDRegistrationSlipHtml = (data: any) => {
           margin: 0;
           padding: 15px;
           background: white;
-          font-size: 13px;
+          font-size: 10px;
         }
         .header-container {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
-          padding-bottom: 12px;
+          padding-bottom: 6px;
         }
         .hospital-branding {
           display: flex;
@@ -865,20 +878,20 @@ export const generateOPDRegistrationSlipHtml = (data: any) => {
         }
         .divider-thick {
           border-top: 2px solid #1e293b;
-          margin: 10px 0 15px 0;
+          margin: 5px 0 5px 0;
         }
         .patient-grid {
           display: grid;
           grid-template-columns: 1.1fr 0.9fr;
-          row-gap: 10px;
+          row-gap: 2px;
           column-gap: 20px;
-          font-size: 13px;
+          font-size: 10px;
           font-weight: 600;
           color: #000;
         }
         .grid-row {
           display: flex;
-          margin-bottom: 6px;
+          margin-bottom: 2px;
         }
         .label {
           width: 145px;
@@ -898,32 +911,50 @@ export const generateOPDRegistrationSlipHtml = (data: any) => {
         }
         .divider-thin {
           border-top: 1.5px solid #1e293b;
-          margin: 15px 0 25px 0;
+          margin: 5px 0 10px 0;
         }
         .clinical-workspace {
-          min-height: 200px;
           position: relative;
         }
-        .header-wrapper, .footer-wrapper, .receipt-container {
+        .header-wrapper {
+          width: 100%;
+          padding: 0 20px;
+          box-sizing: border-box;
+        }
+        .footer-wrapper {
+          width: 100%;
+          padding: 0 20px;
+          box-sizing: border-box;
+        }
+        .receipt-container {
           width: 100%;
           padding: 0 20px;
           box-sizing: border-box;
         }
         .footer-note {
-          position: fixed;
-          bottom: 10mm;
-          left: 15mm;
-          right: 15mm;
           font-size: 10px;
           color: #666;
           border-top: 1px solid #ddd;
-          padding-top: 8px;
+          padding-top: 4px;
           display: flex;
           justify-content: space-between;
+          margin-top: 8px;
         }
         @media print {
-          body { padding: 0; }
-          .footer-note { position: fixed; bottom: 0; }
+          body { padding: 0; margin: 0; }
+          .footer-wrapper {
+            position: fixed;
+            bottom: 1px;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 0 5mm;
+            box-sizing: border-box;
+            z-index: 1000;
+          }
+          .footer-spacer {
+            height: 160px; /* Reserve space equal to footer height */
+          }
         }
       </style>
       ${!require('@/stores/printStore').usePrintStore.getState().printWithHeader ? `
@@ -995,43 +1026,78 @@ export const generateOPDRegistrationSlipHtml = (data: any) => {
           <span class="value">${appointment.appointmentId || payment.receiptNumber || "N/A"}</span>
         </div>
 
-        <div class="grid-row">
-          <span class="label">${tokenLabel}</span><span class="colon">:</span>
-          <span class="value" style="font-size: 16px; font-weight: 900; color: #0f766e; background: #f0fdf4; padding: 2px 8px; border-radius: 4px; border: 1px solid #ccfbf1;"># ${tokenNoDisplay}</span>
-        </div>
-        <div></div> <!-- Empty cell to balance the grid before Address -->
-
         <div class="grid-row" style="grid-column: 1 / -1; margin-top: 4px;">
           <span class="label">Address</span><span class="colon">:</span>
           <span class="value">${patient.address || "N/A"}</span>
         </div>
 
+        <!-- Compact single row: Token | Paid Amount | Payment Mode -->
+        <div style="grid-column: 1 / -1; display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 4px; padding: 3px 0; border-top: 1px dashed #e2e8f0; border-bottom: 1px dashed #e2e8f0;">
+          <div style="display: flex; align-items: center; gap: 4px; flex: 1; min-width: 120px;">
+            <span style="font-size: 10px; font-weight: 700; color: #475569; flex-shrink: 0;">${tokenLabel}</span>
+            <span style="color: #475569; font-weight: 700; flex-shrink: 0;">:</span>
+            <span style="font-size: 11px; font-weight: 900; color: #0f766e; background: #f0fdf4; padding: 1px 5px; border-radius: 3px; border: 1px solid #ccfbf1; display: inline-block;"># ${tokenNoDisplay}</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 4px; flex: 1; min-width: 120px;">
+            <span style="font-size: 10px; font-weight: 700; color: #475569; flex-shrink: 0;">Paid Amount</span>
+            <span style="color: #475569; font-weight: 700; flex-shrink: 0;">:</span>
+            <span style="font-size: 10px; font-weight: 700; color: #000;">₹ ${Math.round(payment.amount || 0).toLocaleString('en-IN')}</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 4px; flex: 1; min-width: 120px;">
+            <span style="font-size: 10px; font-weight: 700; color: #475569; flex-shrink: 0;">Payment Mode</span>
+            <span style="color: #475569; font-weight: 700; flex-shrink: 0;">:</span>
+            <span style="font-size: 10px; font-weight: 700; color: #000;">${(payment.method || 'CASH').toUpperCase()}</span>
+          </div>
+        </div>
+
+        ${
+          (payment.method || '').toUpperCase() === 'MIXED' && (payment.paymentDetails || payment.splitPayments || payment.breakdown)
+            ? (() => {
+                const breakdown = payment.paymentDetails || payment.splitPayments || payment.breakdown || {};
+                const parts = [];
+                if (breakdown.cash && Number(breakdown.cash) > 0) parts.push(`Cash: ₹${Number(breakdown.cash).toLocaleString('en-IN')}`);
+                if (breakdown.card && Number(breakdown.card) > 0) parts.push(`Card: ₹${Number(breakdown.card).toLocaleString('en-IN')}`);
+                if (breakdown.upi && Number(breakdown.upi) > 0) parts.push(`UPI: ₹${Number(breakdown.upi).toLocaleString('en-IN')}`);
+                return parts.length > 0 ? `
+                <div style="grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; padding: 3px 0; margin-top: 2px; font-size: 9.5px; color: #475569; font-weight: 700;">
+                  <span style="color: #374151; font-weight: 800;">Breakdown:</span>
+                  ${parts.map(p => `<span style="background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 3px; padding: 1px 6px; font-weight: 700;">${p}</span>`).join('')}
+                </div>` : '';
+              })()
+            : ''
+        }
+
         <!-- Follow-up & Visit Calculations Block -->
+        ${followUpExpiryMsg ? `
         <div style="grid-column: span 2; margin-top: 15px; padding: 12px; background-color: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 12px; font-family: 'Inter', sans-serif;">
-          <div style="font-weight: 900; text-transform: uppercase; color: #1e293b; letter-spacing: 0.75px; margin-bottom: 6px; font-size: 11px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">Visit Summary & Follow-up Validation</div>
+          <div style="font-weight: 900; text-transform: uppercase; color: #1e293b; letter-spacing: 0.75px; margin-bottom: 6px; font-size: 11px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">Visit Summary &amp; Follow-up Validation</div>
           <div style="margin-bottom: 4px; color: #334155;"><strong>Visit Count:</strong> ${visitCalculations}</div>
           <div style="color: #0f766e; font-weight: 800;"><strong>Follow-up validity:</strong> ${followUpExpiryMsg}</div>
-        </div>
+        </div>` : `
+        <div style="grid-column: span 2; margin-top: 15px; padding: 12px; background-color: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 12px; font-family: 'Inter', sans-serif;">
+          <div style="font-weight: 900; text-transform: uppercase; color: #1e293b; letter-spacing: 0.75px; margin-bottom: 6px; font-size: 11px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">Visit Summary</div>
+          <div style="margin-bottom: 4px; color: #334155;"><strong>Visit Count:</strong> ${visitCalculations}</div>
+        </div>`}
       </div>
 
       <div class="divider-thin"></div>
       
-      <div class="grid-row" style="margin-top: 10px; margin-bottom: 10px;">
+      <div class="grid-row" style="margin-top: 4px; margin-bottom: 4px;">
         <span class="label" style="width: 150px;">Reason / Symptoms</span><span class="colon">:</span>
-        <span class="value">${patient.symptoms || appointment.notes || 'N/A'}</span>
+        <span class="value">${symptomDisplay}</span>
       </div>
       <div class="divider-thin"></div>
 
-      <div class="clinical-workspace" style="min-height: 250px;">
+      <div class="clinical-workspace" style="min-height: 300px;">
         <!-- Open space for doctor prescription notes -->
       </div>
 
-      <div class="footer-note">
-        <span>Prepared By: Frontdesk / Registration</span>
-        <span>Paid Amount: ₹ ${Math.round(payment.amount || 0).toLocaleString('en-IN')} (${payment.method?.toUpperCase() || 'CASH'})</span>
-        <span>Computer Generated Slip</span>
-      </div>
-      ${footerHtml ? `<div class="footer-wrapper" style="width: 100%;">${footerHtml}</div>` : ""}
+      <!-- Reserve bottom space for fixed footer -->
+      <div class="footer-spacer"></div>
+      ${footerHtml ? `
+      <div class="footer-wrapper">
+        ${footerHtml}
+      </div>` : ""}
     </body>
     </html>
   `;
@@ -1053,45 +1119,57 @@ export const generateClinicalReceiptHtml = (data: any) => {
 
   const isIPD = data.registrationType === 'IPD' || (appointment.type && appointment.type.toUpperCase().includes('IPD'));
   
-  // Dynamic follow-up range and expiry validation calculations
+  const getSymptomsText = (val: any) => {
+    if (Array.isArray(val)) return val.length > 0 ? val.join(', ') : '';
+    if (typeof val === 'string' && val.trim() !== '') return val.trim();
+    return '';
+  };
+  const symptomDisplay = getSymptomsText(patient.symptoms) || 
+                         getSymptomsText(patient.chiefComplaint) || 
+                         getSymptomsText(appointment.symptoms) || 
+                         getSymptomsText(appointment.reason) || 
+                         getSymptomsText(appointment.notes) || 
+                         getSymptomsText(appointment.chiefComplaint) || 
+                         getSymptomsText(appointment.reasonForVisit) || 
+                         "N/A";
+  
+  // ── Follow-up validity block (detailed / IPD receipt) ──────────────────
+  // Priority: stored followUpStatus snapshot (booked values) › live hospital settings
+  // We NEVER use hardcoded numbers — always the hospital admin's configured value.
   const visitCalculations = appointment.visitType || appointment.visitCalculations || (() => {
-    const count = appointment.visitCount || appointment.doctorVisitCount || appointment.followUpStatus?.doctorVisitCount || appointment.followUpStatus?.visitCount || (appointment.type?.toLowerCase() === 'follow-up' ? 2 : 1);
+    const count = appointment.followUpStatus?.doctorVisitCount || appointment.followUpStatus?.visitCount || (appointment.type?.toLowerCase() === 'follow-up' ? 2 : 1);
     const ordinals = ["First", "Second", "Third", "Fourth", "Fifth", "Sixth", "Seventh", "Eighth", "Ninth", "Tenth"];
     return count >= 1 && count <= ordinals.length ? `${ordinals[count - 1]} Visit` : `Visit #${count}`;
   })();
   const followUpStatus = appointment.followUpStatus;
 
-  const enableExpiry = hospital.enableFollowUpExpiry ?? true;
-  const opdRange = hospital.opdFollowUpDays ?? 7;
-  const ipdRange = hospital.ipdFollowUpDays ?? 30;
-  const rangeDays = isIPD ? ipdRange : opdRange;
-  
   const formatDDMMYYYY = (dateInput: Date | string | undefined): string => {
     if (!dateInput) return "N/A";
     const d = new Date(dateInput);
     if (isNaN(d.getTime())) return "N/A";
-    const day = String(d.getDate()).padStart(2, "0");
+    const day   = String(d.getDate()).padStart(2, "0");
     const month = String(d.getMonth() + 1).padStart(2, "0");
-    const year = d.getFullYear();
+    const year  = d.getFullYear();
     return `${day}-${month}-${year}`;
   };
 
-  const visitDateRaw = appointment.date || appointment.appointmentDate || new Date();
+  const visitDateRaw  = appointment.date || appointment.appointmentDate || new Date();
   const baseVisitDate = new Date(visitDateRaw);
-  let expiryDate = new Date(baseVisitDate);
-  
-  if (followUpStatus?.expiryDate) {
-      expiryDate = new Date(followUpStatus.expiryDate);
-  } else {
-      expiryDate.setDate(expiryDate.getDate() + rangeDays);
-  }
 
   let followUpExpiryMsg = "";
-  if (!enableExpiry) {
-    followUpExpiryMsg = "Expiry validation disabled (Free follow-up always allowed).";
-  } else {
-    followUpExpiryMsg = `Visit date is ${formatDDMMYYYY(baseVisitDate)} and expiry date is ${formatDDMMYYYY(expiryDate)} total ${rangeDays} days.`;
+  const liveEnableExpiry = hospital.enableFollowUpExpiry ?? true;
+  const liveRangeDays    = isIPD ? hospital.ipdFollowUpDays : hospital.opdFollowUpDays;
+  
+  if (liveRangeDays !== undefined && liveRangeDays !== null) {
+    const liveExpiryDate = new Date(baseVisitDate);
+    liveExpiryDate.setDate(liveExpiryDate.getDate() + Number(liveRangeDays));
+    if (!liveEnableExpiry) {
+      followUpExpiryMsg = "Expiry validation disabled (Free follow-up always allowed).";
+    } else {
+      followUpExpiryMsg = `Visit date is ${formatDDMMYYYY(baseVisitDate)} and expiry date is ${formatDDMMYYYY(liveExpiryDate)} total ${liveRangeDays} days.`;
+    }
   }
+
 
   return `
     <!DOCTYPE html>
@@ -1409,10 +1487,10 @@ export const generateClinicalReceiptHtml = (data: any) => {
           
           .footer-wrapper {
             position: fixed;
-            bottom: 0;
+            bottom: 1px;
             left: 8mm;
             right: 12mm;
-            padding: 0 0 8mm;
+            padding: 0 0 1px;
             background: white;
             z-index: 1000;
           }
@@ -1574,11 +1652,16 @@ export const generateClinicalReceiptHtml = (data: any) => {
                 </div>
 
                 <!-- Visit Summary & Follow-up Validation Block -->
+                ${followUpExpiryMsg ? `
                 <div style="margin-top: 15px; margin-bottom: 15px; padding: 12px; background-color: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 12px; font-family: 'Inter', sans-serif;">
-                  <div style="font-weight: 900; text-transform: uppercase; color: #1e293b; letter-spacing: 0.75px; margin-bottom: 6px; font-size: 11px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">Visit Summary & Follow-up Validation</div>
+                  <div style="font-weight: 900; text-transform: uppercase; color: #1e293b; letter-spacing: 0.75px; margin-bottom: 6px; font-size: 11px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">Visit Summary &amp; Follow-up Validation</div>
                   <div style="margin-bottom: 4px; color: #334155;"><strong>Visit Type / Ordinal:</strong> ${visitCalculations} (${appointment.type || 'OPD'})</div>
                   <div style="color: #0f766e; font-weight: 800;"><strong>Follow-up validity:</strong> ${followUpExpiryMsg}</div>
-                </div>
+                </div>` : `
+                <div style="margin-top: 15px; margin-bottom: 15px; padding: 12px; background-color: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 12px; font-family: 'Inter', sans-serif;">
+                  <div style="font-weight: 900; text-transform: uppercase; color: #1e293b; letter-spacing: 0.75px; margin-bottom: 6px; font-size: 11px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">Visit Summary</div>
+                  <div style="margin-bottom: 4px; color: #334155;"><strong>Visit Type / Ordinal:</strong> ${visitCalculations} (${appointment.type || 'OPD'})</div>
+                </div>`}
 
                 <!-- Vital Signs -->
                 ${
@@ -1622,7 +1705,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
                         patient.medicalHistory !== "None" &&
                         patient.medicalHistory !== "NONE" &&
                         patient.medicalHistory !== "CLEAR"))) ||
-                  appointment.notes || patient.symptoms
+                  symptomDisplay !== "N/A"
                     ? `
                 <div class="section">
                   <div class="section-header">${data.showVitals ? "Medical History, Allergies &amp; Current Symptoms" : "Reason / Symptoms"}</div>
@@ -1656,11 +1739,11 @@ export const generateClinicalReceiptHtml = (data: any) => {
                         : ""
                     }
                     ${
-                      patient.symptoms || appointment.notes
+                      symptomDisplay !== "N/A"
                         ? `
                     <tr>
                       <td class="label">Reason / Symptoms:</td>
-                      <td colspan="3" class="value">${patient.symptoms || appointment.notes}</td>
+                      <td colspan="3" class="value">${symptomDisplay}</td>
                     </tr>`
                         : ""
                     }
@@ -1910,7 +1993,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
         <div class="footer">
           <div style="flex: 1;">
             <p style="margin: 0; font-weight: 700;">PREPARED BY: ${patient.preparedBy || "System Administrator"}</p>
-            <p style="margin: 4px 0 0 0;">This is a computer-generated document and does not require a physical signature.</p>
+            
             <p style="margin: 2px 0 0 0;">Print Date: ${new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })} at ${formatTime12Hr(new Date())}</p>
           </div>
           <div class="signatory-box">

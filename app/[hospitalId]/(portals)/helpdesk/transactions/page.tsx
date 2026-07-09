@@ -838,16 +838,6 @@ export default function TransactionsPage() {
 
     const showInitialLoading = isLoading && !txRaw;
 
-    if (showInitialLoading) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <div className="flex flex-col items-center gap-4">
-                    <RefreshCw className="w-8 h-8 text-teal-600 animate-spin" />
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Synchronizing Revenue Ledger...</p>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500 pb-12">
@@ -888,13 +878,7 @@ export default function TransactionsPage() {
                             {exporting ? <RefreshCw size={16} className="sm:size-[18px] animate-spin" /> : <Download size={16} className="sm:size-[18px]" />}
                             <span className="text-[10px] font-black uppercase tracking-wider hidden md:inline">Categorized</span>
                         </button>
-                        <button
-                            onClick={handlePrintAll}
-                            className="p-2 sm:p-2.5 bg-white border border-slate-200 text-slate-400 rounded-lg sm:rounded-xl hover:text-indigo-600 hover:border-indigo-200 shadow-sm active:scale-95 transition-all"
-                            title="Print current page"
-                        >
-                            <Printer size={16} className="sm:size-[18px]" />
-                        </button>
+                       
                         <button onClick={() => {
                     toast.loading('Refreshing page...', { duration: 1000 });
                     setTimeout(() => {
@@ -1069,7 +1053,12 @@ export default function TransactionsPage() {
             {/* LEDGER TABLE */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[500px]">
                 <div className="overflow-x-auto">
-                    {filteredTransactions.length > 0 ? (
+                    {showInitialLoading ? (
+                        <div className="py-40 flex flex-col items-center justify-center gap-4">
+                            <RefreshCw className="w-8 h-8 text-teal-600 animate-spin" />
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Synchronizing Revenue Ledger...</p>
+                        </div>
+                    ) : filteredTransactions.length > 0 ? (
                         <table className="w-full min-w-[800px] table-auto text-left">
                             <thead>
                                 <tr className="bg-slate-50 border-b border-slate-200 text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">

@@ -3,6 +3,7 @@ import { Pill, Calendar, User, Download, Building2, X, CheckCircle2, ChevronRigh
 import { Card } from '@/components/admin';
 import { format } from 'date-fns';
 import { formatFrequency } from '@/lib/frequencyUtils';
+import { formatDoctorName } from '@/lib/utils/name-utils';
 
 interface Medicine {
     name: string;
@@ -257,7 +258,7 @@ export default function PrescriptionsSection({
                                         </span>
                                     </div>
                                     <h3 className="font-black text-gray-950 dark:text-white text-sm sm:text-lg uppercase tracking-tight truncate italic">
-                                        Dr. {prescription.doctor?.user?.name || prescription.doctor?.name || 'Medical Specialist'}
+                                        {formatDoctorName(prescription.doctor?.user?.name || prescription.doctor?.name || 'Medical Specialist')}
                                     </h3>
                                     <div className="flex items-center gap-1.5 text-[8px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
                                         <Building2 className="w-2.5 h-2.5 text-blue-600" />

@@ -1,7 +1,8 @@
-﻿import React, { useState } from 'react';
-import { Calendar, Clock, MapPin, User, FileText, ChevronRight, X, CheckCircle2, Building2, Stethoscope, Info } from 'lucide-react';
+import React, { useState } from 'react';
+import { Calendar, Clock, MapPin, User, FileText, ChevronRight, X, CheckCircle2, Building2, Stethoscope, Info, Shield } from 'lucide-react';
 import { Card } from '@/components/admin';
 import { format } from 'date-fns';
+import { formatDoctorName } from '@/lib/utils/name-utils';
 
 interface Appointment {
     _id: string;
@@ -13,7 +14,7 @@ interface Appointment {
         user?: {
             name: string;
         };
-        name?: string; // Fallback
+        name?: string;
         specialties?: string[];
         department?: string;
     };
@@ -48,18 +49,29 @@ interface Appointment {
     };
     amount?: number;
     paymentStatus?: string;
+    followUpStatus?: {
+        eligible?: boolean;
+        visitCount?: number;
+        doctorVisitCount?: number;
+        rangeDays?: number;
+        expiryDate?: string | Date;
+        enableExpiry?: boolean;
+        message?: string;
+    };
 }
 
 interface AppointmentsSectionProps {
     appointments: Appointment[];
     patientName?: string;
     patientEmail?: string;
+    hospitals?: any[];
 }
 
 function AppointmentsSection({
     appointments,
     patientName = 'Valued Patient',
-    patientEmail = ''
+    patientEmail = '',
+    hospitals = []
 }: AppointmentsSectionProps) {
     const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
 
@@ -137,7 +149,7 @@ function AppointmentsSection({
                                     <div className="flex items-center justify-between gap-2 mb-1 sm:mb-2">
                                         <div className="space-y-0 text-left min-w-0">
                                             <h3 className="font-black text-gray-950 dark:text-white text-[11px] sm:text-base uppercase tracking-tight">
-                                                Dr. {appointment.doctor?.user?.name || appointment.doctor?.name || 'Medical Specialist'}
+                                                {formatDoctorName(appointment.doctor?.user?.name || appointment.doctor?.name || 'Medical Specialist')}
                                             </h3>
                                             <p className="text-[7px] sm:text-[10px] font-black uppercase text-blue-600 tracking-widest ">
                                                 {appointment.doctor?.specialties?.[0] || appointment.doctor?.department || 'Authorized Physician'}
@@ -231,6 +243,59 @@ function AppointmentsSection({
                                             </div>
                                         </div>
                                     </div>
+
+                                    {/* Follow-up Expiry Date */}
+                                    {(() => {
+                                        let hasExpiry = !!appointment.followUpStatus?.expiryDate;
+                                        let expiryDate = appointment.followUpStatus?.expiryDate;
+                                        let rangeDays = appointment.followUpStatus?.rangeDays;
+                                        let eligible = appointment.followUpStatus?.eligible;
+                                        
+                                        // Dynamic calculation if hospital settings are available
+                                        if (appointment.hospital && (appointment.hospital as any)._id) {
+                                            const hosp = hospitals.find(h => h._id === (appointment.hospital as any)._id);
+                                            if (hosp) {
+                                                const isIPD = appointment.type?.toUpperCase().includes('IPD');
+                                                rangeDays = isIPD ? hosp.ipdFollowUpDays : hosp.opdFollowUpDays;
+                                                const enableExpiry = hosp.enableFollowUpExpiry ?? true;
+                                                
+                                                if (rangeDays !== undefined && rangeDays !== null && enableExpiry) {
+                                                    const baseDate = new Date(appointmentDate);
+                                                    const calcExpiryDate = new Date(baseDate);
+                                                    calcExpiryDate.setDate(calcExpiryDate.getDate() + Number(rangeDays));
+                                                    
+                                                    expiryDate = calcExpiryDate;
+                                                    hasExpiry = true;
+                                                    
+                                                    // Dynamic eligible check
+                                                    const today = new Date();
+                                                    eligible = today <= calcExpiryDate;
+                                                }
+                                            }
+                                        }
+
+                                        if (!hasExpiry || !expiryDate) return null;
+
+                                        return (
+                                            <div className="bg-teal-50 dark:bg-teal-900/10 border border-teal-200 dark:border-teal-800/30 rounded-xl p-2.5 flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <Shield className="w-3 h-3 sm:w-4 sm:h-4 text-teal-600" />
+                                                    <div>
+                                                        <p className="text-[6px] sm:text-[8px] font-black text-teal-600 uppercase tracking-widest leading-none">Follow-up Valid Until</p>
+                                                        <p className="text-[9px] sm:text-[11px] font-black text-teal-800 dark:text-teal-300 mt-0.5">
+                                                            {new Date(expiryDate as string | Date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-[6px] sm:text-[8px] font-black text-teal-600 uppercase tracking-widest leading-none">Within {rangeDays || 0} Days</p>
+                                                    <p className={`text-[8px] sm:text-[10px] font-black uppercase mt-0.5 ${eligible ? 'text-emerald-600' : 'text-amber-600'}`}>
+                                                        {eligible ? 'Eligible' : 'New Visit'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
 
                                     {/* Payment Footer */}
                                     <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between">

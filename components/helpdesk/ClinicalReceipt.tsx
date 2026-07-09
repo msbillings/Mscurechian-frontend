@@ -111,13 +111,16 @@ function ClinicalReceipt({ hospital: propHospital, patient, appointment, payment
       try {
         const response = await hospitalAdminService.getHospital();
         if (response?.hospital) {
-          const h = response.hospital;
+          const h = response.hospital as any;
           setHospital({
             name: h.name || propHospital.name,
             address: h.address || propHospital.address,
             contact: h.phone || propHospital.contact,
             email: h.email || propHospital.email,
-            logo: h.logo || propHospital.logo
+            logo: h.logo || propHospital.logo,
+            opdFollowUpDays: h.opdFollowUpDays ?? propHospital.opdFollowUpDays,
+            ipdFollowUpDays: h.ipdFollowUpDays ?? propHospital.ipdFollowUpDays,
+            enableFollowUpExpiry: h.enableFollowUpExpiry ?? propHospital.enableFollowUpExpiry
           });
         }
       } catch (error) {

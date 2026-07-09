@@ -142,7 +142,7 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
                             alignItems: 'center',
                             gap: '6px',
                             color: '#1e40af',
-                            fontSize: 'clamp(10px, 1.6vw, 14px)',
+                            fontSize: 'clamp(11px, 1.8vw, 15px)',
                             fontWeight: '700',
                             marginTop: '2px'
                         }}>
@@ -168,7 +168,7 @@ const MainHeader: React.FC<MainHeaderProps> = ({ initialDetails }) => {
                         alignItems: 'center',
                         flexWrap: 'wrap',
                         gap: '12px',
-                        fontSize: 'clamp(9px, 1.4vw, 13px)',
+                        fontSize: 'clamp(10px, 1.6vw, 14px)',
                         color: '#475569',
                         fontWeight: '600',
                         marginTop: '2px',

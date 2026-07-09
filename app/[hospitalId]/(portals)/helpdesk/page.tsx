@@ -600,13 +600,7 @@ function HelpdeskDashboard() {
                             Reset
                         </button>
                     )}
-                    <button
-                        onClick={handleRefresh}
-                        className="p-1 sm:p-2.5 bg-white border border-slate-200 text-slate-400 rounded-lg sm:rounded-xl hover:text-teal-600 shadow-sm active:scale-95"
-                        aria-label="Refresh Dashboard"
-                    >
-                        <RefreshCw size={10} className="sm:size-[16px]" />
-                    </button>
+                    
                     <button
                         onClick={handlePrintLetterhead}
                         className="flex items-center gap-0.5 sm:gap-2 px-2 sm:px-5 py-1.5 sm:py-2.5 bg-white border border-slate-200 text-slate-600 rounded-lg sm:rounded-xl text-[7.5px] sm:text-[10px] font-bold uppercase tracking-widest hover:border-teal-500 hover:text-teal-600 shadow-sm"

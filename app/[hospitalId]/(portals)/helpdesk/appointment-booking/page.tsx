@@ -926,7 +926,10 @@ export default function AppointmentBooking() {
             const dateStr = new Date(selectedDate).toISOString().split('T')[0];
             const allAptsRes = await helpdeskService.getAppointments(1, 200, undefined, dateStr, dateStr).catch(() => ({ data: [] }));
             const allApts = Array.isArray(allAptsRes) ? allAptsRes : (allAptsRes?.data || allAptsRes?.appointments || []);
-            const activeToday = allApts.filter((a: any) => !['completed', 'cancelled', 'no-show', 'rejected'].includes(a.status?.toLowerCase()));
+            // Count ALL booked appointments for the day (including completed ones) for token numbering.
+            // Only exclude explicitly cancelled/rejected/no-show — completed OPD must count so
+            // the IPD booked later in the same day gets the correct sequential token.
+            const activeToday = allApts.filter((a: any) => !['cancelled', 'no-show', 'rejected'].includes(a.status?.toLowerCase()));
             const parseTime = (timeStr?: string) => {
                 if (!timeStr) return 0;
                 const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);

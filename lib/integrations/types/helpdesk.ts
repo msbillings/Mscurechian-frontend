@@ -69,6 +69,9 @@ export interface HelpdeskProfile {
     email?: string;
     rooms?: { _id: string; label: string; type: string }[];
     departments?: { _id: string; name: string; code: string }[];
+    opdFollowUpDays?: number;
+    ipdFollowUpDays?: number;
+    enableFollowUpExpiry?: boolean;
   };
   bankDetails?: {
     accountName?: string;

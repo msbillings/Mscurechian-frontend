@@ -96,7 +96,7 @@ const MasterFooter: React.FC<MasterFooterProps> = ({ initialDetails }) => {
                     fontSize: '8px', 
                     color: '#9ca3af' 
                 }}>
-                    This is a computer-generated document and does not require a physical signature unless specified.
+                    
                 </p>
             </div>
         </div>
