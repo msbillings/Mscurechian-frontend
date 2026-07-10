@@ -25,11 +25,16 @@ export const LabDashboardService = {
   getStats: async (
     range: string = "today",
     skipCache: boolean = false,
+    startDate?: string,
+    endDate?: string,
   ): Promise<LabDashboardStats> => {
+    let url = `${LAB_ENDPOINTS.DASHBOARD.STATS}?range=${range}&skipCache=${skipCache}`;
+    if (startDate && endDate) {
+      url += `&startDate=${startDate}&endDate=${endDate}`;
+    }
     return apiClient<LabDashboardStats>(
-      `${LAB_ENDPOINTS.DASHBOARD.STATS}?range=${range}&skipCache=${skipCache}`,
+      url,
       { skipCache },
     );
   },
 };
-

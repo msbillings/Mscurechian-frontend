@@ -118,16 +118,13 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
             <div ref={ref} style={{ padding: 0, background: '#fff', fontFamily: '"Segoe UI", Arial, sans-serif' }}>
                 <style>{`
                     .print-content {
-                        display: flex;
-                        flex-direction: column;
+                        display: block;
                         width: 100%;
                         max-width: 210mm;
-                        min-height: 295mm; 
                         margin: 0 auto;
                         position: relative;
                         background: #ffffff;
                         color: #000;
-                        padding-bottom: 15px; 
                     }
                     @media (min-width: 800px) {
                         .report-body   { padding: 20px !important; }
@@ -139,14 +136,13 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
                         .lab-test-table td { padding: 8px 10px !important; }
                     }
                     .report-body {
-                        flex: 1 1 auto;
+                        display: block;
                         padding: 12px;
                         box-sizing: border-box;
                         position: relative;
                     }
                     .lab-print-footer {
-                        margin-top: auto;
-                        flex-shrink: 0;
+                        display: block;
                         position: relative;
                         width: 100%;
                         box-sizing: border-box;

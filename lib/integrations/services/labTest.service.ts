@@ -1,4 +1,4 @@
-﻿import { apiClient } from '../api/apiClient';
+import { apiClient } from '../api/apiClient';
 import { LabTest, LabTestPayload, TestParameter } from '../types/labTest';
 import { LAB_ENDPOINTS } from '../config/endpoints';
 
@@ -51,5 +51,13 @@ export const LabTestService = {
     // Get Meta Options
     getMetaOptions: async (): Promise<any> => {
         return apiClient<any>(LAB_ENDPOINTS.META);
+    },
+
+    // Update Meta Options
+    updateMetaOptions: async (data: { methods?: string[]; sampleTypes?: string[]; units?: string[] }): Promise<any> => {
+        return apiClient<any>(LAB_ENDPOINTS.META, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        });
     }
 };

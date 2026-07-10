@@ -25,19 +25,6 @@ export default function PrinterSettingsCard() {
                     <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${printWithHeader ? 'translate-x-4' : 'translate-x-0'}`} />
                 </div>
             </div>
-
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 transition-colors">
-                <div className="space-y-1 mb-2">
-                    <p className="text-[10px] font-black text-slate-700 uppercase tracking-[0.1em]">Footer Terms & Conditions</p>
-                    <p className="text-[9px] font-medium text-slate-400">Add custom instructions for the print receipt footer (one per line)</p>
-                </div>
-                <textarea 
-                    value={usePrintStore((state) => state.footerTerms)} 
-                    onChange={(e) => usePrintStore.getState().setFooterTerms(e.target.value)}
-                    placeholder="clinical correlation required&#10;Contact helpdesk for alarms&#10;Not for medico-legal use"
-                    className="w-full h-24 p-2 text-xs text-slate-700 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                />
-            </div>
         </div>
     );
 }

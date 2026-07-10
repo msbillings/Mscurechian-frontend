@@ -39,6 +39,23 @@ function HospitalAdminManageTestPage() {
     const [editingMethod, setEditingMethod] = useState<{ index: number; value: string } | null>(null);
     const [editMethodError, setEditMethodError] = useState('');
 
+    // Sample Type manager state
+    const [showSampleManager, setShowSampleManager] = useState(false);
+    const [editingSample, setEditingSample] = useState<{ index: number; value: string } | null>(null);
+
+    // Unit manager state
+    const [showUnitManager, setShowUnitManager] = useState(false);
+    const [editingUnit, setEditingUnit] = useState<{ index: number; value: string } | null>(null);
+
+    const persistMetaOptions = async (updatedMeta: { methods?: string[]; sampleTypes?: string[]; units?: string[] }) => {
+        try {
+            await LabTestService.updateMetaOptions(updatedMeta);
+        } catch (e: any) {
+            console.error("Failed to persist meta options", e);
+            toast.error(e.message || "Failed to persist customization to server");
+        }
+    };
+
     const [formData, setFormData] = useState({
         testName: '',
         departmentId: '',
@@ -99,15 +116,20 @@ function HospitalAdminManageTestPage() {
                 setFormData(prev => ({ ...prev, departmentId: depts[0]._id, departmentIds: [depts[0]._id] }));
             }
 
+            // 2. If editing, load test details AFTER meta is ready
             if (isEditMode && testId) {
                 setInitialLoading(true);
                 try {
                     const test = await LabTestService.getTestById(testId);
+
+                    // Resolve method field (stored as 'methodology' in DB)
                     const methodVal = test.method || (test as any).methodology || '';
+                    // Resolve turnaround time (stored as 'temporalTATCycle' or 'turnaroundTime')
                     const tatVal = test.turnaroundTime || (test as any).temporalTATCycle || '';
                     const unitVal = test.unit || '';
                     const sampleTypeVal = test.sampleType || '';
 
+                    // Inject any custom values into metaOptions so the dropdowns show them
                     setMetaOptions((prev: any) => {
                         const inject = (list: string[], val: string) =>
                             val && !list.some(x => x.toLowerCase() === val.toLowerCase())
@@ -122,6 +144,7 @@ function HospitalAdminManageTestPage() {
                         };
                     });
 
+                    // Map resultParameters — handle both inline subdoc and separate collection response
                     const rawParams = (test as any).resultParameters || [];
                     const mappedParams = rawParams.map((p: any) => ({
                         label: p.label || p.name || '',
@@ -163,7 +186,9 @@ function HospitalAdminManageTestPage() {
                 } catch (error) {
                     console.error("Failed to fetch test details", error);
                     toast.error("Failed to load test details");
-                    startNavigation(() => router.push(getPath('/hospital-admin/labs/tests')));
+                    startNavigation(() => {
+                        router.push(getPath('/hospital-admin/labs/tests'));
+                    });
                 } finally {
                     setInitialLoading(false);
                 }
@@ -215,7 +240,9 @@ function HospitalAdminManageTestPage() {
             }
             queryClient.invalidateQueries({ queryKey: ['hospital-admin-lab-tests'] });
             queryClient.invalidateQueries({ queryKey: ['hospital-admin-lab-departments'] });
-            startNavigation(() => router.push(getPath('/hospital-admin/labs/tests')));
+            startNavigation(() => {
+                router.push(getPath('/hospital-admin/labs/tests'));
+            });
         } catch (error: any) {
             toast.error(error.message || "Failed to save test");
         } finally {
@@ -252,16 +279,44 @@ function HospitalAdminManageTestPage() {
         } else if (modalState.type === 'test') {
             setFormData(prev => ({ ...prev, testName: newItemName }));
         } else if (modalState.type === 'sample') {
-            setFormData(prev => ({ ...prev, sampleType: newItemName }));
+            const trimmed = newItemName.trim();
+            const alreadyExists = metaOptions.sampleTypes.some(
+                (s: string) => s.trim().toLowerCase() === trimmed.toLowerCase()
+            );
+            if (alreadyExists) return;
+            const updatedSamples = [...metaOptions.sampleTypes, trimmed];
+            setMetaOptions((prev: any) => ({
+                ...prev,
+                sampleTypes: updatedSamples,
+            }));
+            setFormData(prev => ({ ...prev, sampleType: trimmed }));
+            persistMetaOptions({ sampleTypes: updatedSamples });
+            toast.success(`Sample Type "${trimmed}" added`);
         } else if (modalState.type === 'method') {
             const trimmed = newItemName.trim();
             const alreadyExists = metaOptions.methods.some(
                 (m: string) => m.trim().toLowerCase() === trimmed.toLowerCase()
             );
             if (alreadyExists) return;
-            setMetaOptions((prev: any) => ({ ...prev, methods: [...prev.methods, trimmed] }));
+            const updatedMethods = [...metaOptions.methods, trimmed];
+            setMetaOptions((prev: any) => ({ ...prev, methods: updatedMethods }));
             setFormData(prev => ({ ...prev, method: trimmed }));
+            persistMetaOptions({ methods: updatedMethods });
             toast.success(`Method "${trimmed}" added`);
+        } else if (modalState.type === 'unit') {
+            const trimmed = newItemName.trim();
+            const alreadyExists = metaOptions.units.some(
+                (u: string) => u.trim().toLowerCase() === trimmed.toLowerCase()
+            );
+            if (alreadyExists) return;
+            const updatedUnits = [...metaOptions.units, trimmed];
+            setMetaOptions((prev: any) => ({
+                ...prev,
+                units: updatedUnits,
+            }));
+            setFormData(prev => ({ ...prev, unit: trimmed }));
+            persistMetaOptions({ units: updatedUnits });
+            toast.success(`Unit "${trimmed}" added`);
         } else if (modalState.type === 'tat') {
             setFormData(prev => ({ ...prev, turnaroundTime: newItemName }));
         }
@@ -298,7 +353,7 @@ function HospitalAdminManageTestPage() {
                 </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-6">
+            <form onSubmit={handleSubmit} className="max-w-7xl mx-auto space-y-6">
 
                     {/* Basic Information */}
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm">
@@ -376,11 +431,32 @@ function HospitalAdminManageTestPage() {
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label className="block text-[9px] md:text-xs text-gray-700 dark:text-gray-300 mb-1.5">
-                                    Sample Type <span className="text-rose-500">*</span>
-                                </label>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Sample Type <span className="text-rose-500">*</span>
+                                    </label>
+                                    <div className="flex items-center gap-1.5">
+                                        <button
+                                            type="button"
+                                            onClick={() => openModal('sample', 'Add New Sample Type')}
+                                            className="flex items-center gap-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 px-2.5 py-1 rounded-lg border border-indigo-200 dark:border-indigo-800 transition-all"
+                                        >
+                                            <Plus className="w-3 h-3" />
+                                            Add Type
+                                        </button>
+                                        <button
+                                            type="button"
+                                            title="Edit / Delete sample types"
+                                            onClick={() => { setShowSampleManager(true); setEditingSample(null); }}
+                                            className="flex items-center gap-1 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 bg-slate-100 dark:bg-gray-700 hover:bg-slate-200 dark:hover:bg-gray-600 px-2 py-1 rounded-lg border border-slate-200 dark:border-gray-600 transition-all"
+                                        >
+                                            <Settings className="w-3 h-3" />
+                                            Manage
+                                        </button>
+                                    </div>
+                                </div>
                                 <select
-                                    className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none cursor-pointer"
+                                    className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none cursor-pointer"
                                     value={formData.sampleType}
                                     onChange={e => setFormData({ ...formData, sampleType: e.target.value })}
                                     required
@@ -423,18 +499,38 @@ function HospitalAdminManageTestPage() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Unit</label>
-                                <input
-                                    type="text"
-                                    list="unit-options"
-                                    placeholder="Select or type unit..."
-                                    className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Unit
+                                    </label>
+                                    <div className="flex items-center gap-1.5">
+                                        <button
+                                            type="button"
+                                            onClick={() => openModal('unit', 'Add New Unit')}
+                                            className="flex items-center gap-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 px-2.5 py-1 rounded-lg border border-indigo-200 dark:border-indigo-800 transition-all"
+                                        >
+                                            <Plus className="w-3 h-3" />
+                                            Add Unit
+                                        </button>
+                                        <button
+                                            type="button"
+                                            title="Edit / Delete units"
+                                            onClick={() => { setShowUnitManager(true); setEditingUnit(null); }}
+                                            className="flex items-center gap-1 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 bg-slate-100 dark:bg-gray-700 hover:bg-slate-200 dark:hover:bg-gray-600 px-2 py-1 rounded-lg border border-slate-200 dark:border-gray-600 transition-all"
+                                        >
+                                            <Settings className="w-3 h-3" />
+                                            Manage
+                                        </button>
+                                    </div>
+                                </div>
+                                <select
+                                    className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none cursor-pointer text-gray-700 dark:text-gray-300"
                                     value={formData.unit || ''}
                                     onChange={e => setFormData({ ...formData, unit: e.target.value })}
-                                />
-                                <datalist id="unit-options">
-                                    {metaOptions.units?.map((u: string) => <option key={u} value={u} />)}
-                                </datalist>
+                                >
+                                    <option value="">Select unit...</option>
+                                    {metaOptions.units?.map((u: string) => <option key={u} value={u}>{u}</option>)}
+                                </select>
                             </div>
                         </div>
 
@@ -480,6 +576,7 @@ function HospitalAdminManageTestPage() {
                                             className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none"
                                             value={formData.normalRanges[category].min}
                                             onChange={e => handleRangeChange(category, 'min', e.target.value)}
+                                            onWheel={e => (e.target as HTMLElement).blur()}
                                         />
                                         <span className="text-gray-400">-</span>
                                         <input
@@ -488,6 +585,7 @@ function HospitalAdminManageTestPage() {
                                             className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none"
                                             value={formData.normalRanges[category].max}
                                             onChange={e => handleRangeChange(category, 'max', e.target.value)}
+                                            onWheel={e => (e.target as HTMLElement).blur()}
                                         />
                                     </div>
                                 </div>
@@ -510,6 +608,7 @@ function HospitalAdminManageTestPage() {
                                     placeholder="0"
                                     value={formData.price}
                                     onChange={e => setFormData({ ...formData, price: e.target.value })}
+                                    onWheel={e => (e.target as HTMLElement).blur()}
                                 />
                             </div>
                             <p className="text-xs text-gray-500 mt-2">Charged to walk-in and inpatient billing</p>
@@ -528,6 +627,7 @@ function HospitalAdminManageTestPage() {
                                     placeholder="—"
                                     value={formData.labPrice}
                                     onChange={e => setFormData({ ...formData, labPrice: e.target.value })}
+                                    onWheel={e => (e.target as HTMLElement).blur()}
                                 />
                             </div>
                             <p className="text-xs text-purple-500 mt-2">Discounted rate for referring labs. If empty, standard price applies.</p>
@@ -572,9 +672,9 @@ function HospitalAdminManageTestPage() {
             {modalState.type && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl border border-slate-200 dark:border-gray-700 overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className={`px-6 py-5 border-b border-slate-100 dark:border-gray-700 flex items-center justify-between ${modalState.type === 'method' ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}>
+                        <div className={`px-6 py-5 border-b border-slate-100 dark:border-gray-700 flex items-center justify-between ${['method', 'sample', 'unit'].includes(modalState.type) ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}>
                             <div className="flex items-center gap-3">
-                                {modalState.type === 'method' && (
+                                {['method', 'sample', 'unit'].includes(modalState.type) && (
                                     <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center shadow-sm">
                                         <Database className="w-4 h-4 text-white" />
                                     </div>
@@ -583,6 +683,12 @@ function HospitalAdminManageTestPage() {
                                     <h3 className="text-base font-bold text-gray-900 dark:text-white">{modalState.title}</h3>
                                     {modalState.type === 'method' && (
                                         <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium mt-0.5">Will be added to the Method dropdown</p>
+                                    )}
+                                    {modalState.type === 'sample' && (
+                                        <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium mt-0.5">Will be added to the Sample Type dropdown</p>
+                                    )}
+                                    {modalState.type === 'unit' && (
+                                        <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium mt-0.5">Will be added to the Unit dropdown</p>
                                     )}
                                 </div>
                             </div>
@@ -597,14 +703,27 @@ function HospitalAdminManageTestPage() {
                         <div className="p-6 space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                                    {modalState.type === 'method' ? 'Method Name' : 'Name'}
+                                    {modalState.type === 'method' ? 'Method Name' : modalState.type === 'sample' ? 'Sample Type Name' : modalState.type === 'unit' ? 'Unit Name' : 'Name'}
                                 </label>
                                 {(() => {
-                                    const isDuplicate = modalState.type === 'method' &&
-                                        newItemName.trim() !== '' &&
-                                        metaOptions.methods.some((m: string) =>
-                                            m.trim().toLowerCase() === newItemName.trim().toLowerCase()
-                                        );
+                                    const isDuplicate = (() => {
+                                        if (modalState.type === 'method') {
+                                            return metaOptions.methods.some((m: string) =>
+                                                m.trim().toLowerCase() === newItemName.trim().toLowerCase()
+                                            );
+                                        }
+                                        if (modalState.type === 'sample') {
+                                            return metaOptions.sampleTypes.some((s: string) =>
+                                                s.trim().toLowerCase() === newItemName.trim().toLowerCase()
+                                            );
+                                        }
+                                        if (modalState.type === 'unit') {
+                                            return metaOptions.units.some((u: string) =>
+                                                u.trim().toLowerCase() === newItemName.trim().toLowerCase()
+                                            );
+                                        }
+                                        return false;
+                                    })();
                                     return (
                                         <>
                                             <input
@@ -614,10 +733,18 @@ function HospitalAdminManageTestPage() {
                                                     ? 'border-rose-400 dark:border-rose-500 focus:ring-2 focus:ring-rose-400/20'
                                                     : 'border-slate-200 dark:border-gray-700 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500'
                                                     }`}
-                                                placeholder={modalState.type === 'method' ? 'e.g. Colorimetry, PCR, ELISA...' : 'Enter name...'}
+                                                placeholder={
+                                                    modalState.type === 'method'
+                                                        ? 'e.g. Colorimetry, PCR, ELISA...'
+                                                        : modalState.type === 'sample'
+                                                        ? 'e.g. Blood, Serum, Plasma...'
+                                                        : modalState.type === 'unit'
+                                                        ? 'e.g. mg/dL, mmol/L, %...'
+                                                        : 'Enter name...'
+                                                }
                                                 value={newItemName}
                                                 onChange={e => setNewItemName(e.target.value)}
-                                                onKeyDown={e => e.key === 'Enter' && handleAddCustomItem()}
+                                                onKeyDown={e => e.key === 'Enter' && !isDuplicate && handleAddCustomItem()}
                                             />
                                             {isDuplicate && (
                                                 <div className="mt-2 flex items-start gap-1.5 px-3 py-2 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-lg">
@@ -648,12 +775,20 @@ function HospitalAdminManageTestPage() {
                                         (modalState.type === 'method' &&
                                             metaOptions.methods.some((m: string) =>
                                                 m.trim().toLowerCase() === newItemName.trim().toLowerCase()
+                                            )) ||
+                                        (modalState.type === 'sample' &&
+                                            metaOptions.sampleTypes.some((s: string) =>
+                                                s.trim().toLowerCase() === newItemName.trim().toLowerCase()
+                                            )) ||
+                                        (modalState.type === 'unit' &&
+                                            metaOptions.units.some((u: string) =>
+                                                u.trim().toLowerCase() === newItemName.trim().toLowerCase()
                                             ))
                                     }
-                                    className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium shadow-sm transition-all flex items-center justify-center gap-2"
+                                    className="flex-2 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium shadow-sm transition-all flex items-center justify-center gap-2"
                                 >
                                     <Plus className="w-4 h-4" />
-                                    {modalState.type === 'method' ? 'Add Method' : 'Add'}
+                                    {modalState.type === 'method' ? 'Add Method' : modalState.type === 'sample' ? 'Add Type' : modalState.type === 'unit' ? 'Add Unit' : 'Add'}
                                 </button>
                             </div>
                         </div>
@@ -717,6 +852,7 @@ function HospitalAdminManageTestPage() {
                                                                 updated[idx] = trimmed;
                                                                 setMetaOptions((prev: any) => ({ ...prev, methods: updated }));
                                                                 if (formData.method === oldName) setFormData(prev => ({ ...prev, method: trimmed }));
+                                                                persistMetaOptions({ methods: updated });
                                                                 setEditingMethod(null); setEditMethodError('');
                                                             }
                                                             if (e.key === 'Escape') { setEditingMethod(null); setEditMethodError(''); }
@@ -741,6 +877,7 @@ function HospitalAdminManageTestPage() {
                                                                 updated[idx] = trimmed;
                                                                 setMetaOptions((prev: any) => ({ ...prev, methods: updated }));
                                                                 if (formData.method === oldName) setFormData(prev => ({ ...prev, method: trimmed }));
+                                                                persistMetaOptions({ methods: updated });
                                                                 setEditingMethod(null); setEditMethodError('');
                                                             }}
                                                             className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold transition-all"
@@ -779,6 +916,7 @@ function HospitalAdminManageTestPage() {
                                                                 const updated = metaOptions.methods.filter((_: string, i: number) => i !== idx);
                                                                 setMetaOptions((prev: any) => ({ ...prev, methods: updated }));
                                                                 if (formData.method === method) setFormData(prev => ({ ...prev, method: '' }));
+                                                                persistMetaOptions({ methods: updated });
                                                             }}
                                                             className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors"
                                                         >
@@ -798,6 +936,304 @@ function HospitalAdminManageTestPage() {
                             <button
                                 type="button"
                                 onClick={() => { setShowMethodManager(false); setEditingMethod(null); setEditMethodError(''); }}
+                                className="px-4 py-2 bg-slate-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-slate-300 dark:hover:bg-gray-500 transition-all"
+                            >
+                                Done
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Sample Type Manager Modal ── */}
+            {showSampleManager && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl border border-slate-200 dark:border-gray-700 overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="flex items-center justify-between px-6 py-5 bg-slate-50 dark:bg-gray-700/50 border-b border-slate-100 dark:border-gray-700">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 bg-slate-700 dark:bg-gray-600 rounded-xl flex items-center justify-center shadow-sm">
+                                    <Settings className="w-4 h-4 text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-bold text-gray-900 dark:text-white">Manage Sample Types</h3>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Edit or delete existing sample types</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => { setShowSampleManager(false); setEditingSample(null); }}
+                                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <div className="p-5 max-h-[420px] overflow-y-auto space-y-2">
+                            {metaOptions.sampleTypes.length === 0 ? (
+                                <div className="py-10 text-center">
+                                    <Database className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                                    <p className="text-sm text-gray-400">No sample types yet. Add one first.</p>
+                                </div>
+                            ) : (
+                                metaOptions.sampleTypes.map((sample: string, idx: number) => {
+                                    const isEditing = editingSample?.index === idx;
+                                    const isDuplicateEdit = isEditing &&
+                                        editingSample!.value.trim() !== '' &&
+                                        editingSample!.value.trim().toLowerCase() !== sample.toLowerCase() &&
+                                        metaOptions.sampleTypes.some((s: string, i: number) =>
+                                            i !== idx && s.trim().toLowerCase() === editingSample!.value.trim().toLowerCase()
+                                        );
+
+                                    return (
+                                        <div key={idx} className={`rounded-xl border transition-all ${isEditing ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50/50 dark:bg-indigo-900/10' : 'border-slate-100 dark:border-gray-700 bg-white dark:bg-gray-900/30 hover:border-slate-200 dark:hover:border-gray-600'}`}>
+                                            {isEditing ? (
+                                                <div className="p-3 space-y-2">
+                                                    <input
+                                                        type="text"
+                                                        autoFocus
+                                                        value={editingSample!.value}
+                                                        onChange={e => { setEditingSample({ index: idx, value: e.target.value }); }}
+                                                        onKeyDown={e => {
+                                                            if (e.key === 'Enter') {
+                                                                const trimmed = editingSample!.value.trim();
+                                                                if (!trimmed || isDuplicateEdit) return;
+                                                                const updated = [...metaOptions.sampleTypes];
+                                                                const oldName = updated[idx];
+                                                                updated[idx] = trimmed;
+                                                                setMetaOptions((prev: any) => ({ ...prev, sampleTypes: updated }));
+                                                                if (formData.sampleType === oldName) setFormData(prev => ({ ...prev, sampleType: trimmed }));
+                                                                persistMetaOptions({ sampleTypes: updated });
+                                                                setEditingSample(null);
+                                                            }
+                                                            if (e.key === 'Escape') { setEditingSample(null); }
+                                                        }}
+                                                        className={`w-full px-3 py-2 bg-white dark:bg-gray-900 border rounded-lg text-sm outline-none transition-all ${isDuplicateEdit ? 'border-rose-400 focus:ring-2 focus:ring-rose-400/20' : 'border-indigo-300 dark:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20'}`}
+                                                    />
+                                                    {isDuplicateEdit && (
+                                                        <div className="flex items-center gap-1.5 text-xs text-rose-600 dark:text-rose-400 font-medium">
+                                                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                                            <span>&ldquo;{editingSample!.value.trim()}&rdquo; already exists.</span>
+                                                        </div>
+                                                    )}
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            type="button"
+                                                            disabled={!editingSample!.value.trim() || isDuplicateEdit}
+                                                            onClick={() => {
+                                                                const trimmed = editingSample!.value.trim();
+                                                                if (!trimmed || isDuplicateEdit) return;
+                                                                const updated = [...metaOptions.sampleTypes];
+                                                                const oldName = updated[idx];
+                                                                updated[idx] = trimmed;
+                                                                setMetaOptions((prev: any) => ({ ...prev, sampleTypes: updated }));
+                                                                if (formData.sampleType === oldName) setFormData(prev => ({ ...prev, sampleType: trimmed }));
+                                                                persistMetaOptions({ sampleTypes: updated });
+                                                                setEditingSample(null);
+                                                            }}
+                                                            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold transition-all"
+                                                        >
+                                                            <Check className="w-3.5 h-3.5" /> Save
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { setEditingSample(null); }}
+                                                            className="flex-1 py-1.5 bg-slate-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-xs font-bold hover:bg-slate-200 dark:hover:bg-gray-600 transition-all"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center justify-between px-4 py-3 group">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <div className="w-2 h-2 rounded-full bg-indigo-400 dark:bg-indigo-500 shrink-0" />
+                                                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{sample}</span>
+                                                        {formData.sampleType === sample && (
+                                                            <span className="px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 text-[9px] font-bold uppercase tracking-widest rounded">selected</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { setEditingSample({ index: idx, value: sample }); }}
+                                                            className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
+                                                        >
+                                                            <Edit2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const updated = metaOptions.sampleTypes.filter((_: string, i: number) => i !== idx);
+                                                                setMetaOptions((prev: any) => ({ ...prev, sampleTypes: updated }));
+                                                                if (formData.sampleType === sample) setFormData(prev => ({ ...prev, sampleType: '' }));
+                                                                persistMetaOptions({ sampleTypes: updated });
+                                                            }}
+                                                            className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+
+                        <div className="px-5 py-4 bg-slate-50 dark:bg-gray-700/30 border-t border-slate-100 dark:border-gray-700 flex items-center justify-between">
+                            <p className="text-xs text-gray-400">{metaOptions.sampleTypes.length} type{metaOptions.sampleTypes.length !== 1 ? 's' : ''} total</p>
+                            <button
+                                type="button"
+                                onClick={() => { setShowSampleManager(false); setEditingSample(null); }}
+                                className="px-4 py-2 bg-slate-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-slate-300 dark:hover:bg-gray-500 transition-all"
+                            >
+                                Done
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Unit Manager Modal ── */}
+            {showUnitManager && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl border border-slate-200 dark:border-gray-700 overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="flex items-center justify-between px-6 py-5 bg-slate-50 dark:bg-gray-700/50 border-b border-slate-100 dark:border-gray-700">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 bg-slate-700 dark:bg-gray-600 rounded-xl flex items-center justify-center shadow-sm">
+                                    <Settings className="w-4 h-4 text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-bold text-gray-900 dark:text-white">Manage Units</h3>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Edit or delete existing units</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => { setShowUnitManager(false); setEditingUnit(null); }}
+                                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <div className="p-5 max-h-[420px] overflow-y-auto space-y-2">
+                            {metaOptions.units.length === 0 ? (
+                                <div className="py-10 text-center">
+                                    <Database className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                                    <p className="text-sm text-gray-400">No units yet. Add one first.</p>
+                                </div>
+                            ) : (
+                                metaOptions.units.map((unit: string, idx: number) => {
+                                    const isEditing = editingUnit?.index === idx;
+                                    const isDuplicateEdit = isEditing &&
+                                        editingUnit!.value.trim() !== '' &&
+                                        editingUnit!.value.trim().toLowerCase() !== unit.toLowerCase() &&
+                                        metaOptions.units.some((u: string, i: number) =>
+                                            i !== idx && u.trim().toLowerCase() === editingUnit!.value.trim().toLowerCase()
+                                        );
+
+                                    return (
+                                        <div key={idx} className={`rounded-xl border transition-all ${isEditing ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50/50 dark:bg-indigo-900/10' : 'border-slate-100 dark:border-gray-700 bg-white dark:bg-gray-900/30 hover:border-slate-200 dark:hover:border-gray-600'}`}>
+                                            {isEditing ? (
+                                                <div className="p-3 space-y-2">
+                                                    <input
+                                                        type="text"
+                                                        autoFocus
+                                                        value={editingUnit!.value}
+                                                        onChange={e => { setEditingUnit({ index: idx, value: e.target.value }); }}
+                                                        onKeyDown={e => {
+                                                            if (e.key === 'Enter') {
+                                                                const trimmed = editingUnit!.value.trim();
+                                                                if (!trimmed || isDuplicateEdit) return;
+                                                                const updated = [...metaOptions.units];
+                                                                const oldName = updated[idx];
+                                                                updated[idx] = trimmed;
+                                                                setMetaOptions((prev: any) => ({ ...prev, units: updated }));
+                                                                if (formData.unit === oldName) setFormData(prev => ({ ...prev, unit: trimmed }));
+                                                                persistMetaOptions({ units: updated });
+                                                                setEditingUnit(null);
+                                                            }
+                                                            if (e.key === 'Escape') { setEditingUnit(null); }
+                                                        }}
+                                                        className={`w-full px-3 py-2 bg-white dark:bg-gray-900 border rounded-lg text-sm outline-none transition-all ${isDuplicateEdit ? 'border-rose-400 focus:ring-2 focus:ring-rose-400/20' : 'border-indigo-300 dark:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20'}`}
+                                                    />
+                                                    {isDuplicateEdit && (
+                                                        <div className="flex items-center gap-1.5 text-xs text-rose-600 dark:text-rose-400 font-medium">
+                                                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                                            <span>&ldquo;{editingUnit!.value.trim()}&rdquo; already exists.</span>
+                                                        </div>
+                                                    )}
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            type="button"
+                                                            disabled={!editingUnit!.value.trim() || isDuplicateEdit}
+                                                            onClick={() => {
+                                                                const trimmed = editingUnit!.value.trim();
+                                                                if (!trimmed || isDuplicateEdit) return;
+                                                                const updated = [...metaOptions.units];
+                                                                const oldName = updated[idx];
+                                                                updated[idx] = trimmed;
+                                                                setMetaOptions((prev: any) => ({ ...prev, units: updated }));
+                                                                if (formData.unit === oldName) setFormData(prev => ({ ...prev, unit: trimmed }));
+                                                                persistMetaOptions({ units: updated });
+                                                                setEditingUnit(null);
+                                                            }}
+                                                            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold transition-all"
+                                                        >
+                                                            <Check className="w-3.5 h-3.5" /> Save
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { setEditingUnit(null); }}
+                                                            className="flex-1 py-1.5 bg-slate-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-xs font-bold hover:bg-slate-200 dark:hover:bg-gray-600 transition-all"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center justify-between px-4 py-3 group">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <div className="w-2 h-2 rounded-full bg-indigo-400 dark:bg-indigo-500 shrink-0" />
+                                                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{unit}</span>
+                                                        {formData.unit === unit && (
+                                                            <span className="px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 text-[9px] font-bold uppercase tracking-widest rounded">selected</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { setEditingUnit({ index: idx, value: unit }); }}
+                                                            className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
+                                                        >
+                                                            <Edit2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const updated = metaOptions.units.filter((_: string, i: number) => i !== idx);
+                                                                setMetaOptions((prev: any) => ({ ...prev, units: updated }));
+                                                                if (formData.unit === unit) setFormData(prev => ({ ...prev, unit: '' }));
+                                                                persistMetaOptions({ units: updated });
+                                                            }}
+                                                            className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+
+                        <div className="px-5 py-4 bg-slate-50 dark:bg-gray-700/30 border-t border-slate-100 dark:border-gray-700 flex items-center justify-between">
+                            <p className="text-xs text-gray-400">{metaOptions.units.length} unit{metaOptions.units.length !== 1 ? 's' : ''} total</p>
+                            <button
+                                type="button"
+                                onClick={() => { setShowUnitManager(false); setEditingUnit(null); }}
                                 className="px-4 py-2 bg-slate-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-slate-300 dark:hover:bg-gray-500 transition-all"
                             >
                                 Done

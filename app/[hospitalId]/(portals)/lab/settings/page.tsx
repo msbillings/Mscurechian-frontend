@@ -8,6 +8,7 @@ import ImageCropper from '@/components/ui/ImageCropper';
 import { useAuthStore } from '@/stores/authStore';
 import PrinterSettingsCard from '@/components/printers/PrinterSettingsCard';
 import SupportBadgeToggle from '@/components/common/SupportBadgeToggle';
+import { usePrintStore } from '@/stores/printStore';
 
 export default function LabSettingsPage() {
     const [settings, setSettings] = useState<LabSettings>({
@@ -82,6 +83,14 @@ export default function LabSettingsPage() {
             localStorage.setItem('curechain_lab_settings_draft', JSON.stringify(settings));
         }
     }, [settings]);
+
+    useEffect(() => {
+        if (settings.labTerms) {
+            usePrintStore.getState().setFooterTerms(
+                settings.labTerms.filter((t: string) => t.trim() !== '').join('\n')
+            );
+        }
+    }, [settings.labTerms]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;

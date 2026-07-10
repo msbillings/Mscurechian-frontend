@@ -21,6 +21,7 @@ import { LabSample } from "@/lib/integrations/types/labSample";
 import { useAuthStore } from "@/stores/authStore";
 import Link from "next/link";
 import { clearApiCache } from "@/lib/integrations/api/apiClient";
+import { toast } from "react-hot-toast";
 
 // Clean Skeleton
 const StatCardSkeleton = () => (
@@ -39,10 +40,19 @@ const rangeLabels: Record<string, string> = {
   today: "Today",
   "7days": "Week",
   "1month": "Month",
+  custom: "Custom",
 };
 
 function LabDashboard() {
   const [range, setRange] = useState("today");
+  const [startDate, setStartDate] = useState(() => {
+    const today = new Date();
+    return today.toISOString().split("T")[0];
+  });
+  const [endDate, setEndDate] = useState(() => {
+    const today = new Date();
+    return today.toISOString().split("T")[0];
+  });
   const [stats, setStats] = useState<LabDashboardStats | null>(null);
   const [activeTests, setActiveTests] = useState<LabSample[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,6 +79,13 @@ function LabDashboard() {
   };
 
   useEffect(() => {
+    if (range === "custom") {
+      if (!startDate || !endDate) return;
+      if (startDate > endDate) {
+        toast.error("Start Date cannot be after End Date");
+        return;
+      }
+    }
     fetchStats();
 
     // 2. Listen for socket-triggered events
@@ -101,13 +118,18 @@ function LabDashboard() {
         });
       }
     };
-  }, [range, user]);
+  }, [range, user, startDate, endDate]);
 
   const fetchStats = async (silent = false, skipCache = false) => {
     if (!silent) setLoading(true);
     try {
       const [statsData, samplesData] = await Promise.all([
-        LabDashboardService.getStats(range, skipCache),
+        LabDashboardService.getStats(
+          range,
+          skipCache,
+          range === "custom" ? startDate : undefined,
+          range === "custom" ? endDate : undefined
+        ),
         LabSampleService.getSamples("Pending", skipCache),
       ]);
       setStats(statsData);
@@ -182,7 +204,35 @@ function LabDashboard() {
           </div>
         </div>
 
-        <div className="flex flex-wrap md:flex-nowrap items-center justify-between xl:justify-end gap-2 w-full xl:w-auto">
+        <div className="flex flex-wrap items-center justify-between xl:justify-end gap-3 w-full xl:w-auto">
+          {range === "custom" && (
+            <div className="flex flex-wrap items-center gap-2 animate-in slide-in-from-right duration-300">
+              <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-gray-900 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-800 shadow-inner">
+                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Start</span>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="bg-transparent text-[11px] font-bold text-gray-700 dark:text-gray-200 outline-none cursor-pointer"
+                />
+              </div>
+              <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-gray-900 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-800 shadow-inner">
+                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">End</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="bg-transparent text-[11px] font-bold text-gray-700 dark:text-gray-200 outline-none cursor-pointer"
+                />
+              </div>
+              {startDate > endDate && (
+                <span className="text-[9px] text-rose-500 font-bold uppercase tracking-wider px-2 py-1 bg-rose-50 dark:bg-rose-950/20 rounded">
+                  Invalid Range
+                </span>
+              )}
+            </div>
+          )}
+
           <div className="flex bg-slate-50 dark:bg-gray-900 p-1 rounded-lg border border-gray-100 dark:border-gray-800">
             {Object.keys(rangeLabels).map((r) => (
               <button
@@ -196,21 +246,6 @@ function LabDashboard() {
                 {rangeLabels[r]}
               </button>
             ))}
-          </div>
-          <div className="flex items-center">
-            <button
-              onClick={() => {
-                clearApiCache();
-                fetchStats(false, true);
-              }}
-              disabled={loading}
-              className="p-1.5 md:py-2 md:px-2.5 bg-gray-50 dark:bg-gray-800/50 text-gray-500 hover:text-blue-600 rounded-lg border border-gray-200 dark:border-gray-700 transition-all shadow-sm shrink-0"
-              title="Refresh Stats"
-            >
-              <RefreshCw
-                className={`w-3.5 h-3.5 md:w-4 md:h-4 ${loading ? "animate-spin" : ""}`}
-              />
-            </button>
           </div>
         </div>
       </div>
@@ -260,39 +295,12 @@ function LabDashboard() {
               </div>
               
               <div className="flex flex-wrap items-center gap-2">
-                {/* Billing Type Tabs */}
-                <div className="flex bg-slate-50 dark:bg-gray-900 p-0.5 rounded-lg border border-gray-100 dark:border-gray-800 gap-0.5">
-                    {(['all', 'opd', 'ipd', 'lab'] as const).map((t) => (
-                        <button
-                            key={t}
-                            onClick={() => setTypeFilter(t)}
-                            className={`px-2 py-1 rounded-md text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-all ${
-                                typeFilter === t
-                                    ? t === 'opd'
-                                        ? 'bg-emerald-500 text-white shadow-sm'
-                                        : t === 'ipd'
-                                        ? 'bg-blue-500 text-white shadow-sm'
-                                        : t === 'lab'
-                                        ? 'bg-purple-500 text-white shadow-sm'
-                                        : 'bg-gray-800 dark:bg-gray-600 text-white shadow-sm'
-                                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                            }`}
-                        >
-                            {t === 'all' ? 'All' : t === 'opd' ? 'OPD' : t === 'ipd' ? 'IPD' : 'Lab-to-Lab'}
-                        </button>
-                    ))}
-                </div>
-
-                <button
-                  onClick={() => startNavigation(() => router.push("/lab/samples"))}
-                  disabled={isNavigating}
-                  className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded-lg transition-colors flex items-center gap-1"
+                <Link
+                  href="/lab/samples"
+                  className="px-2.5 py-1 text-[9px] md:text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 rounded-lg transition-colors border border-indigo-100 dark:border-indigo-900/50"
                 >
-                  {isNavigating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
-                  View Full List
-                  <ArrowRightCircle
-                   size={12} />
-                </button>
+                  View All Orders
+                </Link>
               </div>
             </div>
 

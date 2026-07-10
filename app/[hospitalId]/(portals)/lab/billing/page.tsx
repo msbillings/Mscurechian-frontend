@@ -153,6 +153,8 @@ function LabBillingPage() {
         const gender = searchParams.get('gender');
         const refDoctor = searchParams.get('refDoctor');
         const sampleIdParam = searchParams.get('sampleId');
+        const patientType = searchParams.get('patientType') as 'opd' | 'ipd' | 'lab' | null;
+        const originalPatientName = searchParams.get('originalPatientName');
 
         if (sampleIdParam) {
             setSampleId(sampleIdParam);
@@ -161,6 +163,10 @@ function LabBillingPage() {
         const displayIdParam = searchParams.get('displayId');
         if (displayIdParam) {
             setDisplayId(displayIdParam);
+        }
+
+        if (patientType) {
+            setBillingMode(patientType);
         }
 
         if (name || mobile) {
@@ -172,14 +178,26 @@ function LabBillingPage() {
                 else if (g === 'other') normalizedGender = 'Other';
             }
 
-            setPatient(prev => ({
-                ...prev,
-                name: name || prev.name,
-                mobile: mobile || prev.mobile,
-                age: age ? parseInt(age) : prev.age,
-                gender: (normalizedGender as any) || prev.gender,
-                refDoctor: refDoctor || prev.refDoctor,
-            }));
+            if (patientType === 'lab') {
+                setLabClient(prev => ({
+                    ...prev,
+                    labName: name || prev.labName,
+                    mobile: mobile || prev.mobile,
+                    referenceDoctor: refDoctor || prev.referenceDoctor,
+                    originalPatientName: originalPatientName || prev.originalPatientName,
+                    patientAge: age ? parseInt(age) : prev.patientAge,
+                    patientGender: (normalizedGender as any) || prev.patientGender,
+                }));
+            } else {
+                setPatient(prev => ({
+                    ...prev,
+                    name: name || prev.name,
+                    mobile: mobile || prev.mobile,
+                    age: age ? parseInt(age) : prev.age,
+                    gender: (normalizedGender as any) || prev.gender,
+                    refDoctor: refDoctor || prev.refDoctor,
+                }));
+            }
         }
     }, [searchParams]);
 
@@ -239,6 +257,16 @@ function LabBillingPage() {
     const [isInitialized, setIsInitialized] = useState(false);
     useEffect(() => {
         if (typeof window === 'undefined') return;
+
+        // If query parameters are present, skip loading draft and clear draft
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasQueryParams = urlParams.get('name') || urlParams.get('sampleId') || urlParams.get('patientType');
+        if (hasQueryParams) {
+            localStorage.removeItem('curechain_lab_billing_draft');
+            setIsInitialized(true);
+            return;
+        }
+
         const draft = localStorage.getItem('curechain_lab_billing_draft');
         if (draft) {
             try {

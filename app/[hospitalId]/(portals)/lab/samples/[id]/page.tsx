@@ -94,55 +94,45 @@ export default function LabResultEntryPage() {
         pageStyle: `
             @page {
                 size: A4;
-                margin: 8mm;
+                margin: 10mm;
             }
             @media print {
                 html, body {
                     margin: 0 !important;
                     padding: 0 !important;
                     width: 100% !important;
+                    height: auto !important;
                     background: #fff !important;
                     -webkit-print-color-adjust: exact !important;
                     print-color-adjust: exact !important;
                 }
-                /* Make ALL content visible — react-to-print hides body by default */
                 body > * { visibility: visible !important; }
                 * { visibility: visible !important; box-sizing: border-box !important; }
 
-                /* Full-page border box */
                 .print-content {
-                    display: flex !important;
-                    flex-direction: column !important;
+                    display: block !important;
                     width: 100% !important;
-                    max-width: 100% !important;
-                    min-height: 281mm !important;
+                    height: auto !important;
+                    min-height: 0 !important;
                     margin: 0 !important;
                     padding: 0 !important;
                     border: 3px solid #000 !important;
                     box-sizing: border-box !important;
                     position: relative !important;
                     overflow: visible !important;
-                    page-break-inside: auto !important;
                     background: #fff !important;
                 }
 
-                /* Body area grows → pushes footer down */
                 .report-body {
-                    flex: 1 1 auto !important;
+                    display: block !important;
                     padding: 16px 20px !important;
                     box-sizing: border-box !important;
                     position: relative !important;
                     overflow: visible !important;
                 }
 
-                /* Footer inside border, always at page bottom */
                 .lab-print-footer {
-                    flex-shrink: 0 !important;
-                    margin-top: auto !important;
-                    position: relative !important;
-                    bottom: auto !important;
-                    left: auto !important;
-                    right: auto !important;
+                    display: block !important;
                     width: 100% !important;
                     box-sizing: border-box !important;
                 }

@@ -171,6 +171,7 @@ export default function SampleCollectionPage() {
 
     const handleGenerateBill = (sample: LabSample) => {
         const testNames = sample.tests.map(t => t.testName).join(',');
+        const pType = getSamplePatientType(sample);
         const queryParams = new URLSearchParams({
             name: sample.patientDetails.name,
             mobile: sample.patientDetails.mobile || '',
@@ -179,7 +180,9 @@ export default function SampleCollectionPage() {
             tests: testNames,
             sampleId: sample._id,
             displayId: sample.sampleId,
-            refDoctor: sample.patientDetails.refDoctor || ''
+            refDoctor: sample.patientDetails.refDoctor || '',
+            patientType: pType,
+            originalPatientName: sample.patientDetails.originalPatientName || ''
         }).toString();
         startNavigation(() => {
             router.push(`/lab/billing?${queryParams}`);
