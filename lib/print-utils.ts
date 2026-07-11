@@ -737,9 +737,23 @@ export const generateOPDRegistrationSlipHtml = (data: any) => {
   const ageDisplay = computeAgeFromDob(patient.dob, patient.age, patient.ageUnit) || patient.age || "N/A";
   const doctorTitle = formatDoctorName(appointment.doctorName);
   
-  const rawToken = appointment.tokenNo || appointment.tokenNumber || appointment.token || appointment.queueNumber || appointment.dailyTokenNumber || (appointment.queuePosition !== undefined ? appointment.queuePosition : "01");
-  const tokenNoDisplay = String(rawToken).padStart(2, '0');
+  const formattedPatientName = (() => {
+      const h = patient.honorific;
+      const n = patient.name || "N/A";
+      if (!h) return n;
+      const hLower = h.toLowerCase();
+      if (hLower === 'baby of' || hLower === 'b/o') return `${h} ${n}`;
+      return `${h}. ${n}`;
+  })();
   
+  const rawToken = appointment.tokenNo || appointment.tokenNumber || appointment.token || appointment.queueNumber || appointment.dailyTokenNumber || (appointment.queuePosition !== undefined ? appointment.queuePosition : undefined) || (() => {
+    const refStr = String(appointment.appointmentId || patient.mrn || "10");
+    const digits = refStr.replace(/\D/g, "");
+    const num = parseInt(digits.slice(-3) || "10", 10);
+    return (num % 30) + 1;
+  })();
+  const tokenNoDisplay = !isNaN(Number(rawToken)) ? String(rawToken).padStart(2, '0') : rawToken;
+
   const getSymptomsText = (val: any) => {
     if (Array.isArray(val)) return val.length > 0 ? val.join(', ') : '';
     if (typeof val === 'string' && val.trim() !== '') return val.trim();
@@ -992,7 +1006,7 @@ export const generateOPDRegistrationSlipHtml = (data: any) => {
       <div class="patient-grid">
         <div class="grid-row">
           <span class="label">Name</span><span class="colon">:</span>
-          <span class="value">${patient.name || "N/A"}</span>
+          <span class="value">${formattedPatientName}</span>
         </div>
         <div class="grid-row">
           <span class="label" style="width: 110px;">Age/Gender</span><span class="colon">:</span>
@@ -1117,6 +1131,15 @@ export const generateClinicalReceiptHtml = (data: any) => {
     return generateOPDRegistrationSlipHtml(data);
   }
 
+  const formattedPatientName = (() => {
+      const h = patient.honorific;
+      const n = patient.name || "N/A";
+      if (!h) return n;
+      const hLower = h.toLowerCase();
+      if (hLower === 'baby of' || hLower === 'b/o') return `${h} ${n}`;
+      return `${h}. ${n}`;
+  })();
+
   const isIPD = data.registrationType === 'IPD' || (appointment.type && appointment.type.toUpperCase().includes('IPD'));
   
   const getSymptomsText = (val: any) => {
@@ -1169,7 +1192,6 @@ export const generateClinicalReceiptHtml = (data: any) => {
       followUpExpiryMsg = `Visit date is ${formatDDMMYYYY(baseVisitDate)} and expiry date is ${formatDDMMYYYY(liveExpiryDate)} total ${liveRangeDays} days.`;
     }
   }
-
 
   return `
     <!DOCTYPE html>
@@ -1603,7 +1625,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
                     <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; position: relative; overflow: hidden;">
                         <div style="position: absolute; top: 0; right: 0; background: #1e293b; color: white; padding: 2px 8px; border-bottom-left-radius: 8px; font-size: 8px; font-weight: 900; letter-spacing: 0.5px;">PATIENT IDENTITY</div>
                         <div style="font-size: 15px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-                            ${patient.name}
+                            ${formattedPatientName}
                         </div>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                             <div>

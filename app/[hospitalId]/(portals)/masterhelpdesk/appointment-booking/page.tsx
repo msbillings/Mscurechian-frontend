@@ -1,4 +1,4 @@
-'use client';
+this'use client';
 
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -30,7 +30,6 @@ import {
 import { useRouter, useSearchParams, useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { helpdeskService, masterHelpdeskService } from "@/lib/integrations";
-import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
 import masterDoctorLeaveService from "@/lib/integrations/masterDoctorLeaveService";
 import type { HelpdeskDoctor, HelpdeskProfile } from "@/lib/integrations/types";
 import toast from "react-hot-toast";

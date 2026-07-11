@@ -72,32 +72,14 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
         };
 
         const getDisplayRangeText = (test: any, sampleData: LabSample, defaultRange?: string) => {
-            const res = String(test.result || test.resultValue || '').trim().toLowerCase();
-            const name = String(test.name || test.testName || '').trim().toLowerCase();
-            let rStr = defaultRange || test.normalRange || '';
             const range = getDisplayRangeObj(test, sampleData);
             if (range) {
-                if (range.text) rStr = range.text;
-                else if (range.min !== undefined || range.max !== undefined) {
-                    rStr = `${range.min ?? 0} - ${range.max ?? 0}`;
+                if (range.text) return range.text;
+                if (range.min !== undefined || range.max !== undefined) {
+                    return `${range.min || ''} - ${range.max || ''}`;
                 }
             }
-            const rLower = String(rStr).trim().toLowerCase();
-            if (rLower === '0 - 0' || rLower === '0-0' || rLower === 'n/a' || rLower === '0' || rLower === '-' || rLower.includes('reactive, non reactive') || rLower.includes('reactive / non reactive')) {
-                if (res.includes('reactive')) return 'Non-Reactive';
-                if (res.includes('negative') || res.includes('positive') || name.includes('hcv') || name.includes('hiv') || name.includes('hbsag') || name.includes('dengue') || name.includes('tpha')) return 'Negative';
-                if (rLower.includes('reactive')) return 'Non-Reactive';
-            }
-            return rStr || '-';
-        };
-
-        const formatQualitativeUnit = (unit: string, result: string) => {
-            const uLower = String(unit || '').trim().toLowerCase();
-            const resLower = String(result || '').trim().toLowerCase();
-            if (uLower === 'n/a' || uLower === 'none' || uLower === '0' || uLower === '-' || resLower.includes('negative') || resLower.includes('positive') || resLower.includes('reactive')) {
-                return '';
-            }
-            return unit === '-' ? '' : unit;
+            return defaultRange || test.normalRange || '';
         };
 
         const getResultFlag = (result: string, rangeObj: any, isAbnormal: boolean) => {
@@ -189,16 +171,12 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
                     }
                     .lab-test-table th,
                     .lab-test-table td {
-                        padding: 4px 6px;
+                        padding: 6px 8px;
                         border: none;
                         border-bottom: none;
                         text-align: left;
                         vertical-align: top;
                         word-wrap: break-word;
-                    }
-                    .lab-test-table tr {
-                        page-break-inside: avoid;
-                        break-inside: avoid;
                     }
                     .lab-test-table th {
                         font-weight: 700;
@@ -206,11 +184,7 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
                         border-bottom: 2px solid #000;
                         text-transform: capitalize;
                     }
-                    .test-section { 
-                        margin-bottom: 12px; 
-                        page-break-inside: avoid;
-                        break-inside: avoid;
-                    }
+                    .test-section { margin-bottom: 24px; }
                 `}</style>
 
                 <div className="print-content">
@@ -279,13 +253,8 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
                                 !validParams.length && !adhocSubTests.length &&
                                 mainRes && mainRes.toString().trim() !== '';
 
-                            const isMajor = (t: any) => t && ((t.subTests && t.subTests.length >= 6) || (t.resultParameters && t.resultParameters.length >= 6));
-                            const prevTest = testIdx > 0 ? sample.tests[testIdx - 1] : null;
-                            const isDeptSwitch = testIdx > 0 && test.departmentName && test.departmentName !== prevTest?.departmentName;
-                            const shouldBreak = testIdx > 0 && (isMajor(test) || isMajor(prevTest) || isDeptSwitch);
-
                             return (
-                                <div key={testIdx} className="test-section" style={{ pageBreakBefore: shouldBreak ? 'always' : 'auto', breakBefore: shouldBreak ? 'page' : 'auto', borderTop: testIdx > 0 && !shouldBreak ? '2px solid #e2e8f0' : 'none', paddingTop: testIdx > 0 && !shouldBreak ? '10px' : '0' }}>
+                                <div key={testIdx} className="test-section">
                                     <div className="lab-test-title">
                                         {test.departmentName && <div className="lab-test-dept">{test.departmentName}</div>}
                                         <div className="lab-test-name">{test.testName}</div>
@@ -322,8 +291,8 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
                                                         <td style={{ fontWeight: isHighlight ? 900 : 'normal', color: isHighlight ? '#dc2626' : 'inherit' }}>
                                                             {flag}{sub.result}
                                                         </td>
-                                                        <td>{getDisplayRangeText(sub, sample, sub.range || param.range || test.normalRange)}</td>
-                                                        <td>{formatQualitativeUnit(sub.unit || param.unit || test.unit || '-', sub.result || '-')}</td>
+                                                        <td>{getDisplayRangeText(sub, sample, sub.range || param.range)}</td>
+                                                        <td>{sub.unit || param.unit || '-'}</td>
                                                     </tr>
                                                 );
                                             })}
@@ -338,8 +307,8 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
                                                         <td style={{ fontWeight: isHighlight ? 900 : 'normal', color: isHighlight ? '#dc2626' : 'inherit' }}>
                                                             {flag}{st.result}
                                                         </td>
-                                                        <td>{getDisplayRangeText(st, sample, st.range || test.normalRange)}</td>
-                                                        <td>{formatQualitativeUnit(st.unit || test.unit || '-', st.result || '-')}</td>
+                                                        <td>{getDisplayRangeText(st, sample, st.range)}</td>
+                                                        <td>{st.unit || '-'}</td>
                                                     </tr>
                                                 );
                                             })}
@@ -356,7 +325,7 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
                                                             {flag}{res}
                                                         </td>
                                                         <td>{getDisplayRangeText(test, sample, test.normalRange)}</td>
-                                                        <td>{formatQualitativeUnit(test.unit || '-', res || '-')}</td>
+                                                        <td>{test.unit || '-'}</td>
                                                     </tr>
                                                 );
                                             })()}

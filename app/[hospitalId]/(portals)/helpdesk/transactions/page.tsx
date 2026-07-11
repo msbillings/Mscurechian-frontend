@@ -61,6 +61,17 @@ export const formatPaymentMode = (tx: any) => {
     }
     return mode;
 };
+
+const getPatientNameWithPrefix = (tx: any) => {
+    const rawPatientName = tx.patientName || tx.patient?.name || tx.referenceId?.patientName || "Unknown";
+    const honorific = tx.patient?.honorific || tx.patient?.profile?.honorific || tx.referenceId?.honorific || tx.referenceId?.patientHonorific || tx.honorific || "";
+    if (honorific) {
+        const up = honorific.toUpperCase();
+        const prefix = ["MR", "MRS", "MS", "DR"].includes(up) ? `${up}.` : up;
+        return `${prefix} ${rawPatientName.toUpperCase()}`.trim();
+    }
+    return rawPatientName.toUpperCase();
+};
 export default function TransactionsPage() {
     const [exporting, setExporting] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -244,7 +255,7 @@ export default function TransactionsPage() {
 
                 const row = worksheet.addRow({
                     date: formattedDate,
-                    patient: (tx.patientName || 'Unknown').toUpperCase(),
+                    patient: getPatientNameWithPrefix(tx),
                     mobile: tx.patientMobile || tx.mobile || "N/A",
                     type: serviceType,
                     amount: tx.amount || 0,
@@ -685,7 +696,7 @@ export default function TransactionsPage() {
         if (!win) { toast.error('Please allow popups to print'); return; }
 
         const h = hospital || {};
-        const patientName = tx.patientName || tx.patient?.name || 'Unknown';
+        const patientName = getPatientNameWithPrefix(tx);
         const amount = tx.payment?.amount || tx.amount || 0;
         const rawType = tx.type || 'appointment_booking';
         const typeMapping: Record<string, string> = {
@@ -792,7 +803,7 @@ export default function TransactionsPage() {
         const tabLabel = typeFilter === 'ipd' ? 'IPD Payments' : typeFilter === 'lab' ? 'Lab Payments' : 'OPD Payments';
         const rows = filteredTransactions.map((tx: any) => {
             const amount = tx.payment?.amount || tx.amount || 0;
-            const patientName = (tx.patientName || tx.patient?.name || 'Unknown').toUpperCase();
+            const patientName = getPatientNameWithPrefix(tx);
             const rawType = tx.type || 'appointment_booking';
             const typeMapping: Record<string, string> = {
                 'appointment_booking': 'OPD', 'opd': 'OPD',
@@ -1083,8 +1094,7 @@ export default function TransactionsPage() {
                                     const status = (rawStatus.toLowerCase() === 'paid' || rawStatus.toLowerCase() === 'completed' || appointmentPaid) ? 'completed' : 'pending';
 
                                     const rawType = tx.type || "appointment_booking";
-                                    // 🔧 FIX: Don't use "Emergency Patient" fallback
-                                    const patientName = (tx.patientName || tx.patient?.name || tx.referenceId?.patientName || "Unknown").toUpperCase();
+                                    const patientName = getPatientNameWithPrefix(tx);
 
                                     // Map transaction type to human-readable format
                                     const typeMapping: Record<string, string> = {

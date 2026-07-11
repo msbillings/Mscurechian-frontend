@@ -620,12 +620,11 @@ export default function PatientRegistration() {
                                     <FormInput label="Age" required={!formData.dob} error={touched.age ? errors.age : ''} component={
                                         <div className="flex gap-2">
                                             <input name="age" type="number" value={formData.age} onChange={handleChange} onBlur={() => handleBlur('age')} placeholder="Age" className={`w-full px-3 py-2 rounded-xl bg-slate-50 border ${errors.age && touched.age ? 'border-rose-500' : 'border-slate-200'} focus:border-teal-500 focus:bg-white outline-none text-sm font-bold transition-all`} />
-                                            {formData.honorific === 'Baby of' && (
-                                                <select name="ageUnit" value={formData.ageUnit || 'Months'} onChange={handleChange} className="px-2 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-teal-500 outline-none text-[10px] font-bold transition-all w-[70px] shrink-0">
-                                                    <option value="Months">Mos</option>
-                                                    <option value="Days">Days</option>
-                                                </select>
-                                            )}
+                                            <select name="ageUnit" value={formData.ageUnit || 'Years'} onChange={handleChange} className="px-2 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-teal-500 outline-none text-[10px] font-bold transition-all w-[70px] shrink-0">
+                                                <option value="Years">Yrs</option>
+                                                <option value="Months">Mos</option>
+                                                <option value="Days">Days</option>
+                                            </select>
                                         </div>
                                     } />
                                 </div>

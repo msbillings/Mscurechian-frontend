@@ -299,6 +299,7 @@ export default function PatientsPage() {
                 },
                 patient: {
                     name: sanitizePatientName(patient.name || patient.user?.name),
+                    honorific: patient.profile?.honorific || patient.honorific || appt.patient?.honorific || appt.patientDetails?.honorific,
                     mrn: patient.profile?.mrn || patient.mrn || appt.patient?.mrn || "N/A",
                     age: patient.profile?.age || patient.age || appt.patientDetails?.age || appt.patient?.age,
                     gender: patient.profile?.gender || patient.gender || appt.patientDetails?.gender || appt.patient?.gender,
