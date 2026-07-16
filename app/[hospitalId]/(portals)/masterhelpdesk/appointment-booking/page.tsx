@@ -1,4 +1,5 @@
-this'use client';
+'use client';
+import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
 
 import React, { useState, useEffect, useCallback } from "react";
 import {

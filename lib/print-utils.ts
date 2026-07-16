@@ -3389,6 +3389,11 @@ export const generateBlankLetterheadHtml = (data: any) => {
 
 export const generateAddBillsReceiptHtml = (data: any) => {
   const { hospital, patient, items, payment, preparedBy } = data;
+  const honorific = patient?.honorific || patient?.profile?.honorific || "";
+  const up = honorific.toUpperCase();
+  const prefix = ["MR", "MRS", "MS", "DR"].includes(up) ? `${up}. ` : (up ? `${up} ` : "");
+  const formattedPatientName = `${prefix}${patient?.name || "Unknown Patient"}`.trim();
+  const ageDisplay = patient?.age ? `${patient.age}Y` : "N/A";
 
   return `
     <!DOCTYPE html>

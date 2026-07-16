@@ -25,7 +25,6 @@ export const printPaymentReceipt = (payment: any, summary: any, hospitalDetails?
     if (!printWindow) return;
 
     const printWithHeader = usePrintStore.getState().printWithHeader;
-    const printWithFooter = usePrintStore.getState().printWithFooter;
 
     const receiptDate = format(new Date(payment.date), 'dd-MMM-yyyy hh:mm a');
     const amountInWords = numberToWords(Math.round(payment.amount)) + "Only";
@@ -76,7 +75,7 @@ export const printPaymentReceipt = (payment: any, summary: any, hospitalDetails?
                 @media print {
                     body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                     ${!printWithHeader ? '.header-container { display: none !important; }' : ''}
-                    ${!printWithFooter ? '.print-time { display: none !important; }' : ''}
+
                 }
             </style>
         </head>
