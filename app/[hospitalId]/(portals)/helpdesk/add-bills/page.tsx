@@ -14,6 +14,7 @@ import { apiClient } from '@/lib/integrations/api/apiClient';
 import toast from 'react-hot-toast';
 import { generateAddBillsReceiptHtml, computeAgeFromDob } from '@/lib/print-utils';
 import { useAuthStore } from '@/stores/authStore';
+import { formatPatientNameWithPrefix } from '@/lib/utils/name-utils';
 import { usePrintStore } from '@/stores/printStore';
 import type { LabTest } from '@/lib/integrations/services/lab.service';
 
@@ -209,6 +210,9 @@ export default function AddBillsPage() {
             mrn: patient.mrn || patient.profile?.mrn || 'N/A',
             gender: patient.profile?.gender || patient.gender || 'N/A',
             age: patient.profile?.age || patient.age || 'N/A',
+            ageUnit: patient.profile?.ageUnit || patient.ageUnit || 'Years',
+            prefix: patient.profile?.prefix || patient.prefix || '',
+            dob: patient.profile?.dob || patient.dob,
             bloodGroup: patient.profile?.bloodGroup || patient.bloodGroup || '',
         };
         setSelectedPatient(transformed);
@@ -1414,9 +1418,11 @@ export default function AddBillsPage() {
                                         {(selectedPatient.name || 'P').charAt(0).toUpperCase()}
                                     </div>
                                     <div className="patient-info">
-                                        <div className="patient-name">{selectedPatient.name}</div>
+                                        <div className="patient-name">
+                                            {formatPatientNameWithPrefix(selectedPatient.name, selectedPatient.prefix)}
+                                        </div>
                                         <div className="patient-details">
-                                            MRN: {selectedPatient.mrn} · {selectedPatient.gender}, {selectedPatient.age}y · {selectedPatient.mobile}
+                                            MRN: {selectedPatient.mrn} • {selectedPatient.gender}, {computeAgeFromDob(selectedPatient.dob, selectedPatient.age, selectedPatient.ageUnit)} • {selectedPatient.mobile}
                                         </div>
                                         {loadingAdmission && (
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: '0.7rem', color: '#94a3b8' }}>

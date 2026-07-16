@@ -1,5 +1,5 @@
 import { usePrintStore } from '@/stores/printStore';
-import { formatDoctorName } from '@/lib/utils/name-utils';
+import { formatDoctorName, formatPatientNameWithPrefix } from '@/lib/utils/name-utils';
 
 export const computeAgeFromDob = (dob: any, fallbackAge: any, fallbackUnit: any) => {
     if (dob) {
@@ -19,7 +19,12 @@ export const computeAgeFromDob = (dob: any, fallbackAge: any, fallbackUnit: any)
                 ageMonths += 12;
             }
 
-            if (ageYears > 0) return `${ageYears} Y`;
+            if (ageYears > 0) {
+                if (ageMonths > 0 && ageYears < 5) {
+                    return `${ageYears} Y ${ageMonths} Mos`;
+                }
+                return `${ageYears} Y`;
+            }
             if (ageMonths > 0) return `${ageMonths} Mos`;
             if (ageDays > 0) return `${ageDays} Days`;
             return "0 Days";
@@ -737,14 +742,10 @@ export const generateOPDRegistrationSlipHtml = (data: any) => {
   const ageDisplay = computeAgeFromDob(patient.dob, patient.age, patient.ageUnit) || patient.age || "N/A";
   const doctorTitle = formatDoctorName(appointment.doctorName);
   
-  const formattedPatientName = (() => {
-      const h = patient.honorific;
-      const n = patient.name || "N/A";
-      if (!h) return n;
-      const hLower = h.toLowerCase();
-      if (hLower === 'baby of' || hLower === 'b/o') return `${h} ${n}`;
-      return `${h}. ${n}`;
-  })();
+  const formattedPatientName = formatPatientNameWithPrefix(
+    patient.name || patient.user?.name,
+    patient.honorific || patient.profile?.honorific || patient.honorificTitle
+  );
   
   const rawToken = appointment.tokenNo || appointment.tokenNumber || appointment.token || appointment.queueNumber || appointment.dailyTokenNumber || (appointment.queuePosition !== undefined ? appointment.queuePosition : undefined) || (() => {
     const refStr = String(appointment.appointmentId || patient.mrn || "10");
@@ -817,7 +818,7 @@ export const generateOPDRegistrationSlipHtml = (data: any) => {
     <!DOCTYPE html>
     <html>
     <head>
-      <title>${slipTitle} - ${patient.name || "Patient"}</title>
+      <title>${slipTitle} - ${formattedPatientName || "Patient"}</title>
       <meta charset="UTF-8">
       <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
@@ -1131,14 +1132,10 @@ export const generateClinicalReceiptHtml = (data: any) => {
     return generateOPDRegistrationSlipHtml(data);
   }
 
-  const formattedPatientName = (() => {
-      const h = patient.honorific;
-      const n = patient.name || "N/A";
-      if (!h) return n;
-      const hLower = h.toLowerCase();
-      if (hLower === 'baby of' || hLower === 'b/o') return `${h} ${n}`;
-      return `${h}. ${n}`;
-  })();
+  const formattedPatientName = formatPatientNameWithPrefix(
+    patient.name || patient.user?.name,
+    patient.honorific || patient.profile?.honorific || patient.honorificTitle
+  );
 
   const isIPD = data.registrationType === 'IPD' || (appointment.type && appointment.type.toUpperCase().includes('IPD'));
   
@@ -1197,7 +1194,7 @@ export const generateClinicalReceiptHtml = (data: any) => {
     <!DOCTYPE html>
     <html>
     <head>
-      <title>Patient Registration Bill - ${patient.name}</title>
+      <title>Patient Registration Bill - ${formattedPatientName}</title>
       <meta charset="UTF-8">
       <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
@@ -2046,16 +2043,10 @@ export const generatePrescriptionHtml = (data: any) => {
     return name.toLowerCase().startsWith("dr") ? name : `Dr. ${name}`;
   };
 
-  const getHonorific = (gender: string, age?: number) => {
-    if (!gender) return "";
-    const g = gender.toLowerCase();
-    if (g === "male") return age && age < 13 ? "Master." : "Mr.";
-    if (g === "female") return age && age < 13 ? "Miss." : "Ms.";
-    return "";
-  };
-
-  const patientName =
-    `${getHonorific(patient.gender, patient.age)} ${patient.name}`.trim();
+  const patientName = formatPatientNameWithPrefix(
+    patient.name || patient.user?.name,
+    patient.honorific || patient.profile?.honorific || patient.honorificTitle
+  );
   const ageDisplay = computeAgeFromDob(patient.dob, patient.age, patient.ageUnit);
   const genderDisplay =
     patient.gender && patient.gender !== "-"
@@ -2375,16 +2366,10 @@ export const generateLabTokenHtml = (data: any) => {
     return name.toLowerCase().startsWith("dr") ? name : `Dr. ${name}`;
   };
 
-  const getHonorific = (gender: string, age?: number) => {
-    if (!gender) return "";
-    const g = gender.toLowerCase();
-    if (g === "male") return age && age < 13 ? "Master." : "Mr.";
-    if (g === "female") return age && age < 13 ? "Miss." : "Ms.";
-    return "";
-  };
-
-  const patientName =
-    `${getHonorific(patient.gender, patient.age)} ${patient.name}`.trim();
+  const patientName = formatPatientNameWithPrefix(
+    patient.name || patient.user?.name,
+    patient.honorific || patient.profile?.honorific || patient.honorificTitle
+  );
   const ageDisplay = computeAgeFromDob(patient.dob, patient.age, patient.ageUnit);
   const genderDisplay =
     patient.gender && patient.gender !== "-"
@@ -2635,6 +2620,11 @@ export const generateLabTokenHtml = (data: any) => {
 
 export const generateLabReportHtml = (data: any) => {
   const { hospital, patient, doctor, labSample, headerHtml, footerHtml } = data;
+  const formattedPatientName = formatPatientNameWithPrefix(
+    patient?.name || patient?.user?.name,
+    patient?.honorific || patient?.profile?.honorific || patient?.honorificTitle
+  );
+  const ageDisplay = computeAgeFromDob(patient?.dob, patient?.age, patient?.ageUnit);
   const tests = labSample?.tests || [];
   const sampleId = labSample?.sampleId || 'N/A';
   const sampleType = labSample?.sampleType || 'N/A';
@@ -2738,7 +2728,7 @@ export const generateLabReportHtml = (data: any) => {
     <!DOCTYPE html>
     <html>
     <head>
-      <title>Lab Report - ${patient?.name || 'Patient'}</title>
+      <title>Lab Report - ${formattedPatientName || 'Patient'}</title>
       <meta charset="UTF-8">
       <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
@@ -2884,9 +2874,9 @@ export const generateLabReportHtml = (data: any) => {
         <div class="report-title">Laboratory Report</div>
 
         <div class="info-grid">
-          <div class="info-row"><span class="info-label">Patient Name</span><span class="info-value">: ${patient?.name || 'N/A'}</span></div>
+          <div class="info-row"><span class="info-label">Patient Name</span><span class="info-value">: ${formattedPatientName || 'N/A'}</span></div>
           <div class="info-row"><span class="info-label">Sample ID</span><span class="info-value">: ${sampleId}</span></div>
-          <div class="info-row"><span class="info-label">Age / Gender</span><span class="info-value">: ${patient?.age || 'N/A'} Yrs / ${patient?.gender || 'N/A'}</span></div>
+          <div class="info-row"><span class="info-label">Age / Gender</span><span class="info-value">: ${ageDisplay || 'N/A'} / ${patient?.gender || 'N/A'}</span></div>
           <div class="info-row"><span class="info-label">MRN</span><span class="info-value">: ${patient?.mrn || 'N/A'}</span></div>
           <div class="info-row"><span class="info-label">Referred By</span><span class="info-value">: ${doctor?.name ? (doctor.name.toLowerCase().startsWith('dr') ? doctor.name : `Dr. ${doctor.name}`) : 'N/A'}</span></div>
           <div class="info-row"><span class="info-label">Sample Type</span><span class="info-value">: ${sampleType}</span></div>
@@ -3404,7 +3394,7 @@ export const generateAddBillsReceiptHtml = (data: any) => {
     <!DOCTYPE html>
     <html>
     <head>
-      <title>Hospital Bill - ${patient.name}</title>
+      <title>Hospital Bill - ${formattedPatientName}</title>
       <meta charset="UTF-8">
       <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
@@ -3595,7 +3585,7 @@ export const generateAddBillsReceiptHtml = (data: any) => {
 
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 12px; position: relative; overflow: hidden;">
                     <div style="position: absolute; top: 0; right: 0; background: #1e293b; color: white; padding: 2px 8px; border-bottom-left-radius: 8px; font-size: 8px; font-weight: 900;">PATIENT IDENTITY</div>
-                    <div style="font-size: 15px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 8px;">${patient.name}</div>
+                    <div style="font-size: 15px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 8px;">${formattedPatientName}</div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
                         <div>
                             <div style="font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase;">MRN / Mobile</div>
@@ -3603,7 +3593,7 @@ export const generateAddBillsReceiptHtml = (data: any) => {
                         </div>
                         <div>
                             <div style="font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase;">Age / Gender</div>
-                            <div style="font-size: 10px; font-weight: 700; color: #1e293b;">${patient.age} / ${patient.gender}</div>
+                            <div style="font-size: 10px; font-weight: 700; color: #1e293b;">${ageDisplay} / ${patient.gender}</div>
                         </div>
                         <div>
                             <div style="font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase;">Blood Group</div>

@@ -36,8 +36,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import MainHeader from '@/components/printers/MainHeader';
 import MainFooter from '@/components/printers/MainFooter';
 import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
-import { generateClinicalReceiptHtml } from "@/lib/print-utils";
-import { formatDoctorName } from "@/lib/utils/name-utils";
+import { generateClinicalReceiptHtml, computeAgeFromDob } from "@/lib/print-utils";
+import { formatDoctorName, formatPatientNameWithPrefix } from "@/lib/utils/name-utils";
 import ClinicalReceipt from "@/components/helpdesk/ClinicalReceipt";
 
 export default function AppointmentBooking() {
@@ -727,8 +727,10 @@ export default function AppointmentBooking() {
             },
             patient: {
                 name: selectedPatient.name,
+                honorific: selectedPatient.honorific || selectedPatient.profile?.honorific,
                 mrn: selectedPatient.mrn,
                 age: selectedPatient.age,
+                ageUnit: selectedPatient.ageUnit || selectedPatient.profile?.ageUnit,
                 gender: selectedPatient.gender,
                 mobile: selectedPatient.mobile,
                 dob: selectedPatient.dob,
@@ -1029,11 +1031,11 @@ export default function AppointmentBooking() {
                                     </div>
                                     <div className="flex-1 space-y-2">
                                         <div>
-                                            <h3 className="text-base font-black text-slate-900 uppercase tracking-tight">{selectedPatient.name}</h3>
+                                            <h3 className="text-base font-black text-slate-900 uppercase tracking-tight">{formatPatientNameWithPrefix(selectedPatient.name, selectedPatient.honorific || selectedPatient.profile?.honorific)}</h3>
                                             <div className="flex flex-wrap items-center gap-2 mt-1 text-[9px] font-bold uppercase tracking-widest">
                                                 <span className="flex items-center gap-1.5 px-2 py-0.5 bg-white rounded-lg border border-slate-200 text-slate-600"><Hash size={10} className="text-teal-600" /> {selectedPatient.mrn}</span>
                                                 <span className="flex items-center gap-1.5 px-2 py-0.5 bg-white rounded-lg border border-slate-200 text-slate-600"><Phone size={10} className="text-teal-600" /> {selectedPatient.mobile}</span>
-                                                <span className="flex items-center gap-1.5 px-2 py-0.5 bg-white rounded-lg border border-slate-200 text-slate-600"><Activity size={10} className="text-teal-600" /> {selectedPatient.age} / {selectedPatient.gender}</span>
+                                                <span className="flex items-center gap-1.5 px-2 py-0.5 bg-white rounded-lg border border-slate-200 text-slate-600"><Activity size={10} className="text-teal-600" /> {computeAgeFromDob(selectedPatient.dob, selectedPatient.age, selectedPatient.ageUnit || selectedPatient.profile?.ageUnit)} / {selectedPatient.gender}</span>
                                                 {selectedPatient.bloodGroup && selectedPatient.bloodGroup !== 'N/A' && (
                                                     <span className="flex items-center gap-1.5 px-2 py-0.5 bg-rose-50 rounded-lg border border-rose-100 text-rose-600">
                                                         <Droplets size={10} className="text-rose-500" /> {selectedPatient.bloodGroup}

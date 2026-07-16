@@ -7,6 +7,8 @@ import { helpdeskService } from '@/lib/integrations/services/helpdesk.service';
 import { renderToStaticMarkup } from 'react-dom/server';
 import MainHeader from '@/components/printers/MainHeader';
 import MainFooter from '@/components/printers/MainFooter';
+import { generateTransactionReportHTML } from '@/lib/utils/print-transaction-report';
+import { formatPatientNameWithPrefix } from '@/lib/utils/name-utils';
 import { useSearchParams, useParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
@@ -92,6 +94,15 @@ export default function TransactionReportsPage() {
     const loadReportId = searchParams.get('loadReport');
 
     const [reportDate, setReportDate] = useState(new Date().toISOString().split('T')[0]);
+    const [printConfig, setPrintConfig] = useState({
+        consultations: true,
+        investigations: true,
+        wards: true,
+        radiology: true,
+        services: true,
+        pharmacy: true,
+        receipts: true
+    });
 
     const [doctors,    setDoctors]  = useState<DoctorCharge[]>([]);
     const [admissions, setAdmis]    = useState<AdmissionCharge[]>([]);
@@ -156,11 +167,19 @@ export default function TransactionReportsPage() {
 
     const fetchHistory = () => {
         if (!patientId) return;
-        helpdeskService.getPatientTransactionReports(patientId)
-            .then(res => {
-                setSavedReports(res);
+        
+        const fetchStandard = helpdeskService.getPatientTransactionReports(patientId);
+        const fetchAuto = loadReportId?.startsWith('AUTO_BILL_') 
+            ? helpdeskService.getIPDFinalBill(patientId).catch(() => []) 
+            : Promise.resolve([]);
+
+        Promise.all([fetchStandard, fetchAuto])
+            .then(([standardReports, autoReports]) => {
+                const combinedReports = [...standardReports, ...(autoReports as any[])];
+                setSavedReports(combinedReports);
+                
                 if (loadReportId) {
-                    const r = res.find((x: any) => x._id === loadReportId);
+                    const r = combinedReports.find((x: any) => x._id === loadReportId);
                     if (r) {
                         setDoctors(r.reportData.doctors || []);
                         setAdmis(r.reportData.admissions || []);
@@ -169,6 +188,8 @@ export default function TransactionReportsPage() {
                         setDiags(r.reportData.diags || []);
                         setPay(r.reportData.payments || []);
                         toast.success("Report data loaded from history!");
+                    } else {
+                        toast.error("Could not find the specified report.");
                     }
                 }
             })
@@ -191,104 +212,21 @@ export default function TransactionReportsPage() {
             return;
         }
 
-        const h = hospital || { name: 'Hospital Name', address: 'Hospital Address', contact: 'Contact Info' };
-
-        const headerHtml = renderToStaticMarkup(
-            <MainHeader
-                initialDetails={{
-                    name: h.name || "Hospital Name",
-                    address: h.address || "",
-                    phone: h.phone || h.mobile || "",
-                    email: h.email || "",
-                    logo: h.logo
-                }}
-            />
-        );
-
-        const footerHtml = renderToStaticMarkup(
-            <MainFooter
-                initialDetails={{
-                    name: h.name || "Hospital Name",
-                    address: h.address || "",
-                    phone: h.phone || h.mobile || "",
-                    email: h.email || "",
-                }}
-            />
-        );
+        const h = hospital || { name: 'Hospital Name', address: 'Hospital Address', phone: 'Contact Info' };
         
-        let html = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Statement - ${patient?.name || 'Patient'}</title>
-                <style>
-                    body { font-family: 'Segoe UI', system-ui, sans-serif; padding: 20px; color: #1e293b; line-height: 1.4; background: #fff; font-size: 11px; }
-                    .report-title { text-align: center; margin: 15px 0 25px; }
-                    .report-title h2 { margin: 0; font-size: 18px; color: #4338ca; text-transform: uppercase; letter-spacing: 2px; font-weight: 900; }
-                    .section { margin-bottom: 20px; break-inside: avoid; }
-                    .section-header { background: #f8fafc; padding: 8px 12px; border-left: 4px solid #4338ca; margin-bottom: 12px; font-weight: 900; color: #1e293b; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
-                    table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
-                    th { text-align: left; padding: 10px 8px; background: #f1f5f9; border-bottom: 2px solid #e2e8f0; color: #64748b; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; font-weight: 900; }
-                    td { padding: 8px; border-bottom: 1px solid #f1f5f9; font-size: 10px; color: #334155; font-weight: 500; }
-                    .subtotal-row td { background: #fff; font-weight: 900; color: #4338ca; text-align: right; padding-top: 12px; font-size: 11px; }
-                    .summary-box { margin-top: 30px; border-top: 2px solid #f1f5f9; padding-top: 20px; display: flex; flex-direction: column; align-items: flex-end; }
-                    .summary-item { width: 220px; display: flex; justify-content: space-between; padding: 6px 0; font-size: 11px; color: #64748b; font-weight: 700; }
-                    .summary-item.grand { margin-top: 10px; padding-top: 10px; border-top: 2px solid #4338ca; color: #4338ca; font-weight: 900; font-size: 16px; }
-                    .summary-item.balance { color: ${balance > 0 ? '#e11d48' : '#059669'}; font-weight: 900; font-size: 15px; }
-                    @media print { body { padding: 0; } @page { margin: 1cm; } }
-                </style>
-            </head>
-            <body>
-                <div id="print-header">${headerHtml}</div>
-                <div class="report-title"><h2>Financial Statement</h2></div>
-                
-                ${patient ? `
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 25px; padding: 15px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px">
-                        <div><div style="font-size: 9px; color: #64748b; font-weight: 900; text-transform: uppercase; letter-spacing: 1px">Patient Name</div><div style="font-size: 12px; font-weight: 900; color: #1e293b; margin-top: 4px">${patient.name || patient.user?.name}</div></div>
-                        <div><div style="font-size: 9px; color: #64748b; font-weight: 900; text-transform: uppercase; letter-spacing: 1px">MRN Number</div><div style="font-size: 12px; font-weight: 900; color: #1e293b; margin-top: 4px">${patient.profile?.mrn || 'N/A'}</div></div>
-                        <div><div style="font-size: 9px; color: #64748b; font-weight: 900; text-transform: uppercase; letter-spacing: 1px">Mobile</div><div style="font-size: 12px; font-weight: 900; color: #1e293b; margin-top: 4px">${patient.user?.mobile || patient.mobile || 'N/A'}</div></div>
-                        <div><div style="font-size: 9px; color: #64748b; font-weight: 900; text-transform: uppercase; letter-spacing: 1px">Age / Gender</div><div style="font-size: 12px; font-weight: 900; color: #1e293b; margin-top: 4px">${patient.age || 'N/A'}Y / ${patient.gender || 'N/A'}</div></div>
-                        <div><div style="font-size: 9px; color: #64748b; font-weight: 900; text-transform: uppercase; letter-spacing: 1px">Admission ID</div><div style="font-size: 12px; font-weight: 900; color: #1e293b; margin-top: 4px">${admission?.admissionId || 'N/A'}</div></div>
-                        <div><div style="font-size: 9px; color: #64748b; font-weight: 900; text-transform: uppercase; letter-spacing: 1px">Statement Date</div><div style="font-size: 12px; font-weight: 900; color: #1e293b; margin-top: 4px">${new Date(reportDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div></div>
-                        <div><div style="font-size: 9px; color: #64748b; font-weight: 900; text-transform: uppercase; letter-spacing: 1px">Admission Date</div><div style="font-size: 11px; font-weight: 900; color: #1e293b; margin-top: 4px">${admission ? new Date(admission.admissionDate).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}</div></div>
-                        <div><div style="font-size: 9px; color: #64748b; font-weight: 900; text-transform: uppercase; letter-spacing: 1px">Discharge Date</div><div style="font-size: 12px; font-weight: 900; color: #1e293b; margin-top: 4px">${admission?.dischargeDate ? new Date(admission.dischargeDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : (admission ? 'STILL ADMITTED' : 'N/A')}</div></div>
-                    </div>
-                ` : ''}
-
-                ${doctors.length > 0 ? `
-                    <div class="section"><div class="section-header">Doctor Consultations</div><table><thead><tr><th>Doctor</th><th>Specialization</th><th>Rate</th><th>Visits</th><th>Amount</th></tr></thead><tbody>${doctors.map(r => `<tr><td>${r.doctorName}</td><td>${r.specialization}</td><td>${fmt(r.rate)}</td><td>${r.visits}</td><td>${fmt(r.rate*r.visits)}</td></tr>`).join('')}<tr class="subtotal-row"><td colspan="5">Subtotal: ${fmt(totDoc)}</td></tr></tbody></table></div>
-                ` : ''}
-                ${admissions.length > 0 ? `
-                    <div class="section"><div class="section-header">Admission & ICU Stay</div><table><thead><tr><th>Type</th><th>Description</th><th>Rate/Day</th><th>Days</th><th>Amount</th></tr></thead><tbody>${admissions.map(r => `<tr><td>${r.chargeType}</td><td>${r.description}</td><td>${fmt(r.rate)}</td><td>${r.days}</td><td>${fmt(r.rate*r.days)}</td></tr>`).join('')}<tr class="subtotal-row"><td colspan="5">Subtotal: ${fmt(totAdm)}</td></tr></tbody></table></div>
-                ` : ''}
-                ${meds.length > 0 ? `
-                    <div class="section"><div class="section-header">Pharmacy & Medications</div><table><thead><tr><th>Medicine</th><th>Rate</th><th>Qty</th><th>Amount</th></tr></thead><tbody>${meds.map(r => `<tr><td>${r.medicineName}</td><td>${fmt(r.rate)}</td><td>${r.quantity}</td><td>${fmt(r.rate*r.quantity)}</td></tr>`).join('')}<tr class="subtotal-row"><td colspan="4">Subtotal: ${fmt(totMed)}</td></tr></tbody></table></div>
-                ` : ''}
-                ${services.length > 0 ? `
-                    <div class="section"><div class="section-header">Clinical Services</div><table><thead><tr><th>Service</th><th>Rate</th><th>Qty</th><th>Amount</th></tr></thead><tbody>${services.map(r => `<tr><td>${r.serviceName}</td><td>${fmt(r.rate)}</td><td>${r.quantity}</td><td>${fmt(r.rate*r.quantity)}</td></tr>`).join('')}<tr class="subtotal-row"><td colspan="4">Subtotal: ${fmt(totSvc)}</td></tr></tbody></table></div>
-                ` : ''}
-                ${diags.length > 0 ? `
-                    <div class="section"><div class="section-header">Diagnostics & Lab</div><table><thead><tr><th>Test</th><th>Rate</th><th>Qty</th><th>Amount</th></tr></thead><tbody>${diags.map(r => `<tr><td>${r.testName}</td><td>${fmt(r.rate)}</td><td>${r.quantity}</td><td>${fmt(r.rate*r.quantity)}</td></tr>`).join('')}<tr class="subtotal-row"><td colspan="4">Subtotal: ${fmt(totDiag)}</td></tr></tbody></table></div>
-                ` : ''}
-                ${payments.length > 0 ? `
-                    <div class="section"><div class="section-header">Advance Payments</div><table><thead><tr><th>Receipt</th><th>Date</th><th>Mode</th><th>Status</th><th>Amount</th></tr></thead><tbody>${payments.map(r => `<tr><td style="font-family:monospace;font-weight:900">${r.receiptNo}</td><td>${r.date}</td><td>${r.mode}</td><td>${r.status}</td><td>${fmt(r.amount)}</td></tr>`).join('')}<tr class="subtotal-row"><td colspan="5">Total Paid: ${fmt(totPaid)}</td></tr></tbody></table></div>
-                ` : ''}
-
-                <div class="summary-box">
-                    <div class="summary-item"><span>Grand Total:</span> <span>${fmt(grand)}</span></div>
-                    <div class="summary-item"><span>Advance Received:</span> <span>${fmt(totPaid)}</span></div>
-                    <div class="summary-item grand"><span>Net Payable:</span> <span>${fmt(balance)}</span></div>
-                </div>
-
-
-                <div id="print-footer" style="margin-top: 40px">${footerHtml}</div>
-                <script>window.onload = function() { window.print(); window.onafterprint = function() { window.close(); } }</script>
-            </body>
-            </html>
-        `;
+        const reportData = { doctors, admissions, meds, services, diags, payments };
+        const totals = { grandTotal: grand, totalPaid: totPaid, balance: balance, discount: 0 };
+        
+        const html = generateTransactionReportHTML(h, patient || {}, admission || {}, reportData, totals, printConfig);
 
         win.document.write(html);
         win.document.close();
+        
+        // Let the iframe/window load resources before printing
+        setTimeout(() => {
+            win.print(); 
+            win.onafterprint = function() { win.close(); } 
+        }, 500);
     };
 
     const handleSaveReport = async () => {
@@ -341,7 +279,7 @@ export default function TransactionReportsPage() {
                             {patient && (
                                 <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider border border-indigo-100/50 flex items-center gap-1.5 shadow-sm">
                                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
-                                    {patient.name || patient.user?.name}
+                                    {formatPatientNameWithPrefix(patient.name || patient.user?.name, patient.profile?.prefix || patient.prefix)}
                                 </span>
                             )}
                             <span className="bg-slate-50 text-slate-500 px-3 py-1 rounded-full text-[10px] font-bold border border-slate-200/50 uppercase tracking-widest">
@@ -367,33 +305,57 @@ export default function TransactionReportsPage() {
                         </div>
                     </div>
 
-                            <div className="h-10 w-[1px] bg-slate-100 hidden lg:block mx-1"></div>
+                    <div className="h-10 w-[1px] bg-slate-100 hidden lg:block mx-1"></div>
 
-                            <div className="flex items-center gap-2">
-                                <button 
-                                    onClick={() => router.push(`/${params.hospitalId}/frontdesk/transaction-history`)}
-                                    className="h-12 px-5 bg-white text-slate-600 font-bold text-sm rounded-2xl border border-slate-200 hover:border-indigo-200 hover:text-indigo-600 hover:bg-indigo-50/50 transition-all flex items-center gap-2"
-                                >
-                                    <Search className="w-4 h-4" />
-                                    History
-                                </button>
-                                <button 
-                                    onClick={handleSaveReport}
-                                    disabled={isSaving}
-                                    className="h-12 px-6 bg-white border-2 border-emerald-100 text-emerald-600 hover:bg-emerald-50 font-black text-sm rounded-2xl transition-all flex items-center gap-2 disabled:opacity-50"
-                                >
-                                    {isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                                    Save
-                                </button>
-                                <button 
-                                    onClick={handlePrint}
-                                    className="h-12 px-6 bg-indigo-600 text-white hover:bg-indigo-700 font-black text-sm rounded-2xl shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2"
-                                >
-                                    <Printer className="w-4 h-4" />
-                                    Print
-                                </button>
-                            </div>
+                    <div className="flex items-center gap-2">
+                        <button 
+                            onClick={() => router.push(`/${params.hospitalId}/frontdesk/transaction-history`)}
+                            className="h-12 px-5 bg-white text-slate-600 font-bold text-sm rounded-2xl border border-slate-200 hover:border-indigo-200 hover:text-indigo-600 hover:bg-indigo-50/50 transition-all flex items-center gap-2"
+                        >
+                            <Search className="w-4 h-4" />
+                            History
+                        </button>
+                        <button 
+                            onClick={handleSaveReport}
+                            disabled={isSaving}
+                            className="h-12 px-6 bg-white border-2 border-emerald-100 text-emerald-600 hover:bg-emerald-50 font-black text-sm rounded-2xl transition-all flex items-center gap-2 disabled:opacity-50"
+                        >
+                            {isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                            Save
+                        </button>
+                        <button 
+                            onClick={handlePrint}
+                            className="h-12 px-6 bg-indigo-600 text-white hover:bg-indigo-700 font-black text-sm rounded-2xl shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2"
+                        >
+                            <Printer className="w-4 h-4" />
+                            Print
+                        </button>
+                    </div>
                 </div>
+            </div>
+
+            {/* Print Configuration Panel */}
+            <div className="bg-white p-5 rounded-3xl border border-slate-200/60 shadow-sm flex flex-wrap gap-4 items-center">
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest w-full md:w-auto md:mr-4">Print Configuration:</div>
+                {[
+                    { key: 'consultations', label: 'Consultations' },
+                    { key: 'investigations', label: 'Investigations' },
+                    { key: 'wards', label: 'Wards' },
+                    { key: 'radiology', label: 'Radiology' },
+                    { key: 'services', label: 'Services' },
+                    { key: 'pharmacy', label: 'Pharmacy' },
+                    { key: 'receipts', label: 'Receipts' },
+                ].map(opt => (
+                    <label key={opt.key} className="flex items-center gap-2 cursor-pointer group bg-slate-50 hover:bg-indigo-50 px-3 py-1.5 rounded-xl transition-colors border border-slate-100 hover:border-indigo-100">
+                        <input 
+                            type="checkbox" 
+                            checked={printConfig[opt.key as keyof typeof printConfig]}
+                            onChange={(e) => setPrintConfig(prev => ({ ...prev, [opt.key]: e.target.checked }))}
+                            className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer"
+                        />
+                        <span className="text-xs font-bold text-slate-600 group-hover:text-indigo-700">{opt.label}</span>
+                    </label>
+                ))}
             </div>
 
             {/* KPIs */}

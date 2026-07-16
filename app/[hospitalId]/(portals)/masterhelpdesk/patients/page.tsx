@@ -17,8 +17,9 @@ import { useRouter, useParams } from "next/navigation";
 import ClinicalReceipt from "@/components/helpdesk/ClinicalReceipt";
 import AppointmentHistoryModal from "@/components/helpdesk/AppointmentHistoryModal";
 import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
-import { sanitizePatientName } from "@/lib/utils/name-utils";
+import { sanitizePatientName, formatPatientNameWithPrefix } from "@/lib/utils/name-utils";
 import { calculateAge } from "@/lib/utils/date-utils";
+import { computeAgeFromDob } from "@/lib/print-utils";
 
 function useDebouncedValue<T>(value: T, delayMs: number): T {
     const [debounced, setDebounced] = useState(value);
@@ -350,14 +351,14 @@ export default function MasterPatientsPage() {
                                                             </div>
                                                             <div className="min-w-0">
                                                                 <span className="text-[13px] lg:text-[15px] font-[550] text-slate-700 uppercase tracking-tight truncate block">
-                                                                    {sanitizePatientName(patient.name || patient.user?.name)}
+                                                                    {formatPatientNameWithPrefix(sanitizePatientName(patient.name || patient.user?.name), patient.profile?.honorific || patient.honorific)}
                                                                 </span>
                                                             </div>
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-4 text-center">
                                                         <span className="text-[12px] lg:text-[13px] font-bold text-slate-600 bg-slate-50 border border-slate-200/50 px-2 py-1 rounded-lg">
-                                                            {patient.profile?.age || patient.age || calculateAge(patient.profile?.dob || patient.dob)} <span className="text-[9px] text-slate-400">YRS</span>
+                                                            {computeAgeFromDob(patient.profile?.dob || patient.dob, patient.profile?.age || patient.age, patient.profile?.ageUnit || patient.ageUnit)}
                                                         </span>
                                                     </td>
                                                     <td className="px-4 py-4 text-center">

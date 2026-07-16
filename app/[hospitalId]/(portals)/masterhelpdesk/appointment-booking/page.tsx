@@ -36,7 +36,8 @@ import toast from "react-hot-toast";
 import { renderToStaticMarkup } from 'react-dom/server';
 import MainHeader from '@/components/printers/MainHeader';
 import MainFooter from '@/components/printers/MainFooter';
-import { generateClinicalReceiptHtml } from "@/lib/print-utils";
+import { generateClinicalReceiptHtml, computeAgeFromDob } from "@/lib/print-utils";
+import { formatDoctorName, formatPatientNameWithPrefix } from "@/lib/utils/name-utils";
 import { getSocket, joinSocketRoom } from "@/lib/integrations/api/socket";
 
 export default function MasterAppointmentBooking() {
@@ -724,7 +725,7 @@ export default function MasterAppointmentBooking() {
                     ipdFollowUpDays: latestHospital.ipdFollowUpDays,
                     enableFollowUpExpiry: latestHospital.enableFollowUpExpiry
                 },
-                patient: { name: selectedPatient.name, mrn: selectedPatient.mrn, age: selectedPatient.age, gender: selectedPatient.gender, mobile: selectedPatient.mobile, dob: selectedPatient.dob, address: selectedPatient.address, email: selectedPatient.email, bloodGroup: selectedPatient.bloodGroup, emergencyContact: selectedPatient.emergencyContact, allergies: Array.isArray(selectedPatient.allergies) ? selectedPatient.allergies.join(', ') : selectedPatient.allergies, medicalHistory: selectedPatient.medicalHistory, vitals: { ...vitals } },
+                patient: { name: selectedPatient.name, honorific: selectedPatient.honorific || selectedPatient.profile?.honorific, mrn: selectedPatient.mrn, age: selectedPatient.age, ageUnit: selectedPatient.ageUnit || selectedPatient.profile?.ageUnit, gender: selectedPatient.gender, mobile: selectedPatient.mobile, dob: selectedPatient.dob, address: selectedPatient.address, email: selectedPatient.email, bloodGroup: selectedPatient.bloodGroup, emergencyContact: selectedPatient.emergencyContact, allergies: Array.isArray(selectedPatient.allergies) ? selectedPatient.allergies.join(', ') : selectedPatient.allergies, medicalHistory: selectedPatient.medicalHistory, vitals: { ...vitals } },
                 appointment: {
                     doctorName: selectedDoctor.user?.name || selectedDoctor.name,
                     specialization: selectedDoctor.specialties?.[0] || 'General',
@@ -823,11 +824,11 @@ export default function MasterAppointmentBooking() {
                                         {selectedPatient.name.charAt(0)}
                                     </div>
                                     <div className="flex-1 space-y-2">
-                                        <h3 className="text-base font-black text-slate-900 uppercase tracking-tight">{selectedPatient.name}</h3>
+                                        <h3 className="text-base font-black text-slate-900 uppercase tracking-tight">{formatPatientNameWithPrefix(selectedPatient.name, selectedPatient.honorific || selectedPatient.profile?.honorific)}</h3>
                                         <div className="flex flex-wrap items-center gap-2 mt-1 text-[9px] font-bold uppercase tracking-widest">
                                             <span className="flex items-center gap-1.5 px-2 py-0.5 bg-white rounded-lg border border-slate-200 text-slate-600"><Hash size={10} className="text-teal-600" /> {selectedPatient.mrn}</span>
                                             <span className="flex items-center gap-1.5 px-2 py-0.5 bg-white rounded-lg border border-slate-200 text-slate-600"><Phone size={10} className="text-teal-600" /> {selectedPatient.mobile}</span>
-                                            <span className="flex items-center gap-1.5 px-2 py-0.5 bg-white rounded-lg border border-slate-200 text-slate-600"><Activity size={10} className="text-teal-600" /> {selectedPatient.age} / {selectedPatient.gender}</span>
+                                            <span className="flex items-center gap-1.5 px-2 py-0.5 bg-white rounded-lg border border-slate-200 text-slate-600"><Activity size={10} className="text-teal-600" /> {computeAgeFromDob(selectedPatient.dob, selectedPatient.age, selectedPatient.ageUnit || selectedPatient.profile?.ageUnit)} / {selectedPatient.gender}</span>
                                         </div>
                                     </div>
                                     <button onClick={() => { setSelectedPatient(null); setPatientSearch(""); }} className="absolute top-3 right-3 p-1.5 text-slate-300 hover:text-rose-500 rounded-lg transition-all"><X size={16} /></button>

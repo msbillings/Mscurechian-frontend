@@ -16,12 +16,17 @@ import {
     Info,
     Bed as BedIcon,
     Printer,
-    ChevronDown
+    ChevronDown,
+    TestTube,
+    Microscope,
+    Stethoscope,
+    IndianRupee
 } from 'lucide-react';
 import { ipdService } from '@/lib/integrations/services/ipd.service';
 import { toast } from 'react-hot-toast';
 import { format } from 'date-fns';
 import { printIPDLedger } from '@/lib/utils/print-ipd-ledger';
+import { printPaymentReceipt } from '@/lib/utils/print-payment-receipt';
 import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
 
 interface IPDBillingModalProps {
@@ -42,8 +47,9 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
     const [showChargeForm, setShowChargeForm] = useState(false);
     const [showAdvanceForm, setShowAdvanceForm] = useState(false);
     const [showDiscountForm, setShowDiscountForm] = useState(false);
+    const [showDischargeConfirm, setShowDischargeConfirm] = useState(false);
 
-    const [chargeData, setChargeData] = useState({ category: 'Nursing', description: '', amount: 0 });
+    const [chargeData, setChargeData] = useState({ category: 'Nursing', description: '', amount: 0, quantity: 1 });
     const [advanceData, setAdvanceData] = useState({ amount: 0, mode: 'Cash', transactionType: 'Advance', reference: '' });
     const [discountData, setDiscountData] = useState({ amount: 0, reason: '' });
 
@@ -129,10 +135,17 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
         e.preventDefault();
         try {
             setSubmitting(true);
-            await ipdService.addExtraCharge({ admissionId, ...chargeData });
+            const qtyStr = chargeData.quantity > 1 ? ` (Qty/Days: ${chargeData.quantity})` : '';
+            const totalAmount = chargeData.amount * (chargeData.quantity || 1);
+            await ipdService.addExtraCharge({ 
+                admissionId, 
+                category: chargeData.category, 
+                description: `${chargeData.description}${qtyStr}`, 
+                amount: totalAmount 
+            });
             toast.success("Charge added successfully");
             setShowChargeForm(false);
-            setChargeData({ category: 'Nursing', description: '', amount: 0 });
+            setChargeData({ category: 'Nursing', description: '', amount: 0, quantity: 1 });
             fetchSummary();
         } catch (error: any) {
             toast.error(error.message || "Failed to add charge");
@@ -179,24 +192,6 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
         }
     };
 
-    const handleRemoveDiscount = async () => {
-        if (!window.confirm("Are you sure you want to remove this discount?")) return;
-        try {
-            setSubmitting(true);
-            await ipdService.applyDiscount({
-                admissionId,
-                amount: 0,
-                reason: 'Adjustment Removed'
-            });
-            toast.success("Discount removed successfully");
-            fetchSummary();
-        } catch (error: any) {
-            toast.error(error.message || "Failed to remove discount");
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
     const handleLockBill = async () => {
         if (!window.confirm("Once locked, no further charges or discounts can be added. Proceed?")) return;
         try {
@@ -211,7 +206,29 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
         }
     };
 
+    const handleDischargeRequest = () => {
+        setShowDischargeConfirm(true);
+    };
+
+    const handleDischargeConfirm = async () => {
+        try {
+            setSubmitting(true);
+            await ipdService.dischargePatient(admissionId);
+            toast.success("Patient successfully discharged!");
+            setShowDischargeConfirm(false);
+            onClose(); // Close the modal since they are discharged
+        } catch (error: any) {
+            toast.error(error.message || "Failed to discharge patient");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     if (!isOpen) return null;
+
+    // Calculate final bill and overpaid for header logic
+    const finalBillRaw = (summary?.totalBilledAmount || 0) - (summary?.advancePaid || 0) - (summary?.settlementPaid || 0) - (summary?.discountDetails?.amount || 0);
+    const finalBill = finalBillRaw > 0 ? Math.round(finalBillRaw) : 0;
 
     return (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-2">
@@ -231,9 +248,20 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                     </div>
                     <div className="flex items-center gap-2">
                         {summary?.isBillLocked && (
-                            <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/20 text-emerald-300 rounded-md text-[7px] font-black uppercase tracking-widest border border-emerald-500/30">
+                            <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/20 text-emerald-300 rounded-md text-[7px] font-black uppercase tracking-widest border border-emerald-500/30 mr-2">
                                 <Lock size={10} /> Bill Locked
                             </div>
+                        )}
+                        {/* Discharge Button -> Appears if the bill is settled, and patient is not yet discharged */}
+                        {summary?.status !== 'Discharged' && finalBill <= 0 && (
+                            <button
+                                onClick={handleDischargeRequest}
+                                disabled={submitting}
+                                title="Discharge Patient Now"
+                                className="mr-2 px-3 py-1.5 bg-rose-600 text-white rounded-lg flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest hover:bg-rose-700 transition-all shadow-md disabled:opacity-50"
+                            >
+                                <ArrowUpCircle size={12} /> Discharge Patient
+                            </button>
                         )}
                         <button
                             onClick={() => summary && printIPDLedger(summary, hospitalDetails)}
@@ -249,18 +277,18 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                 </div>
 
                 {/* Tabs */}
-                <div className="flex bg-slate-50 px-4 border-b border-slate-100">
+                <div className="flex bg-slate-50 px-4 border-b border-slate-100 overflow-x-auto custom-scrollbar">
                     {[
                         { id: 'summary', label: 'Summary', icon: Wallet },
                         { id: 'charges', label: 'Charges', icon: History },
-                        ...(!hidePaymentActions ? [{ id: 'advances', label: 'Payments', icon: CreditCard }] : []),
+                        ...(!hidePaymentActions ? [{ id: 'advances', label: 'Payment Receipts', icon: CreditCard }] : []),
                     ].map((tab) => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as any)}
-                            className={`px-3 py-2.5 flex items-center gap-1.5 text-[7px] font-black uppercase tracking-widest transition-all relative ${activeTab === tab.id ? 'text-teal-600' : 'text-slate-400 hover:text-slate-600'}`}
+                            className={`px-3 py-3 flex items-center gap-2 text-[8px] font-black uppercase tracking-widest transition-all relative whitespace-nowrap ${activeTab === tab.id ? 'text-teal-600' : 'text-slate-400 hover:text-slate-600'}`}
                         >
-                            <tab.icon size={12} />
+                            <tab.icon size={14} />
                             {tab.label}
                             {activeTab === tab.id && <div className="absolute bottom-0 left-0 right-0 h-1 bg-teal-600 rounded-t-full" />}
                         </button>
@@ -309,42 +337,45 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                         const overpaid = Math.max(0, totalAdvance - afterDiscount);
 
                                         // Row helper — now with expandable accordion
-                                        const Row = ({ label, sub, amount, color = 'text-slate-800', bg = '', rowKey, subItems }: {
-                                            label: string; sub?: string; amount: string; color?: string; bg?: string; rowKey?: string; subItems?: any[];
+                                        const Row = ({ label, sub, amount, color = 'text-slate-800', bg = '', rowKey, subItems, icon: Icon }: {
+                                            label: string; sub?: string; amount: string; color?: string; bg?: string; rowKey?: string; subItems?: any[]; icon?: any;
                                         }) => {
                                             const isExpandable = rowKey && subItems && subItems.length > 0;
                                             const isExpanded = rowKey ? expandedRows[rowKey] : false;
                                             return (
-                                                <div>
+                                                <div className="mb-2">
                                                     <div
-                                                        className={`flex justify-between items-center px-3 py-2 rounded-lg ${bg} ${isExpandable ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+                                                        className={`flex justify-between items-center px-4 py-3 rounded-xl border border-transparent ${bg} ${isExpandable ? 'cursor-pointer hover:border-slate-200 transition-all' : ''}`}
                                                         onClick={() => {
                                                             if (isExpandable && rowKey) {
                                                                 setExpandedRows(prev => ({ ...prev, [rowKey]: !prev[rowKey] }));
                                                             }
                                                         }}
                                                     >
-                                                        <div className="flex items-center gap-1.5">
+                                                        <div className="flex items-center gap-3">
+                                                            {Icon && <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-white shadow-sm ${color}`}><Icon size={16} /></div>}
                                                             <div>
-                                                                <span className={`text-[8px] font-bold uppercase ${color}`}>{label}</span>
-                                                                {sub && <span className="ml-2 text-[6px] font-black text-slate-400 uppercase tracking-widest">{sub}</span>}
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className={`text-xs font-bold ${color}`}>{label}</span>
+                                                                    {isExpandable && (
+                                                                        <ChevronDown size={14} className={`text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+                                                                    )}
+                                                                </div>
+                                                                {sub && <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{sub}</span>}
                                                             </div>
-                                                            {isExpandable && (
-                                                                <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
-                                                            )}
                                                         </div>
-                                                        <span className={`text-[9px] font-black ${color}`}>{amount}</span>
+                                                        <span className={`text-sm font-black tracking-tight ${color}`}>{amount}</span>
                                                     </div>
                                                     {isExpandable && isExpanded && (
-                                                        <div className="ml-4 mr-2 mt-1 mb-2 border-l-2 border-slate-200 pl-3 space-y-1 animate-in slide-in-from-top-1 duration-200">
+                                                        <div className="mx-4 mt-2 mb-3 border-l-2 border-slate-200 pl-4 space-y-2 animate-in slide-in-from-top-1 duration-200">
                                                             {subItems!.map((item: any, idx: number) => (
-                                                                <div key={idx} className="flex justify-between items-center py-1 text-[7px]">
+                                                                <div key={idx} className="flex justify-between items-center py-1 text-[11px]">
                                                                     <div className="flex items-center gap-2">
-                                                                        <span className="font-bold text-slate-500 uppercase">{item.description || item.bedId || item.type || 'Item'}</span>
+                                                                        <span className="font-bold text-slate-700 capitalize">{item.description || item.bedId || item.type || 'Item'}</span>
                                                                         {item.date && <span className="text-slate-400">{format(new Date(item.date), 'dd MMM')}</span>}
-                                                                        {item.category && <span className="px-1 py-0.5 bg-slate-100 text-slate-400 rounded text-[5px] font-black uppercase">{item.category}</span>}
+                                                                        {item.category && <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded text-[9px] font-bold uppercase tracking-wider">{item.category}</span>}
                                                                     </div>
-                                                                    <span className={`font-black ${item.status === 'Reversed' ? 'text-slate-300 line-through' : 'text-slate-600'}`}>₹ {(item.amount || item.charge || 0).toLocaleString()}</span>
+                                                                    <span className={`font-black ${item.status === 'Reversed' ? 'text-slate-300 line-through' : 'text-slate-700'}`}>₹ {(item.amount || item.charge || 0).toLocaleString()}</span>
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -354,31 +385,33 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                         };
 
                                         const Divider = ({ label }: { label: string }) => (
-                                            <div className="border-t border-dashed border-slate-200 pt-3 mt-1 mb-2">
-                                                <p className="text-[6px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
+                                            <div className="flex items-center gap-4 my-6">
+                                                <div className="h-px bg-slate-200 flex-1" />
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
+                                                <div className="h-px bg-slate-200 flex-1" />
                                             </div>
                                         );
 
-                                        const SubTotal = ({ label, amount, color = 'text-slate-900', bg = 'bg-slate-100' }: {
+                                        const SubTotal = ({ label, amount, color = 'text-slate-900', bg = 'bg-slate-50' }: {
                                             label: string; amount: string; color?: string; bg?: string;
                                         }) => (
-                                            <div className={`flex justify-between items-center px-3 py-2 rounded-lg mt-2 ${bg}`}>
-                                                <span className={`text-[8px] font-black uppercase ${color}`}>{label}</span>
-                                                <span className={`text-[10px] font-black ${color}`}>{amount}</span>
+                                            <div className={`flex justify-between items-center px-4 py-3 rounded-xl mt-3 ${bg}`}>
+                                                <span className={`text-xs font-bold uppercase tracking-wider ${color}`}>{label}</span>
+                                                <span className={`text-sm font-black tracking-tight ${color}`}>{amount}</span>
                                             </div>
                                         );
 
                                         return (
-                                            <div className="bg-white rounded-[16px] border border-slate-200 overflow-hidden shadow-sm">
-                                                <div className="px-4 py-2.5 bg-slate-900 text-white flex justify-between items-center">
-                                                    <h3 className="text-[9px] font-black uppercase tracking-widest">Patient Bill Statement</h3>
-                                                    <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                                            <div className="bg-white rounded-[24px] border border-slate-200 overflow-hidden shadow-xl shadow-slate-200/50">
+                                                <div className="px-6 py-4 bg-slate-900 text-white flex justify-between items-center">
+                                                    <h3 className="text-xs font-black uppercase tracking-widest">Patient Bill Statement</h3>
+                                                    <span className="text-[9px] font-bold text-teal-400 uppercase tracking-widest flex items-center gap-1.5 bg-teal-400/10 px-2 py-1 rounded-md">
                                                         <span className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-pulse inline-block" />
                                                         Live
                                                     </span>
                                                 </div>
 
-                                                <div className="p-4 space-y-1">
+                                                <div className="p-6">
 
                                                     {/* ── CHARGES (with accordion drilldown) ── */}
                                                     <Row
@@ -388,6 +421,7 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                         bg="bg-blue-50/50"
                                                         color="text-blue-800"
                                                         rowKey="bed"
+                                                        icon={BedIcon}
                                                         subItems={summary?.bedCharges?.items?.map((b: any) => ({ description: `${b.bedId} • ${b.type}`, charge: b.charge, date: null, category: `${Math.ceil(b.days || 1)} day(s) @ ₹${b.rate}` }))}
                                                     />
 
@@ -398,6 +432,7 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                         bg="bg-violet-50/50"
                                                         color="text-violet-800"
                                                         rowKey="pharmacy"
+                                                        icon={TestTube} // Using TestTube as a placeholder for pharmacy if pills not available, wait, we have Package or Plus
                                                         subItems={(summary?.extraCharges?.items || []).filter((i: any) => i.category === 'Pharmacy')}
                                                     />
 
@@ -408,6 +443,7 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                         bg="bg-cyan-50/50"
                                                         color="text-cyan-800"
                                                         rowKey="lab"
+                                                        icon={Microscope}
                                                         subItems={(summary?.extraCharges?.items || []).filter((i: any) => i.category === 'Lab')}
                                                     />
                                                     {otherExtra > 0 && (
@@ -418,6 +454,7 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                             bg="bg-orange-50/50"
                                                             color="text-orange-800"
                                                             rowKey="other"
+                                                            icon={Stethoscope}
                                                             subItems={(summary?.extraCharges?.items || []).filter((i: any) => i.category !== 'Pharmacy' && i.category !== 'Lab')}
                                                         />
                                                     )}
@@ -434,11 +471,12 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                                 amount={`₹ ${returnCredits.toLocaleString()}`}
                                                                 bg="bg-rose-50/50"
                                                                 color="text-rose-600"
+                                                                icon={Receipt}
                                                             />
                                                             <SubTotal
                                                                 label="Net Bill After Returns"
                                                                 amount={`₹ ${netAfterReturn.toLocaleString()}`}
-                                                                bg="bg-slate-100"
+                                                                bg="bg-slate-50"
                                                             />
                                                         </>
                                                     )}
@@ -451,11 +489,12 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                                 amount={`₹ ${discount.toLocaleString()}`}
                                                                 bg="bg-emerald-50/50"
                                                                 color="text-emerald-700"
+                                                                icon={Tag}
                                                             />
                                                             <SubTotal
                                                                 label="After Discount"
                                                                 amount={`₹ ${afterDiscount.toLocaleString()}`}
-                                                                bg="bg-slate-100"
+                                                                bg="bg-slate-50"
                                                             />
                                                         </>
                                                     )}
@@ -468,27 +507,31 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                         amount={`₹ ${totalAdvance.toLocaleString()}`}
                                                         bg="bg-teal-50/50"
                                                         color="text-teal-700"
+                                                        icon={IndianRupee}
                                                     />
 
-                                                    {/* ── FINAL BILL (professional dark card for due, emerald for settled/overpaid) ── */}
-                                                    <div className={`rounded-xl p-4 mt-3 flex justify-between items-center border-2 ${overpaid > 0
-                                                            ? 'bg-emerald-50 border-emerald-300'
+                                                    {/* ── FINAL BILL ── */}
+                                                    <div className={`rounded-2xl p-6 mt-6 flex justify-between items-center shadow-2xl relative overflow-hidden ${overpaid > 0
+                                                            ? 'bg-gradient-to-r from-emerald-500 to-teal-500 border border-emerald-400'
                                                             : finalBill === 0
-                                                                ? 'bg-emerald-50 border-emerald-200'
-                                                                : 'bg-slate-900 border-slate-800'
+                                                                ? 'bg-gradient-to-r from-teal-500 to-emerald-500 border border-teal-400'
+                                                                : 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700'
                                                         }`}>
-                                                        <div>
-                                                            <p className={`text-[9px] font-black uppercase tracking-widest ${overpaid > 0 || finalBill === 0 ? 'text-emerald-600' : 'text-slate-400'
+                                                        {/* Abstract background decorative element */}
+                                                        <div className="absolute right-0 top-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+                                                        
+                                                        <div className="relative z-10">
+                                                            <p className={`text-xs font-black uppercase tracking-[0.2em] mb-1 ${(overpaid > 0 || finalBill === 0) ? 'text-white/90' : 'text-slate-400'
                                                                 }`}>
                                                                 {overpaid > 0 ? 'Overpaid — Refund Due' : finalBill === 0 ? '✓ Fully Settled' : 'Final Patient Bill'}
                                                             </p>
                                                             {overpaid > 0 && (
-                                                                <p className="text-[7px] font-bold text-emerald-500 mt-0.5">Return ₹ {overpaid.toLocaleString()} to patient</p>
+                                                                <p className="text-[10px] font-bold text-white/80 tracking-wide mt-1">Return ₹ {overpaid.toLocaleString()} to patient</p>
                                                             )}
                                                         </div>
-                                                        <p className={`text-3xl font-black tracking-tight ${overpaid > 0 || finalBill === 0 ? 'text-emerald-600' : 'text-teal-400'
+                                                        <p className={`text-4xl font-black tracking-tighter relative z-10 ${overpaid > 0 || finalBill === 0 ? 'text-white drop-shadow-md' : 'text-teal-400 drop-shadow-[0_0_15px_rgba(45,212,191,0.2)]'
                                                             }`}>
-                                                            ₹ {(overpaid > 0 ? overpaid : finalBill).toLocaleString()}
+                                                            <span className="text-2xl mr-1 opacity-80">₹</span>{(overpaid > 0 ? overpaid : finalBill).toLocaleString()}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -555,20 +598,20 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                 <div className="space-y-6">
                                     <div className="flex justify-between items-center">
                                         <h3 className="text-xs font-black uppercase tracking-tight text-slate-700">Detailed Charges</h3>
-                                        {/* {!summary?.isBillLocked && !showChargeForm && summary?.status !== 'Discharge Initiated' && (
+                                        {!summary?.isBillLocked && !showChargeForm && summary?.status !== 'Discharge Initiated' && (
                                             <button
                                                 onClick={() => setShowChargeForm(true)}
-                                                className="px-4 py-2 bg-teal-600 text-white rounded-xl text-[8px] font-black uppercase tracking-widest flex items-center gap-2"
+                                                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-[8px] font-black uppercase tracking-widest flex items-center gap-2 transition-all shadow-md"
                                             >
                                                 <Plus size={14} /> New Charge
                                             </button>
-                                        )} */}
+                                        )}
                                     </div>
 
                                     {showChargeForm && (
                                         <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 animate-in slide-in-from-top-4 duration-300">
                                             <form onSubmit={handleAddCharge} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                                                <div className="space-y-1.5 md:col-span-3">
+                                                <div className="space-y-1.5 md:col-span-2">
                                                     <label className="text-[7px] font-black text-slate-400 uppercase tracking-widest ml-1">Category</label>
                                                     <select
                                                         value={chargeData.category}
@@ -576,15 +619,18 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                         className="w-full px-3 py-2.5 bg-white border border-slate-100 rounded-lg text-[9px] font-bold outline-none focus:ring-2 focus:ring-teal-500/20"
                                                     >
                                                         <option>Nursing</option>
-                                                        <option>Doctor Fee</option>
+                                                        <option>Consultation Charges</option>
                                                         <option>OT</option>
                                                         <option>Pharmacy</option>
                                                         <option>Consumables</option>
-                                                        <option>Lab</option>
+                                                        <option>Investigation Charges</option>
                                                         <option>Misc</option>
+                                                        <option>Monitor Charges</option>
+                                                        <option>Dmo (duty Doctor)</option>
+                                                        <option>Ward Charges</option>
                                                     </select>
                                                 </div>
-                                                <div className="space-y-1.5 md:col-span-4">
+                                                <div className="space-y-1.5 md:col-span-3">
                                                     <label className="text-[7px] font-black text-slate-400 uppercase tracking-widest ml-1">Description</label>
                                                     <input
                                                         required
@@ -594,19 +640,34 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                         placeholder="E.G. Consult, etc."
                                                     />
                                                 </div>
-                                                <div className="space-y-1.5 md:col-span-5">
+                                                <div className="space-y-1.5 md:col-span-2">
                                                     <label className="text-[7px] font-black text-slate-400 uppercase tracking-widest ml-1">Amount (₹)</label>
-                                                    <div className="flex gap-1.5">
-                                                        <input
-                                                            required
-                                                            type="number"
-                                                            value={chargeData.amount}
-                                                            onChange={(e) => setChargeData(prev => ({ ...prev, amount: Number(e.target.value) }))}
-                                                            className="flex-1 min-w-[60px] px-3 py-2.5 bg-white border border-slate-100 rounded-lg text-[9px] font-bold outline-none focus:ring-2 focus:ring-teal-500/20"
-                                                        />
+                                                    <input
+                                                        required
+                                                        type="number"
+                                                        min="0"
+                                                        value={chargeData.amount || ''}
+                                                        onChange={(e) => setChargeData(prev => ({ ...prev, amount: Number(e.target.value) }))}
+                                                        className="w-full px-3 py-2.5 bg-white border border-slate-100 rounded-lg text-[9px] font-bold outline-none focus:ring-2 focus:ring-teal-500/20"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1.5 md:col-span-2">
+                                                    <label className="text-[7px] font-black text-slate-400 uppercase tracking-widest ml-1">Qty / Days</label>
+                                                    <input
+                                                        required
+                                                        type="number"
+                                                        min="1"
+                                                        value={chargeData.quantity || ''}
+                                                        onChange={(e) => setChargeData(prev => ({ ...prev, quantity: Number(e.target.value) }))}
+                                                        className="w-full px-3 py-2.5 bg-white border border-slate-100 rounded-lg text-[9px] font-bold outline-none focus:ring-2 focus:ring-teal-500/20"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1.5 md:col-span-3 pb-[1px]">
+                                                    <div className="flex gap-1.5 w-full">
                                                         <button
+                                                            type="submit"
                                                             disabled={submitting}
-                                                            className="px-4 py-2.5 bg-teal-600 text-white rounded-lg text-[7px] font-black uppercase transition-all disabled:opacity-50"
+                                                            className="flex-1 py-2.5 bg-teal-600 text-white rounded-lg text-[7px] font-black uppercase transition-all disabled:opacity-50"
                                                         >
                                                             Add
                                                         </button>
@@ -628,14 +689,14 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Bed Occupancy</p>
                                         {summary?.bedCharges?.items.map((item: any, i: number) => (
                                             <div key={i} className="p-4 bg-white border border-slate-100 rounded-2xl flex justify-between items-center group">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center shadow-md"><BedIcon size={18} /></div>
+                                                <div className="flex items-center gap-5">
+                                                    <div className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-md"><BedIcon size={24} /></div>
                                                     <div>
-                                                        <p className="text-[10px] font-black text-slate-900 uppercase">{item.bedId || "Unknown Bed"} • {item.type}</p>
-                                                        <p className="text-[8px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{item.days < 1 ? `${Math.round(item.days * 24)}h` : Math.floor(item.days) === 1 ? '1 Day' : `${Math.floor(item.days)} Days`} @ ₹ {item.rate}/day</p>
+                                                        <p className="text-xs font-black text-slate-900 uppercase">{item.bedId || "Unknown Bed"} • {item.type}</p>
+                                                        <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{item.days < 1 ? `${Math.round(item.days * 24)}h` : Math.floor(item.days) === 1 ? '1 Day' : `${Math.floor(item.days)} Days`} @ ₹ {item.rate}/day</p>
                                                     </div>
                                                 </div>
-                                                <p className="font-black text-slate-900">₹ {item.charge.toLocaleString()}</p>
+                                                <p className="text-sm font-black text-slate-900">₹ {item.charge.toLocaleString()}</p>
                                             </div>
                                         ))}
                                     </div>
@@ -649,22 +710,22 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                             </div>
                                         ) : (
                                             summary?.extraCharges?.items.map((item: any, i: number) => (
-                                                <div key={i} className="p-3 bg-white border border-slate-100 rounded-xl flex justify-between items-center">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shadow-sm ${item.status === 'Reversed' ? 'bg-slate-100 text-slate-400' : 'bg-teal-50 text-teal-600'}`}>
-                                                            <Tag size={16} />
+                                                <div key={i} className="p-4 bg-white border border-slate-100 rounded-xl flex justify-between items-center group transition-all hover:shadow-sm">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={`w-10 h-10 rounded-[14px] flex items-center justify-center shadow-sm ${item.status === 'Reversed' ? 'bg-slate-100 text-slate-400' : 'bg-teal-50 text-teal-600'}`}>
+                                                            <Tag size={20} />
                                                         </div>
                                                         <div>
-                                                            <div className="flex items-center gap-1.5">
-                                                                <p className="text-[9px] font-black text-slate-900 uppercase">{item.description}</p>
-                                                                <span className="px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded-md text-[5.5px] font-black uppercase">{item.category}</span>
+                                                            <div className="flex items-center gap-2">
+                                                                <p className="text-xs font-black text-slate-900 uppercase">{item.description}</p>
+                                                                <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md text-[7px] font-black uppercase tracking-wider">{item.category}</span>
                                                             </div>
-                                                            <p className="text-[7px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">{format(new Date(item.date), 'dd MMM yyyy, hh:mm a')}</p>
+                                                            <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{format(new Date(item.date), 'dd MMM yyyy, hh:mm a')}</p>
                                                         </div>
                                                     </div>
                                                     <div className="text-right">
-                                                        <p className={`text-[10px] font-black ${item.status === 'Reversed' ? 'text-slate-300 line-through' : 'text-slate-900'}`}>₹ {item.amount.toLocaleString()}</p>
-                                                        {item.status === 'Reversed' && <p className="text-[5px] font-black text-rose-500 uppercase tracking-widest">Reversed</p>}
+                                                        <p className={`text-sm font-black ${item.status === 'Reversed' ? 'text-slate-300 line-through' : 'text-slate-900'}`}>₹ {item.amount.toLocaleString()}</p>
+                                                        {item.status === 'Reversed' && <p className="text-[6px] font-black text-rose-500 uppercase tracking-widest mt-1">Reversed</p>}
                                                     </div>
                                                 </div>
                                             ))
@@ -678,14 +739,14 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                 <div className="space-y-6">
                                     <div className="flex justify-between items-center">
                                         <h3 className="text-xs font-black uppercase tracking-tight text-slate-700">Payment History</h3>
-                                        {/* {!summary?.isBillLocked && !showAdvanceForm && (
+                                        {!summary?.isBillLocked && !showAdvanceForm && (
                                             <button
                                                 onClick={() => setShowAdvanceForm(true)}
                                                 className="px-4 py-2 bg-teal-600 text-white rounded-xl text-[8px] font-black uppercase tracking-widest flex items-center gap-2"
                                             >
                                                 <Plus size={14} /> Record Payment
                                             </button>
-                                        )} */}
+                                        )}
                                     </div>
 
                                     {showAdvanceForm && (
@@ -698,8 +759,10 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                         onChange={(e) => setAdvanceData(prev => ({ ...prev, transactionType: e.target.value }))}
                                                         className={`w-full px-3 py-2.5 border border-slate-100 rounded-lg text-[9px] font-bold outline-none focus:ring-2 focus:ring-teal-500/20 ${advanceData.transactionType === 'Refund' ? 'bg-rose-50 text-rose-600 border-rose-100' : advanceData.transactionType === 'Settlement' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-white'}`}
                                                     >
-                                                        <option value="Advance">Advance</option>
-                                                        <option value="Settlement">Settlement</option>
+                                                        <option value="Advance">Advance Deposit</option>
+                                                        <option value="Interim Payment">Interim Payment (Partial)</option>
+                                                        <option value="Settlement">Final Settlement</option>
+                                                        <option value="Due Recovery">Due Recovery</option>
                                                         <option value="Refund">Refund</option>
                                                     </select>
                                                 </div>
@@ -712,9 +775,11 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                     >
                                                         <option value="Cash">Cash</option>
                                                         <option value="Card">Card</option>
-                                                        <option value="UPI">UPI</option>
                                                         <option value="Bank Transfer">Bank Transfer</option>
-                                                        <option value="Insurance">Insurance</option>
+                                                        <option value="Cheque">Cheque</option>
+                                                        <option value="Digital Wallet">Digital Wallet (UPI, Apple Pay)</option>
+                                                        <option value="Insurance">Insurance / TPA</option>
+                                                        <option value="Corporate/Sponsor">Corporate / Sponsor</option>
                                                     </select>
                                                 </div>
                                                 <div className="space-y-1.5 md:col-span-3">
@@ -775,13 +840,13 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                 {summary?.advances?.map((adv: any, i: number) => (
                                                     <div key={i} className="p-4 bg-white border border-slate-100 rounded-2xl flex justify-between items-center group shadow-sm transition-all hover:shadow-md">
                                                         <div className="flex items-center gap-4">
-                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm ${adv.transactionType === 'Refund' ? 'bg-rose-50 text-rose-600' : adv.transactionType === 'Settlement' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'}`}>
-                                                                {adv.transactionType === 'Refund' ? <ArrowUpCircle size={18} /> : adv.transactionType === 'Settlement' ? <CheckCircle2 size={18} /> : <ArrowDownCircle size={18} />}
+                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm ${adv.transactionType === 'Refund' ? 'bg-rose-50 text-rose-600' : adv.transactionType === 'Settlement' || adv.transactionType === 'Due Recovery' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                                                                {adv.transactionType === 'Refund' ? <ArrowUpCircle size={18} /> : adv.transactionType === 'Settlement' || adv.transactionType === 'Due Recovery' ? <CheckCircle2 size={18} /> : <ArrowDownCircle size={18} />}
                                                             </div>
                                                             <div>
                                                                 <div className="flex items-center gap-2">
                                                                     <p className="text-[10px] font-black text-slate-900 uppercase">
-                                                                        {adv.transactionType === 'Refund' ? 'Refund Issued' : adv.transactionType === 'Settlement' ? 'Final Settlement' : 'Advance Payment'}
+                                                                        {adv.transactionType === 'Refund' ? 'Refund Issued' : adv.transactionType === 'Settlement' ? 'Final Settlement' : adv.transactionType === 'Due Recovery' ? 'Due Recovery' : adv.transactionType === 'Interim Payment' ? 'Interim Payment' : 'Advance Deposit'}
                                                                     </p>
                                                                     <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded-md text-[6px] font-black uppercase">{adv.mode}</span>
                                                                 </div>
@@ -790,11 +855,21 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                                 </p>
                                                             </div>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <p className={`font-black ${adv.transactionType === 'Refund' ? 'text-rose-600' : adv.transactionType === 'Settlement' ? 'text-blue-600' : 'text-emerald-600'}`}>
-                                                                {adv.transactionType === 'Refund' ? '-' : '+'}₹ {adv.amount.toLocaleString()}
-                                                            </p>
-                                                            <p className="text-[6px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Processed</p>
+                                                        <div className="flex items-center gap-6">
+                                                            <div className="text-right">
+                                                                <p className={`font-black ${adv.transactionType === 'Refund' ? 'text-rose-600' : adv.transactionType === 'Settlement' || adv.transactionType === 'Due Recovery' ? 'text-blue-600' : 'text-emerald-600'}`}>
+                                                                    {adv.transactionType === 'Refund' ? '-' : '+'}₹ {adv.amount.toLocaleString()}
+                                                                </p>
+                                                                <p className="text-[6px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Processed</p>
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => printPaymentReceipt(adv, summary, hospitalDetails)}
+                                                                title="Print Receipt Slip"
+                                                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 border border-slate-100 hover:bg-teal-50 hover:text-teal-600 hover:border-teal-200 transition-all shadow-sm"
+                                                            >
+                                                                <Printer size={16} />
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -866,6 +941,46 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                     </div>
                 )
             }
+            {/* Professional Discharge Confirmation Modal */}
+            {showDischargeConfirm && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-white max-w-md w-full rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className="p-6 text-center">
+                            <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-rose-100">
+                                <ArrowUpCircle size={32} />
+                            </div>
+                            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight mb-2">Confirm Patient Discharge</h3>
+                            <p className="text-sm text-slate-500 leading-relaxed font-medium">
+                                Are you sure you want to officially discharge <span className="font-bold text-slate-900">{summary?.patientName}</span>? 
+                                <br/><br/>
+                                This action will immediately free up their bed and mark their admission cycle as completed.
+                            </p>
+                        </div>
+                        <div className="flex bg-slate-50 p-4 border-t border-slate-100 gap-3">
+                            <button
+                                onClick={() => setShowDischargeConfirm(false)}
+                                disabled={submitting}
+                                className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 hover:text-slate-800 transition-all shadow-sm disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDischargeConfirm}
+                                disabled={submitting}
+                                className="flex-1 py-3 bg-rose-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 transition-all shadow-md shadow-rose-200 disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {submitting ? (
+                                    <>Processing...</>
+                                ) : (
+                                    <>
+                                        <ArrowUpCircle size={14} /> Yes, Discharge Now
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 };

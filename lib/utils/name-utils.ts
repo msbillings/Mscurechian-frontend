@@ -41,3 +41,17 @@ export const formatDoctorName = (name: string | null | undefined): string => {
   
   return cleaned ? `Dr. ${cleaned}` : "Doctor";
 };
+
+/**
+ * Formats patient names with honorific prefix if available.
+ */
+export const formatPatientNameWithPrefix = (name: string | null | undefined, honorific: string | null | undefined): string => {
+    const rawPatientName = name || "Unknown";
+    const h = honorific || "";
+    if (h) {
+        const up = h.toUpperCase();
+        const prefix = ["MR", "MRS", "MS", "DR"].includes(up) ? `${up}.` : up;
+        return `${prefix} ${rawPatientName.toUpperCase()}`.trim();
+    }
+    return rawPatientName.toUpperCase();
+};
