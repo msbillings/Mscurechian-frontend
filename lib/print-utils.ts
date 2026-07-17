@@ -2756,9 +2756,14 @@ export const generateLabReportHtml = (data: any) => {
       <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         @media print {
-          @page { size: A4; margin: 0; }
-          body { margin: 0; padding: 12mm 15mm 12mm 15mm; }
+          @page { size: A4; margin: 8mm; }
+          body { margin: 0; padding: 0; }
           .no-print { display: none !important; }
+          table.lab-master-print-table { width: 100% !important; border-collapse: collapse !important; border: none !important; }
+          table.lab-master-print-table > thead { display: table-header-group !important; }
+          table.lab-master-print-table > tbody { display: table-row-group !important; }
+          table.lab-master-print-table > tfoot { display: table-footer-group !important; }
+          table.lab-master-print-table > thead > tr > td, table.lab-master-print-table > tbody > tr > td, table.lab-master-print-table > tfoot > tr > td { border: none !important; padding: 0 !important; }
         }
         html, body { height: 100%; margin: 0; padding: 0; }
         body {
@@ -2884,58 +2889,74 @@ export const generateLabReportHtml = (data: any) => {
         </button>
       </div>
       <div class="container">
-
-        ${headerHtml || `
-        <div style="text-align:center; padding-bottom: 10px; border-bottom: 2px solid #1e3a5f; margin-bottom: 12px;">
-          <h1 style="margin:0; font-size:22px; font-weight:900; text-transform:uppercase; color:#1e3a5f;">
-            ${hospital?.name || 'Medical Center'}
-          </h1>
-          <p style="margin:4px 0 0; font-size:11px; color:#64748b;">${hospital?.address || ''}</p>
-          ${hospital?.phone ? `<p style="margin:2px 0 0; font-size:10px; color:#94a3b8;">Phone: ${hospital.phone}</p>` : ''}
-        </div>`}
-
-        <div class="report-title">Laboratory Report</div>
-
-        <div class="info-grid">
-          <div class="info-row"><span class="info-label">Patient Name</span><span class="info-value">: ${formattedPatientName || 'N/A'}</span></div>
-          <div class="info-row"><span class="info-label">Sample ID</span><span class="info-value">: ${sampleId}</span></div>
-          <div class="info-row"><span class="info-label">Age / Gender</span><span class="info-value">: ${ageDisplay || 'N/A'} / ${patient?.gender || 'N/A'}</span></div>
-          <div class="info-row"><span class="info-label">MRN</span><span class="info-value">: ${patient?.mrn || 'N/A'}</span></div>
-          <div class="info-row"><span class="info-label">Referred By</span><span class="info-value">: ${doctor?.name ? (doctor.name.toLowerCase().startsWith('dr') ? doctor.name : `Dr. ${doctor.name}`) : 'N/A'}</span></div>
-          <div class="info-row"><span class="info-label">Sample Type</span><span class="info-value">: ${sampleType}</span></div>
-          <div class="info-row"><span class="info-label">Collection Date</span><span class="info-value">: ${collectionDate}</span></div>
-          <div class="info-row"><span class="info-label">Report Date</span><span class="info-value">: ${reportDate}</span></div>
-          <div class="info-row"><span class="info-label">Status</span><span class="info-value">: <span class="status-badge">${status}</span></span></div>
-          <div class="info-row"><span class="info-label">Mobile</span><span class="info-value">: ${patient?.mobile || 'N/A'}</span></div>
-        </div>
-
-        <table>
+        <table class="lab-master-print-table" style="width: 100%; border-collapse: collapse; border: none;">
           <thead>
             <tr>
-              <th style="width:40%;">Parameter</th>
-              <th style="width:20%;">Result</th>
-              <th style="width:15%;">Units</th>
-              <th style="width:25%;">Reference Range</th>
+              <td style="border: none; padding: 0;">
+                ${headerHtml || `
+                <div style="text-align:center; padding-bottom: 10px; border-bottom: 2px solid #1e3a5f; margin-bottom: 12px;">
+                  <h1 style="margin:0; font-size:22px; font-weight:900; text-transform:uppercase; color:#1e3a5f;">
+                    ${hospital?.name || 'Medical Center'}
+                  </h1>
+                  <p style="margin:4px 0 0; font-size:11px; color:#64748b;">${hospital?.address || ''}</p>
+                  ${hospital?.phone ? `<p style="margin:2px 0 0; font-size:10px; color:#94a3b8;">Phone: ${hospital.phone}</p>` : ''}
+                </div>`}
+
+                <div class="report-title">Laboratory Report</div>
+
+                <div class="info-grid">
+                  <div class="info-row"><span class="info-label">Patient Name</span><span class="info-value">: ${formattedPatientName || 'N/A'}</span></div>
+                  <div class="info-row"><span class="info-label">Sample ID</span><span class="info-value">: ${sampleId}</span></div>
+                  <div class="info-row"><span class="info-label">Age / Gender</span><span class="info-value">: ${ageDisplay || 'N/A'} / ${patient?.gender || 'N/A'}</span></div>
+                  <div class="info-row"><span class="info-label">MRN</span><span class="info-value">: ${patient?.mrn || 'N/A'}</span></div>
+                  <div class="info-row"><span class="info-label">Referred By</span><span class="info-value">: ${doctor?.name ? (doctor.name.toLowerCase().startsWith('dr') ? doctor.name : `Dr. ${doctor.name}`) : 'N/A'}</span></div>
+                  <div class="info-row"><span class="info-label">Sample Type</span><span class="info-value">: ${sampleType}</span></div>
+                  <div class="info-row"><span class="info-label">Collection Date</span><span class="info-value">: ${collectionDate}</span></div>
+                  <div class="info-row"><span class="info-label">Report Date</span><span class="info-value">: ${reportDate}</span></div>
+                  <div class="info-row"><span class="info-label">Status</span><span class="info-value">: <span class="status-badge">${status}</span></span></div>
+                  <div class="info-row"><span class="info-label">Mobile</span><span class="info-value">: ${patient?.mobile || 'N/A'}</span></div>
+                </div>
+              </td>
             </tr>
           </thead>
           <tbody>
-            ${tests.length > 0 ? testsHtml : `
-              <tr>
-                <td colspan="4" style="text-align:center; padding: 30px; color:#94a3b8; font-style:italic;">
-                  No test results available yet
-                </td>
-              </tr>
-            `}
+            <tr>
+              <td style="border: none; padding: 0;">
+                <table style="width: 100%; border-collapse: collapse; margin-top: 6px;">
+                  <thead>
+                    <tr>
+                      <th style="width:40%;">Parameter</th>
+                      <th style="width:20%;">Result</th>
+                      <th style="width:15%;">Units</th>
+                      <th style="width:25%;">Reference Range</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${tests.length > 0 ? testsHtml : `
+                      <tr>
+                        <td colspan="4" style="text-align:center; padding: 30px; color:#94a3b8; font-style:italic;">
+                          No test results available yet
+                        </td>
+                      </tr>
+                    `}
+                  </tbody>
+                </table>
+              </td>
+            </tr>
           </tbody>
+          <tfoot>
+            <tr>
+              <td style="border: none; padding: 0;">
+                <div class="footer-push">
+                ${footerHtml || `
+                <div style="border-top: 1px solid #e5e7eb; margin-top: 20px; padding-top: 8px; text-align:center; font-size:9px; color:#9ca3af;">
+                  <p style="margin:0;">Generated by MsCureChain • ${new Date().toLocaleDateString('en-GB')} at ${formatTime12Hr(new Date())}</p>
+                </div>`}
+                </div>
+              </td>
+            </tr>
+          </tfoot>
         </table>
-
-
-        <div class="footer-push">
-        ${footerHtml || `
-        <div style="border-top: 1px solid #e5e7eb; margin-top: 20px; padding-top: 8px; text-align:center; font-size:9px; color:#9ca3af;">
-          <p style="margin:0;">Generated by MsCureChain • ${new Date().toLocaleDateString('en-GB')} at ${formatTime12Hr(new Date())}</p>
-        </div>`}
-        </div>
       </div>
     </body>
     </html>
