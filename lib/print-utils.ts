@@ -2670,13 +2670,36 @@ export const generateLabReportHtml = (data: any) => {
     return unit === '-' ? '' : unit;
   };
 
+  const checkIsAbnormalRange = (valStr: any, rangeStr: any, currentAbnormal?: boolean) => {
+    if (currentAbnormal) return true;
+    if (!valStr || !rangeStr || rangeStr === '-' || rangeStr === 'N/A') return false;
+    if (String(valStr).includes('(L)') || String(valStr).includes('(H)')) return true;
+    const cleanVal = parseFloat(String(valStr).replace(/,/g, '').trim());
+    if (isNaN(cleanVal)) return false;
+    const cleanRange = String(rangeStr).replace(/,/g, '').trim();
+    const rangeMatch = cleanRange.match(/^(-?\d+(?:\.\d+)?)\s*(?:-|to|–|—)\s*(-?\d+(?:\.\d+)?)$/i);
+    if (rangeMatch) {
+      const minVal = parseFloat(rangeMatch[1]);
+      const maxVal = parseFloat(rangeMatch[2]);
+      if (!isNaN(minVal) && cleanVal < minVal) return true;
+      if (!isNaN(maxVal) && cleanVal > maxVal) return true;
+    } else if (cleanRange.startsWith('<')) {
+      const maxVal = parseFloat(cleanRange.substring(1).trim());
+      if (!isNaN(maxVal) && cleanVal >= maxVal) return true;
+    } else if (cleanRange.startsWith('>')) {
+      const minVal = parseFloat(cleanRange.substring(1).trim());
+      if (!isNaN(minVal) && cleanVal <= minVal) return true;
+    }
+    return false;
+  };
+
   const testsHtml = tests.map((test: any, idx: number) => {
-    const isAbnormal = test.isAbnormal || String(test.resultValue || '').includes('(L)') || String(test.resultValue || '').includes('(H)');
-    const resultValue = test.resultValue || '-';
     const rawUnit = test.unit || '-';
     const rawRange = getDisplayRange(test);
+    const resultValue = test.resultValue || '-';
     const range = formatQualitativeRange(rawRange, resultValue, test.testName);
     const unit = formatQualitativeUnit(rawUnit, resultValue);
+    const isAbnormal = checkIsAbnormalRange(resultValue, range, test.isAbnormal || String(resultValue).includes('(L)') || String(resultValue).includes('(H)'));
     const hasSubTests = test.subTests && test.subTests.length > 0;
     const isMajorPanel = (t: any) => t && t.subTests && t.subTests.length >= 6;
     const isDeptSwitch = idx > 0 && test.departmentName && test.departmentName !== tests[idx - 1]?.departmentName;
@@ -2684,12 +2707,12 @@ export const generateLabReportHtml = (data: any) => {
     const breakStyle = shouldBreakPage ? 'page-break-before: always; break-before: page;' : '';
 
     const subTestsHtml = (test.subTests || []).map((sub: any) => {
-      const subAbnormal = sub.isAbnormal || String(sub.result || '').includes('(L)') || String(sub.result || '').includes('(H)') || isAbnormal;
       const rawSubRange = getDisplayRange(sub);
       const inheritedRange = (rawSubRange && rawSubRange !== '-') ? rawSubRange : rawRange;
       const subRange = formatQualitativeRange(inheritedRange, sub.result || '-', sub.name || test.testName);
       const inheritedUnit = (sub.unit && sub.unit !== '-') ? sub.unit : rawUnit;
       const subUnit = formatQualitativeUnit(inheritedUnit, sub.result || '-');
+      const subAbnormal = checkIsAbnormalRange(sub.result, subRange, sub.isAbnormal || String(sub.result || '').includes('(L)') || String(sub.result || '').includes('(H)') || isAbnormal);
       return `
       <tr style="background: #ffffff; page-break-inside: avoid; break-inside: avoid;">
         <td style="padding: 5px 8px 5px 20px; border-bottom: none; font-size: 12px; color: #334155; text-transform: uppercase;">${sub.name || '-'}</td>
@@ -2697,8 +2720,8 @@ export const generateLabReportHtml = (data: any) => {
           ${sub.result || '-'}
           ${subAbnormal ? '<span style="font-size:10px; background:#fee2e2; color:#dc2626; padding: 1px 5px; border-radius:4px; margin-left:6px; font-weight:900;">▲ HIGH/LOW</span>' : ''}
         </td>
-        <td style="padding: 5px 8px; border-bottom: none; font-size: 12px; color: #475569;">${subRange}</td>
         <td style="padding: 5px 8px; border-bottom: none; font-size: 12px; color: #64748b;">${subUnit}</td>
+        <td style="padding: 5px 8px; border-bottom: none; font-size: 12px; color: #475569;">${subRange}</td>
       </tr>`;
     }).join('');
 
@@ -2718,8 +2741,8 @@ export const generateLabReportHtml = (data: any) => {
           ${resultValue}
           ${isAbnormal ? '<span style="font-size:10px; background:#fee2e2; color:#dc2626; padding: 1px 5px; border-radius:4px; margin-left:6px; font-weight:900;">▲ HIGH/LOW</span>' : ''}
         </td>
-        <td style="padding: 6px 8px; border-top: ${idx > 0 && !shouldBreakPage ? '1px solid #e2e8f0' : 'none'}; border-bottom: none; font-size: 12px; color: #475569;">${range}</td>
         <td style="padding: 6px 8px; border-top: ${idx > 0 && !shouldBreakPage ? '1px solid #e2e8f0' : 'none'}; border-bottom: none; font-size: 12px; color: #64748b;">${unit}</td>
+        <td style="padding: 6px 8px; border-top: ${idx > 0 && !shouldBreakPage ? '1px solid #e2e8f0' : 'none'}; border-bottom: none; font-size: 12px; color: #475569;">${range}</td>
       </tr>
     `;
   }).join('');
@@ -2891,8 +2914,8 @@ export const generateLabReportHtml = (data: any) => {
             <tr>
               <th style="width:40%;">Parameter</th>
               <th style="width:20%;">Result</th>
-              <th style="width:25%;">Reference Range</th>
               <th style="width:15%;">Units</th>
+              <th style="width:25%;">Reference Range</th>
             </tr>
           </thead>
           <tbody>

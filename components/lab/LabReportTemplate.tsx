@@ -82,14 +82,32 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
             return defaultRange || test.normalRange || '';
         };
 
-        const getResultFlag = (result: string, rangeObj: any, isAbnormal: boolean) => {
+        const getResultFlag = (result: string, rangeObj: any, isAbnormal: boolean, rangeText?: string) => {
             if (!result) return '';
-            
-            if (rangeObj && (rangeObj.min !== undefined || rangeObj.max !== undefined)) {
-                const val = parseFloat(result);
-                if (!isNaN(val)) {
-                    if (rangeObj.min !== undefined && val < rangeObj.min) return '(L) ';
-                    if (rangeObj.max !== undefined && val > rangeObj.max) return '(H) ';
+            const cleanStr = String(result).replace(/,/g, '').trim();
+            const val = parseFloat(cleanStr);
+
+            if (!isNaN(val)) {
+                if (rangeObj && (rangeObj.min !== undefined || rangeObj.max !== undefined)) {
+                    if (rangeObj.min !== undefined && val < parseFloat(String(rangeObj.min).replace(/,/g, ''))) return '(L) ';
+                    if (rangeObj.max !== undefined && val > parseFloat(String(rangeObj.max).replace(/,/g, ''))) return '(H) ';
+                }
+
+                if (rangeText && rangeText !== 'N/A' && rangeText !== '-' && rangeText !== '') {
+                    const cleanRange = String(rangeText).replace(/,/g, '').trim();
+                    const rangeMatch = cleanRange.match(/^(-?\d+(?:\.\d+)?)\s*(?:-|to|–|—)\s*(-?\d+(?:\.\d+)?)$/i);
+                    if (rangeMatch) {
+                        const minVal = parseFloat(rangeMatch[1]);
+                        const maxVal = parseFloat(rangeMatch[2]);
+                        if (!isNaN(minVal) && val < minVal) return '(L) ';
+                        if (!isNaN(maxVal) && val > maxVal) return '(H) ';
+                    } else if (cleanRange.startsWith('<')) {
+                        const maxVal = parseFloat(cleanRange.substring(1).trim());
+                        if (!isNaN(maxVal) && val >= maxVal) return '(H) ';
+                    } else if (cleanRange.startsWith('>')) {
+                        const minVal = parseFloat(cleanRange.substring(1).trim());
+                        if (!isNaN(minVal) && val <= minVal) return '(L) ';
+                    }
                 }
             }
             if (isAbnormal) return '(B) ';
@@ -184,6 +202,18 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
                         border-bottom: 2px solid #000;
                         text-transform: capitalize;
                     }
+                    .lab-test-table td.abnormal-result {
+                        font-weight: 900 !important;
+                        color: #dc2626 !important;
+                    }
+                    @media print {
+                        .lab-test-table td.abnormal-result {
+                            font-weight: 900 !important;
+                            color: #dc2626 !important;
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                        }
+                    }
                     .test-section { margin-bottom: 24px; }
                 `}</style>
 
@@ -264,8 +294,8 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
                                             <tr>
                                                 <th style={{ width: '35%' }}>Parameter</th>
                                                 <th style={{ width: '25%' }}>Result</th>
-                                                <th style={{ width: '25%' }}>Reference Range</th>
                                                 <th style={{ width: '15%' }}>Units</th>
+                                                <th style={{ width: '25%' }}>Reference Range</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -280,52 +310,55 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
                                                     st => st.name === param.label || st.name === param.key
                                                 );
                                                 if (!sub) return null;
-                                                const isAbnormal = test.isAbnormal || (sub as any).isAbnormal || String(sub.result || '').includes('(L)') || String(sub.result || '').includes('(H)'); 
                                                 const rangeObj = getDisplayRangeObj(sub, sample);
-                                                const flag = getResultFlag(sub.result as string, rangeObj, isAbnormal);
+                                                const rangeText = getDisplayRangeText(sub, sample, sub.range || param.range);
+                                                const isAbnormal = test.isAbnormal || (sub as any).isAbnormal || String(sub.result || '').includes('(L)') || String(sub.result || '').includes('(H)'); 
+                                                const flag = getResultFlag(sub.result as string, rangeObj, isAbnormal, rangeText);
                                                 const isHighlight = flag !== '' || isAbnormal;
                                                 
                                                 return (
                                                     <tr key={`p-${idx}`}>
                                                         <td style={{ textTransform: 'uppercase' }}>{param.label}</td>
-                                                        <td style={{ fontWeight: isHighlight ? 900 : 'normal', color: isHighlight ? '#dc2626' : 'inherit' }}>
+                                                        <td className={isHighlight ? 'abnormal-result' : ''} style={{ fontWeight: isHighlight ? 900 : 'normal', color: isHighlight ? '#dc2626' : 'inherit' }}>
                                                             {flag}{sub.result}
                                                         </td>
-                                                        <td>{getDisplayRangeText(sub, sample, sub.range || param.range)}</td>
                                                         <td>{sub.unit || param.unit || '-'}</td>
+                                                        <td>{rangeText}</td>
                                                     </tr>
                                                 );
                                             })}
                                             {!validParams.length && adhocSubTests.map((st: any, idx: number) => {
-                                                const isAbnormal = test.isAbnormal || (st as any).isAbnormal || String(st.result || '').includes('(L)') || String(st.result || '').includes('(H)'); 
                                                 const rangeObj = getDisplayRangeObj(st, sample);
-                                                const flag = getResultFlag(st.result as string, rangeObj, isAbnormal);
+                                                const rangeText = getDisplayRangeText(st, sample, st.range);
+                                                const isAbnormal = test.isAbnormal || (st as any).isAbnormal || String(st.result || '').includes('(L)') || String(st.result || '').includes('(H)'); 
+                                                const flag = getResultFlag(st.result as string, rangeObj, isAbnormal, rangeText);
                                                 const isHighlight = flag !== '' || isAbnormal;
                                                 return (
                                                     <tr key={`a-${idx}`}>
                                                         <td style={{ textTransform: 'uppercase' }}>{st.name}</td>
-                                                        <td style={{ fontWeight: isHighlight ? 900 : 'normal', color: isHighlight ? '#dc2626' : 'inherit' }}>
+                                                        <td className={isHighlight ? 'abnormal-result' : ''} style={{ fontWeight: isHighlight ? 900 : 'normal', color: isHighlight ? '#dc2626' : 'inherit' }}>
                                                             {flag}{st.result}
                                                         </td>
-                                                        <td>{getDisplayRangeText(st, sample, st.range)}</td>
                                                         <td>{st.unit || '-'}</td>
+                                                        <td>{rangeText}</td>
                                                     </tr>
                                                 );
                                             })}
                                             {!validParams.length && !adhocSubTests.length && hasMainResult && (() => {
                                                 const res = (test as any).result || test.resultValue;
-                                                const isAbnormal = test.isAbnormal || String(res || '').includes('(L)') || String(res || '').includes('(H)'); 
                                                 const rangeObj = getDisplayRangeObj(test, sample);
-                                                const flag = getResultFlag(res, rangeObj, isAbnormal);
+                                                const rangeText = getDisplayRangeText(test, sample, test.normalRange);
+                                                const isAbnormal = test.isAbnormal || String(res || '').includes('(L)') || String(res || '').includes('(H)'); 
+                                                const flag = getResultFlag(res, rangeObj, isAbnormal, rangeText);
                                                 const isHighlight = flag !== '' || isAbnormal;
                                                 return (
                                                     <tr>
                                                         <td style={{ textTransform: 'uppercase' }}>{test.testName}</td>
-                                                        <td style={{ fontWeight: isHighlight ? 900 : 'normal', color: isHighlight ? '#dc2626' : 'inherit' }}>
+                                                        <td className={isHighlight ? 'abnormal-result' : ''} style={{ fontWeight: isHighlight ? 900 : 'normal', color: isHighlight ? '#dc2626' : 'inherit' }}>
                                                             {flag}{res}
                                                         </td>
-                                                        <td>{getDisplayRangeText(test, sample, test.normalRange)}</td>
                                                         <td>{test.unit || '-'}</td>
+                                                        <td>{rangeText}</td>
                                                     </tr>
                                                 );
                                             })()}
