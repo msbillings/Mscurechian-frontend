@@ -2892,7 +2892,7 @@ export const generateLabReportHtml = (data: any) => {
         <table class="lab-master-print-table" style="width: 100%; border-collapse: collapse; border: none;">
           <thead>
             <tr>
-              <td style="border: none; padding: 0;">
+              <td colspan="4" style="border: none; padding: 0;">
                 ${headerHtml || `
                 <div style="text-align:center; padding-bottom: 10px; border-bottom: 2px solid #1e3a5f; margin-bottom: 12px;">
                   <h1 style="margin:0; font-size:22px; font-weight:900; text-transform:uppercase; color:#1e3a5f;">
@@ -2918,35 +2918,25 @@ export const generateLabReportHtml = (data: any) => {
                 </div>
               </td>
             </tr>
+            <tr style="background: #f8fafc; border-bottom: 2px solid #cbd5e1;">
+              <th style="width:40%; padding: 8px 10px; text-align: left; font-size: 12px; color: #334155;">Parameter</th>
+              <th style="width:20%; padding: 8px 10px; text-align: left; font-size: 12px; color: #334155;">Result</th>
+              <th style="width:15%; padding: 8px 10px; text-align: left; font-size: 12px; color: #334155;">Units</th>
+              <th style="width:25%; padding: 8px 10px; text-align: left; font-size: 12px; color: #334155;">Reference Range</th>
+            </tr>
           </thead>
           <tbody>
-            <tr>
-              <td style="border: none; padding: 0;">
-                <table style="width: 100%; border-collapse: collapse; margin-top: 6px;">
-                  <thead>
-                    <tr>
-                      <th style="width:40%;">Parameter</th>
-                      <th style="width:20%;">Result</th>
-                      <th style="width:15%;">Units</th>
-                      <th style="width:25%;">Reference Range</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${tests.length > 0 ? testsHtml : `
-                      <tr>
-                        <td colspan="4" style="text-align:center; padding: 30px; color:#94a3b8; font-style:italic;">
-                          No test results available yet
-                        </td>
-                      </tr>
-                    `}
-                  </tbody>
-                </table>
-              </td>
-            </tr>
+            ${tests.length > 0 ? testsHtml : `
+              <tr>
+                <td colspan="4" style="text-align:center; padding: 30px; color:#94a3b8; font-style:italic;">
+                  No test results available yet
+                </td>
+              </tr>
+            `}
           </tbody>
           <tfoot>
             <tr>
-              <td style="border: none; padding: 0;">
+              <td colspan="4" style="border: none; padding: 0;">
                 <div class="footer-push">
                 ${footerHtml || `
                 <div style="border-top: 1px solid #e5e7eb; margin-top: 20px; padding-top: 8px; text-align:center; font-size:9px; color:#9ca3af;">

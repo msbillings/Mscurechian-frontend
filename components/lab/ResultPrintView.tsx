@@ -127,48 +127,37 @@ const ResultPrintView = forwardRef<HTMLDivElement, ResultPrintViewProps>(({ samp
                             </div>
                         </td>
                     </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td className="border-0 p-0">
-                            {/* Results Table */}
-                            <table className="w-full text-sm mb-6 border-collapse">
-                                <thead>
-                                    <tr className="border-b-2 border-gray-800 text-left bg-gray-50">
-                                        <th className="py-2.5 w-1/3 px-2">Test Name</th>
-                                        <th className="py-2.5 px-2">Result</th>
-                                        <th className="py-2.5 px-2">Units</th>
-                                        <th className="py-2.5 px-2">Reference Range</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="text-gray-800">
-                                    {sample.tests.map((test, index) => (
-                                        <React.Fragment key={`${test.testName}-${index}`}>
-                                            <tr className="border-b border-gray-200">
-                                                <td className="py-3 px-2 font-bold text-gray-900 bg-gray-50/30">{test.testName}</td>
-                                                <td className={`py-3 px-2 font-black ${test.isAbnormal ? 'text-red-600' : ''}`}>
-                                                    {test.resultValue || '-'}
-                                                    {test.isAbnormal && <span className="text-red-600 ml-1 text-[10px] bg-red-50 border border-red-200 px-1 rounded">â–² Abnormal</span>}
-                                                </td>
-                                                <td className="py-3 px-2">{test.unit || '-'}</td>
-                                                <td className="py-3 px-2 text-xs">{getDisplayRange(test)}</td>
-                                            </tr>
-
-                                            {/* Sub Tests */}
-                                            {test.subTests && test.subTests.length > 0 && test.subTests.map((sub, sIndex) => (
-                                                <tr key={`sub-${index}-${sIndex}`} className="border-b border-gray-100 text-[13px]">
-                                                    <td className="py-2 px-6 text-gray-600 italic font-medium">{sub.name}</td>
-                                                    <td className="py-2 px-2 font-semibold">{sub.result || '-'}</td>
-                                                    <td className="py-2 px-2">{sub.unit || '-'}</td>
-                                                    <td className="py-2 px-2 text-[11px] text-gray-500">{sub.range || '-'}</td>
-                                                </tr>
-                                            ))}
-                                        </React.Fragment>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </td>
+                    <tr className="border-b-2 border-gray-800 text-left bg-gray-50 text-sm">
+                        <th className="py-2.5 w-1/3 px-2 font-bold">Test Name</th>
+                        <th className="py-2.5 px-2 font-bold">Result</th>
+                        <th className="py-2.5 px-2 font-bold">Units</th>
+                        <th className="py-2.5 px-2 font-bold">Reference Range</th>
                     </tr>
+                </thead>
+                <tbody className="text-gray-800 text-sm">
+                    {sample.tests.map((test, index) => (
+                        <React.Fragment key={`${test.testName}-${index}`}>
+                            <tr className="border-b border-gray-200" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                                <td className="py-3 px-2 font-bold text-gray-900 bg-gray-50/30">{test.testName}</td>
+                                <td className={`py-3 px-2 font-black ${test.isAbnormal ? 'text-red-600' : ''}`}>
+                                    {test.resultValue || '-'}
+                                    {test.isAbnormal && <span className="text-red-600 ml-1 text-[10px] bg-red-50 border border-red-200 px-1 rounded">▲ Abnormal</span>}
+                                </td>
+                                <td className="py-3 px-2">{test.unit || '-'}</td>
+                                <td className="py-3 px-2 text-xs">{getDisplayRange(test)}</td>
+                            </tr>
+
+                            {/* Sub Tests */}
+                            {test.subTests && test.subTests.length > 0 && test.subTests.map((sub, sIndex) => (
+                                <tr key={`sub-${index}-${sIndex}`} className="border-b border-gray-100 text-[13px]" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                                    <td className="py-2 px-6 text-gray-600 italic font-medium">{sub.name}</td>
+                                    <td className="py-2 px-2 font-semibold">{sub.result || '-'}</td>
+                                    <td className="py-2 px-2">{sub.unit || '-'}</td>
+                                    <td className="py-2 px-2 text-[11px] text-gray-500">{sub.range || '-'}</td>
+                                </tr>
+                            ))}
+                        </React.Fragment>
+                    ))}
                 </tbody>
                 <tfoot>
                     <tr>
@@ -217,8 +206,6 @@ const ResultPrintView = forwardRef<HTMLDivElement, ResultPrintViewProps>(({ samp
                         margin: 0;
                         padding: 20px;
                         border: none;
-                        page-break-after: avoid;
-                        page-break-inside: avoid;
                     }
                         table.lab-master-print-table {
                             width: 100% !important;
