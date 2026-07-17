@@ -116,18 +116,18 @@ export default function LabResultEntryPage() {
                     min-height: 0 !important;
                     margin: 0 !important;
                     padding: 0 !important;
-                    border: 3px solid #000 !important;
+                    border: none !important;
                     box-sizing: border-box !important;
-                    position: relative !important;
+                    position: static !important;
                     overflow: visible !important;
                     background: #fff !important;
                 }
 
                 .report-body {
                     display: block !important;
-                    padding: 16px 20px !important;
+                    padding: 0 !important;
                     box-sizing: border-box !important;
-                    position: relative !important;
+                    position: static !important;
                     overflow: visible !important;
                 }
 

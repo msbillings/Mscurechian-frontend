@@ -217,6 +217,14 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
                             -webkit-print-color-adjust: exact !important;
                             print-color-adjust: exact !important;
                         }
+                        .print-content, .report-body {
+                            position: static !important;
+                            display: block !important;
+                            border: none !important;
+                            padding: 0 !important;
+                            margin: 0 !important;
+                            overflow: visible !important;
+                        }
                         table.lab-master-print-table {
                             width: 100% !important;
                             border-collapse: collapse !important;
