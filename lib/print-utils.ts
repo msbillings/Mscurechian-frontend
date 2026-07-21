@@ -3625,7 +3625,7 @@ export const generateAddBillsReceiptHtml = (data: any) => {
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 12px; position: relative; overflow: hidden;">
                     <div style="position: absolute; top: 0; right: 0; background: #1e293b; color: white; padding: 2px 8px; border-bottom-left-radius: 8px; font-size: 8px; font-weight: 900;">PATIENT IDENTITY</div>
                     <div style="font-size: 15px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 8px;">${formattedPatientName}</div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px;">
                         <div>
                             <div style="font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase;">MRN / Mobile</div>
                             <div style="font-size: 10px; font-weight: 700; color: #1e293b;">${patient.mrn} / ${patient.mobile}</div>
@@ -3637,6 +3637,10 @@ export const generateAddBillsReceiptHtml = (data: any) => {
                         <div>
                             <div style="font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase;">Blood Group</div>
                             <div style="font-size: 10px; font-weight: 700; color: #e11d48;">${patient.bloodGroup || "N/A"}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase;">Doctor / Ref</div>
+                            <div style="font-size: 10px; font-weight: 700; color: #1e293b;">${patient.refDoctor || "Self / Walk-in"}</div>
                         </div>
                     </div>
                 </div>

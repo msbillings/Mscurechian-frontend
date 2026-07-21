@@ -48,6 +48,7 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
     const [showAdvanceForm, setShowAdvanceForm] = useState(false);
     const [showDiscountForm, setShowDiscountForm] = useState(false);
     const [showDischargeConfirm, setShowDischargeConfirm] = useState(false);
+    const [showPostDischarge, setShowPostDischarge] = useState(false);
 
     const [chargeData, setChargeData] = useState({ category: 'Nursing', description: '', amount: 0, quantity: 1 });
     const [advanceData, setAdvanceData] = useState({ amount: 0, mode: 'Cash', transactionType: 'Advance', reference: '' });
@@ -55,12 +56,7 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
 
     const [submitting, setSubmitting] = useState(false);
 
-    // Auto-fill advance amount with balance due when opening form
-    useEffect(() => {
-        if (showAdvanceForm && summary?.financials?.balance > 0) {
-            setAdvanceData(prev => ({ ...prev, amount: Math.round(summary.financials.balance) }));
-        }
-    }, [showAdvanceForm, summary]);
+    // Auto-fill moved to button click to prevent 5s interval overrides
 
     useEffect(() => {
         hospitalAdminService.getHospital().then((res) => {
@@ -85,8 +81,15 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                         
                         const patientObj = admissionDetails.patient || {};
                         const profileObj = admissionDetails.patientProfile || {};
+                        
+                        const calcAge = (dob: any) => {
+                            if (!dob) return null;
+                            const diff = Date.now() - new Date(dob).getTime();
+                            return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
+                        };
+
                         data.mrn = data.mrn || patientObj.mrn || profileObj.mrn || admissionDetails.mrn || "";
-                        data.patientAge = data.patientAge || patientObj.age || profileObj.age || "";
+                        data.patientAge = data.patientAge || patientObj.age || profileObj.age || calcAge(patientObj.dateOfBirth) || calcAge(profileObj.dateOfBirth) || "";
                         data.patientGender = data.patientGender || patientObj.gender || profileObj.gender || "";
                         data.patientAddress = data.patientAddress || patientObj.address || profileObj.address || "";
                         data.patientContact = data.patientContact || patientObj.phone || patientObj.mobile || profileObj.phone || profileObj.mobile || "";
@@ -115,8 +118,15 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                 
                 const patientObj = admissionDetails.patient || {};
                 const profileObj = admissionDetails.patientProfile || {};
+                
+                const calcAge = (dob: any) => {
+                    if (!dob) return null;
+                    const diff = Date.now() - new Date(dob).getTime();
+                    return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
+                };
+
                 data.mrn = data.mrn || patientObj.mrn || profileObj.mrn || admissionDetails.mrn || "";
-                data.patientAge = data.patientAge || patientObj.age || profileObj.age || "";
+                data.patientAge = data.patientAge || patientObj.age || profileObj.age || calcAge(patientObj.dateOfBirth) || calcAge(profileObj.dateOfBirth) || "";
                 data.patientGender = data.patientGender || patientObj.gender || profileObj.gender || "";
                 data.patientAddress = data.patientAddress || patientObj.address || profileObj.address || "";
                 data.patientContact = data.patientContact || patientObj.phone || patientObj.mobile || profileObj.phone || profileObj.mobile || "";
@@ -156,6 +166,24 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
 
     const handleAddAdvance = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        const balance = Math.round(summary?.financials?.balance || 0);
+        const overpaid = balance < 0 ? Math.abs(balance) : 0;
+
+        if (['Interim Payment', 'Settlement', 'Due Recovery'].includes(advanceData.transactionType)) {
+            if (advanceData.amount > balance) {
+                toast.error(`Amount cannot exceed the pending balance of ₹${balance.toLocaleString()}`);
+                return;
+            }
+        }
+
+        if (advanceData.transactionType === 'Refund') {
+            if (advanceData.amount > overpaid) {
+                toast.error(`Refund cannot exceed the overpaid amount of ₹${overpaid.toLocaleString()}`);
+                return;
+            }
+        }
+
         try {
             setSubmitting(true);
             await ipdService.addAdvancePayment({
@@ -216,7 +244,8 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
             await ipdService.dischargePatient(admissionId);
             toast.success("Patient successfully discharged!");
             setShowDischargeConfirm(false);
-            onClose(); // Close the modal since they are discharged
+            setShowPostDischarge(true);
+            fetchSummary(); // Update the background state
         } catch (error: any) {
             toast.error(error.message || "Failed to discharge patient");
         } finally {
@@ -253,14 +282,15 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                             </div>
                         )}
                         {/* Discharge Button -> Appears if the bill is settled, and patient is not yet discharged */}
-                        {summary?.status !== 'Discharged' && finalBill <= 0 && (
+                        {summary?.status !== 'Discharged' && (
                             <button
-                                onClick={handleDischargeRequest}
+                                onClick={finalBill <= 0 ? handleDischargeRequest : () => toast.error("Please clear pending payments before discharging")}
                                 disabled={submitting}
-                                title="Discharge Patient Now"
-                                className="mr-2 px-3 py-1.5 bg-rose-600 text-white rounded-lg flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest hover:bg-rose-700 transition-all shadow-md disabled:opacity-50"
+                                title={finalBill <= 0 ? "Discharge Patient Now" : "Clear pending payments to discharge"}
+                                className={`mr-2 px-3 py-1.5 text-white rounded-lg flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest transition-all shadow-md ${finalBill <= 0 ? 'bg-rose-600 hover:bg-rose-700' : 'bg-slate-400 cursor-not-allowed opacity-80'}`}
                             >
-                                <ArrowUpCircle size={12} /> Discharge Patient
+                                {finalBill <= 0 ? <ArrowUpCircle size={12} /> : <Lock size={12} />} 
+                                Discharge Patient
                             </button>
                         )}
                         <button
@@ -741,7 +771,12 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                         <h3 className="text-xs font-black uppercase tracking-tight text-slate-700">Payment History</h3>
                                         {!summary?.isBillLocked && !showAdvanceForm && (
                                             <button
-                                                onClick={() => setShowAdvanceForm(true)}
+                                                onClick={() => {
+                                                    setShowAdvanceForm(true);
+                                                    if (summary?.financials?.balance > 0) {
+                                                        setAdvanceData(prev => ({ ...prev, amount: Math.round(summary.financials.balance) }));
+                                                    }
+                                                }}
                                                 className="px-4 py-2 bg-teal-600 text-white rounded-xl text-[8px] font-black uppercase tracking-widest flex items-center gap-2"
                                             >
                                                 <Plus size={14} /> Record Payment
@@ -792,7 +827,12 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                                                     />
                                                 </div>
                                                 <div className="space-y-1.5 md:col-span-4">
-                                                    <label className="text-[7px] font-black text-slate-400 uppercase tracking-widest ml-1">Amount (₹)</label>
+                                                    <label className="flex justify-between items-center text-[7px] font-black uppercase tracking-widest ml-1 pr-1">
+                                                        <span className="text-slate-400">Amount (₹)</span>
+                                                        <span className={summary?.financials?.balance > 0 ? "text-rose-500" : summary?.financials?.balance < 0 ? "text-emerald-500" : "text-slate-400"}>
+                                                            {summary?.financials?.balance > 0 ? `Pending: ₹${Math.round(summary.financials.balance).toLocaleString()}` : summary?.financials?.balance < 0 ? `Overpaid: ₹${Math.round(Math.abs(summary.financials.balance)).toLocaleString()}` : "Settled"}
+                                                        </span>
+                                                    </label>
                                                     <div className="flex gap-1.5">
                                                         <input
                                                             required
@@ -981,6 +1021,43 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
                     </div>
                 </div>
             )}
-        </div >
+            {/* Post-Discharge Print Modal */}
+            {showPostDischarge && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-white max-w-md w-full rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className="p-6 text-center">
+                            <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-emerald-100">
+                                <CheckCircle2 size={32} />
+                            </div>
+                            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight mb-2">Discharge Successful</h3>
+                            <p className="text-sm text-slate-500 leading-relaxed font-medium">
+                                <span className="font-bold text-slate-900">{summary?.patientName}</span> has been successfully discharged. The bed is now available.
+                            </p>
+                        </div>
+                        <div className="flex flex-col bg-slate-50 p-4 border-t border-slate-100 gap-3">
+                            <button
+                                onClick={() => {
+                                    if (summary) printIPDLedger(summary, hospitalDetails);
+                                }}
+                                className="w-full py-3 bg-teal-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all shadow-md shadow-teal-200 flex items-center justify-center gap-2"
+                            >
+                                <Printer size={14} /> Print Final Bill
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setShowPostDischarge(false);
+                                    onClose();
+                                }}
+                                className="w-full py-3 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 hover:text-slate-800 transition-all shadow-sm"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 };
+
+export default IPDBillingModal;

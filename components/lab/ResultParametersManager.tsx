@@ -217,6 +217,7 @@ export default function ResultParametersManager({ parameters = [], onChange }: R
                                             <div className="flex items-center gap-1">
                                                 <input
                                                     type="number"
+                                                    step="any"
                                                     placeholder="Min"
                                                     min="0"
                                                     value={range.min ?? ''}
@@ -231,6 +232,7 @@ export default function ResultParametersManager({ parameters = [], onChange }: R
                                                 <span className="text-[10px] text-gray-400 font-bold">-</span>
                                                 <input
                                                     type="number"
+                                                    step="any"
                                                     placeholder="Max"
                                                     min="0"
                                                     value={range.max ?? ''}

@@ -201,6 +201,33 @@ const HeaderPrint: React.FC = () => {
                                 height: 2px !important;
                             }
                         }
+                        @media print {
+                            .lab-header-container, .lab-header-top-section {
+                                display: table !important;
+                                width: 100% !important;
+                            }
+                            .lab-header-logo-container {
+                                display: table-cell !important;
+                                width: 130px !important;
+                                vertical-align: middle !important;
+                            }
+                            .lab-header-divider {
+                                display: table-cell !important;
+                                width: 15px !important;
+                            }
+                            .lab-header-right-section {
+                                display: table-cell !important;
+                                vertical-align: middle !important;
+                                padding-left: 10px !important;
+                            }
+                            .lab-header-right-section *,
+                            .lab-header-contact-row,
+                            .lab-header-phone-container,
+                            .lab-header-email {
+                                display: block !important;
+                                position: static !important;
+                            }
+                        }
                         `}
                     </style>
                     {/* Top section with Logo and Contact Info */}

@@ -15,7 +15,7 @@ import {
     BadgeIndianRupee,
     Download,
 } from "lucide-react";
-import { helpdeskService } from "@/lib/integrations";
+import { helpdeskService, ipdService } from "@/lib/integrations";
 import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
 import toast from "react-hot-toast";
 import Link from "next/link";
@@ -349,12 +349,17 @@ export default function TransactionsPage() {
     }, [totalRevenue, total]);
 
     // 🖨️ PRINT: Single transaction receipt
-    const handlePrintTransaction = (tx: any) => {
+    const handlePrintTransaction = async (tx: any) => {
         const win = window.open('', '_blank');
         if (!win) { toast.error('Please allow popups to print'); return; }
 
         const h = hospital || {};
         const patientName = tx.patientName || tx.patient?.name || 'Unknown';
+        
+        const patientAgeRaw = tx.patientId?.age || (tx.patientId?.dateOfBirth ? Math.floor((Date.now() - new Date(tx.patientId.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 365.25)) : '');
+        const patientGender = tx.patientId?.gender || '';
+        const ageGenderDisplay = [patientAgeRaw ? `${patientAgeRaw}Y` : '', patientGender].filter(Boolean).join(" / ") || "N/A";
+
         const amount = tx.payment?.amount || tx.amount || 0;
         const rawType = tx.type || 'appointment_booking';
         const typeMapping: Record<string, string> = {
@@ -378,7 +383,7 @@ export default function TransactionsPage() {
         const footerHtml = renderToStaticMarkup(
             <MainFooter initialDetails={{ name: h.name || 'Hospital', address: h.address || '', phone: h.phone || h.mobile || '', email: h.email || '' }} />
         );
-        const txDate = tx.date || tx.transactionTime || tx.payment?.date || tx.createdAt || new Date();
+        const txDate = tx.createdAt || tx.transactionTime || tx.payment?.date || tx.date || new Date();
         const formattedDate = txDate ? new Date(txDate).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
 
         let labTestsHtml = '';
@@ -390,7 +395,7 @@ export default function TransactionsPage() {
                     const tName = t.name || t.testName || t.investigationName || 'Unknown Test';
                     const tCost = t.cost || t.price || t.unitCost || t.amount || 0;
                     if (tName) {
-                        labTestsHtml += `<div class="breakdown-row"><span>${tName}</span><span style="font-weight: 900;">₹${Math.round(tCost).toLocaleString('en-IN')}</span></div>`;
+                        labTestsHtml += `<div class="breakdown-row"><span>${tName}</span><span style="font-weight: 900;">${tCost > 0 ? `₹${Math.round(tCost).toLocaleString('en-IN')}` : '-'}</span></div>`;
                     }
                 });
                 labTestsHtml += `</div>`;
@@ -399,6 +404,36 @@ export default function TransactionsPage() {
                 labTestsHtml = `<div style="margin:15px 0;"><p style="font-size:10px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px;">Test Details (Total: 1)</p>
                 <div class="breakdown-row"><span>${fallbackTestName}</span><span style="font-weight: 900;">₹${Math.round(amount).toLocaleString('en-IN')}</span></div></div>`;
             }
+        }
+
+        let ipdBreakdownHtml = '';
+        if (isIPD && apptData.admissionId) {
+            try {
+                // We dynamically fetch the latest actual IPD bill summary for accurate breakdown
+                const summary = await ipdService.getBillSummary(apptData.admissionId);
+                if (summary && summary.financials) {
+                    const f = summary.financials;
+                    ipdBreakdownHtml = `
+                    <div style="margin:15px 0;"><p style="font-size:10px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">IPD Financial Breakdown</p>
+                        <div class="breakdown-row"><span>Total Bill Amount</span><span>₹${Math.round(f.totalBill || 0).toLocaleString('en-IN')}</span></div>
+                        <div class="breakdown-row"><span>Advance Paid</span><span style="color:#16a34a;">₹${Math.round(f.totalAdvance || 0).toLocaleString('en-IN')}</span></div>
+                        ${f.discount > 0 ? `<div class="breakdown-row"><span>Discount</span><span style="color:#16a34a;">₹${Math.round(f.discount || 0).toLocaleString('en-IN')}</span></div>` : ''}
+                        <div class="breakdown-row total" style="padding-top:12px;border-top:1px solid #f1f5f9;"><span>${f.balance < 0 ? 'Overpaid' : 'Balance Due'}</span><span style="color:${f.balance > 0 ? '#e11d48' : '#16a34a'};">₹${Math.round(Math.abs(f.balance || 0)).toLocaleString('en-IN')}</span></div>
+                    </div>`;
+                }
+            } catch (err) {
+                console.error("Failed to fetch IPD summary for receipt", err);
+            }
+        }
+        
+        // Fallback if fetch fails or is older transaction style
+        if (!ipdBreakdownHtml && isIPD && (apptData.totalBillAmount || apptData.advanceAmount || apptData.dueAmount)) {
+            ipdBreakdownHtml = `
+            <div style="margin:15px 0;"><p style="font-size:10px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">IPD Financial Breakdown</p>
+                ${apptData.totalBillAmount ? `<div class="breakdown-row"><span>Total Bill Amount</span><span>₹${Math.round(apptData.totalBillAmount || 0).toLocaleString('en-IN')}</span></div>` : ''}
+                ${apptData.advanceAmount ? `<div class="breakdown-row"><span>Advance Paid</span><span style="color:#16a34a;">₹${Math.round(apptData.advanceAmount || 0).toLocaleString('en-IN')}</span></div>` : ''}
+                ${apptData.dueAmount ? `<div class="breakdown-row total" style="padding-top:12px;border-top:1px solid #f1f5f9;"><span>Balance Due</span><span style="color:#e11d48;">₹${Math.round(apptData.dueAmount || 0).toLocaleString('en-IN')}</span></div>` : ''}
+            </div>`;
         }
 
         const receiptHtml = `<!DOCTYPE html><html><head><title>Receipt - ${patientName}</title><style>
@@ -414,7 +449,7 @@ export default function TransactionsPage() {
             .amount-box .label{font-size:10px;color:rgba(255,255,255,0.5);font-weight:900;text-transform:uppercase;letter-spacing:2px;}
             .amount-box .amount{font-size:36px;font-weight:900;letter-spacing:-1px;color:#2dd4bf;margin:6px 0;}
             .breakdown-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:11px;}
-            .breakdown-row.total{font-weight:900;font-size:13px;color:#0f172a;border-bottom:none;padding-top:12px;}
+            .breakdown-row.total{font-weight:900;font-size:13px;color:#0f172a;border-bottom:none;}
             .mode-badge{display:inline-block;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;padding:4px 10px;border-radius:6px;font-weight:900;font-size:10px;text-transform:uppercase;}
             @media print{body{padding:0;}@page{margin:1cm;}}
         </style></head><body>
@@ -422,6 +457,7 @@ export default function TransactionsPage() {
         <div style="text-align:center;margin:15px 0 20px;"><h2 style="font-size:18px;font-weight:900;color:#0f172a;text-transform:uppercase;letter-spacing:2px;">Payment Receipt</h2><span class="badge badge-${isIPD ? 'ipd' : isLab ? 'lab' : 'opd'}">${serviceType}</span></div>
         <div class="info-grid">
             <div class="info-item"><div class="label">Patient Name</div><div class="value">${patientName}</div></div>
+            <div class="info-item"><div class="label">Age/Sex</div><div class="value">${ageGenderDisplay}</div></div>
             <div class="info-item"><div class="label">Reference / ID</div><div class="value" style="font-family:monospace;font-size:11px;">${tx.transactionId || tx.receiptNumber || apptData.transactionId || apptData.admissionId || apptData.appointmentId || '—'}</div></div>
             <div class="info-item"><div class="label">Date & Time</div><div class="value">${formattedDate}</div></div>
             <div class="info-item"><div class="label">Payment Mode</div><div class="value"><span class="mode-badge">${tx.paymentMethod || tx.paymentMode || 'Cash'}</span></div></div>
@@ -433,12 +469,7 @@ export default function TransactionsPage() {
             <div class="label">Amount Paid</div>
             <div class="amount">₹${Math.round(amount).toLocaleString('en-IN')}</div>
         </div>
-        ${isIPD && (apptData.totalBillAmount || apptData.advanceAmount || apptData.dueAmount) ? `
-        <div style="margin:15px 0;"><p style="font-size:10px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">IPD Financial Breakdown</p>
-            ${apptData.totalBillAmount ? `<div class="breakdown-row"><span>Total Bill Amount</span><span>₹${Math.round(apptData.totalBillAmount || 0).toLocaleString('en-IN')}</span></div>` : ''}
-            ${apptData.advanceAmount ? `<div class="breakdown-row"><span>Advance Paid</span><span style="color:#16a34a;">₹${Math.round(apptData.advanceAmount || 0).toLocaleString('en-IN')}</span></div>` : ''}
-            ${apptData.dueAmount ? `<div class="breakdown-row"><span>Balance Due</span><span style="color:#e11d48;">₹${Math.round(apptData.dueAmount || 0).toLocaleString('en-IN')}</span></div>` : ''}
-        </div>` : ''}
+        ${ipdBreakdownHtml}
         <div id="print-footer" style="margin-top:30px">${footerHtml}</div>
         <script>window.onload=function(){window.print();window.onafterprint=function(){window.close();}}<\/script>
         </body></html>`;

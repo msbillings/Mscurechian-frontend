@@ -217,18 +217,21 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
                             -webkit-print-color-adjust: exact !important;
                             print-color-adjust: exact !important;
                         }
-                        .print-content, .report-body {
+                        .lab-report-template, .print-content, .report-body {
                             position: static !important;
                             display: block !important;
                             border: none !important;
                             padding: 0 !important;
                             margin: 0 !important;
                             overflow: visible !important;
+                            transform: none !important;
                         }
                         table.lab-master-print-table {
+                            display: table !important;
                             width: 100% !important;
                             border-collapse: collapse !important;
                             border: none !important;
+                            margin: 0 !important;
                         }
                         table.lab-master-print-table > thead {
                             display: table-header-group !important;
@@ -239,11 +242,34 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
                         table.lab-master-print-table > tfoot {
                             display: table-footer-group !important;
                         }
+                        table.lab-master-print-table > thead > tr {
+                            page-break-inside: avoid !important;
+                            break-inside: avoid !important;
+                        }
                         table.lab-master-print-table > thead > tr > td,
+                        table.lab-master-print-table > thead > tr > th,
                         table.lab-master-print-table > tbody > tr > td,
-                        table.lab-master-print-table > tfoot > tr > td {
+                        table.lab-master-print-table > tbody > tr > th {
                             border: none !important;
                             padding: 0 !important;
+                            position: static !important;
+                        }
+                        table.lab-master-print-table > thead * {
+                            position: static !important;
+                            z-index: auto !important;
+                            transform: none !important;
+                            box-shadow: none !important;
+                        }
+                        .lab-patient-grid {
+                            display: table !important;
+                            width: 100% !important;
+                            table-layout: fixed !important;
+                            margin: 15px 0 !important;
+                        }
+                        .lab-patient-grid > div {
+                            display: table-cell !important;
+                            width: 50% !important;
+                            vertical-align: top !important;
                         }
                         .test-section {
                             page-break-inside: auto !important;
@@ -416,26 +442,7 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
                                     );
                                 })}
 
-                                <tr style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                                    <td colSpan={4} style={{ border: 'none', padding: 0 }}>
-                                        <div style={{ textAlign: 'center', marginTop: '40px', fontSize: '12px', color: '#666' }}>
-                                            --- End of Invoice ---
-                                        </div>
-                                        <div style={{ textAlign: 'center', fontSize: '11px', color: '#666', marginTop: '5px', paddingBottom: '15px' }}>
-                                            {defaultLabInfo.address} | Phone No: {defaultLabInfo.phone}
-                                        </div>
-                                    </td>
-                                </tr>
                             </tbody>
-                            <tfoot>
-                                <tr>
-                                    <td colSpan={4} style={{ border: 'none', padding: 0 }}>
-                                        <div className="lab-print-footer">
-                                            <FooterPrint />
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tfoot>
                         </table>
                     </div>
                 </div>

@@ -572,6 +572,7 @@ function HospitalAdminManageTestPage() {
                                     <div className="flex items-center gap-2">
                                         <input
                                             type="number"
+                                            step="any"
                                             placeholder="Min"
                                             className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none"
                                             value={formData.normalRanges[category].min}
@@ -581,6 +582,7 @@ function HospitalAdminManageTestPage() {
                                         <span className="text-gray-400">-</span>
                                         <input
                                             type="number"
+                                            step="any"
                                             placeholder="Max"
                                             className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg text-sm text-center focus:ring-1 focus:ring-indigo-500 outline-none"
                                             value={formData.normalRanges[category].max}
@@ -603,6 +605,7 @@ function HospitalAdminManageTestPage() {
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-gray-400">₹</span>
                                 <input
                                     type="number"
+                                    step="any"
                                     required
                                     className="w-full pl-10 pr-4 py-4 bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-2xl font-bold text-gray-900 dark:text-white"
                                     placeholder="0"
@@ -623,6 +626,7 @@ function HospitalAdminManageTestPage() {
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-purple-300">₹</span>
                                 <input
                                     type="number"
+                                    step="any"
                                     className="w-full pl-10 pr-4 py-4 bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-xl outline-none focus:ring-2 focus:ring-purple-500/20 text-2xl font-bold text-purple-900 dark:text-purple-100"
                                     placeholder="—"
                                     value={formData.labPrice}

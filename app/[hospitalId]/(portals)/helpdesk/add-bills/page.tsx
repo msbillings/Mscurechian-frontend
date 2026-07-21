@@ -86,6 +86,10 @@ export default function AddBillsPage() {
     const { printWithHeader, setPrintWithHeader } = usePrintStore();
     const [previewHtml, setPreviewHtml] = useState("");
 
+    // ── Doctors ──
+    const [doctorsList, setDoctorsList] = useState<any[]>([]);
+    const [selectedDoctorId, setSelectedDoctorId] = useState<string>('');
+
     // ── Local Storage Persistence ──
     const STORAGE_KEY = 'add-bills-form-state';
     useEffect(() => {
@@ -159,9 +163,19 @@ export default function AddBillsPage() {
                 setLoadingCustomCharges(false);
             }
         };
+        const fetchDoctors = async () => {
+            try {
+                const doctors = await helpdeskService.getDoctors();
+                const docList = Array.isArray(doctors) ? doctors : (doctors as any)?.doctors || (doctors as any)?.data || [];
+                setDoctorsList(docList);
+            } catch (e) {
+                console.error('Failed to fetch doctors', e);
+            }
+        };
         fetchLabTests();
         fetchPackages();
         fetchCustomCharges();
+        fetchDoctors();
     }, []);
 
     // ── Patient Search ──
@@ -424,19 +438,20 @@ export default function AddBillsPage() {
                             patientDetails: {
                                 name: selectedPatient.name,
                                 mobile: selectedPatient.mobile || 'N/A',
-                                age: selectedPatient.age,
+                                age: (selectedPatient.age === 'N/A' || isNaN(Number(selectedPatient.age))) ? undefined : Number(selectedPatient.age),
                                 ageUnit: selectedPatient.ageUnit || 'Years',
                                 gender: selectedPatient.gender || 'Unknown',
+                                refDoctor: doctorsList.find(d => d._id === selectedDoctorId)?.name || undefined
                             },
-                            items: effectiveLabItems.map(i => ({ testName: i.name })),
+                            items: effectiveLabItems.map(i => ({ testName: i.name, amount: i.amount })),
                             totalAmount: totalLabAmount,
                             finalAmount: totalLabAmount,
                             paymentMode: paymentMethod,
                             paidAmount: paymentMethod === 'due' ? 0 : totalLabAmount,
                             balance: paymentMethod === 'due' ? totalLabAmount : 0,
-                            paymentDetails: paymentMethod === 'mixed' ? labMixed : undefined,
                             admissionId: activeAdmission?._id,
                             notes: `Bill created from Front Desk on ${new Date().toLocaleDateString()}`,
+                            referredBy: selectedDoctorId || undefined,
                         }),
                     });
                     results.push(`${effectiveLabItems.length} lab/custom item(s) ordered`);
@@ -1460,6 +1475,42 @@ export default function AddBillsPage() {
                         </div>
                     </div>
 
+                    {/* ── Referring Doctor Selection ── */}
+                    {selectedPatient && (
+                        <div className="card" style={{ padding: '16px 20px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                                <Stethoscope size={16} style={{ color: '#0ea5e9' }} />
+                                <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Referring Doctor (Optional)</div>
+                            </div>
+                            <select
+                                style={{
+                                    width: '100%',
+                                    padding: '12px 16px',
+                                    borderRadius: '10px',
+                                    border: '1.5px solid #e2e8f0',
+                                    background: '#f8fafc',
+                                    color: '#1e293b',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 600,
+                                    outline: 'none',
+                                    transition: 'all 0.2s'
+                                }}
+                                value={selectedDoctorId}
+                                onChange={(e) => setSelectedDoctorId(e.target.value)}
+                            >
+                                <option value="">No Doctor (Self / Walk-in)</option>
+                                {doctorsList.map((doc: any) => {
+                                    const userId = typeof doc.user === 'object' && doc.user !== null ? doc.user._id : doc.user || doc._id;
+                                    return (
+                                        <option key={doc._id} value={userId}>
+                                            Dr. {doc.name || doc.user?.name}
+                                        </option>
+                                    );
+                                })}
+                            </select>
+                        </div>
+                    )}
+
                     {/* ── Bill Items Form ── */}
                     {selectedPatient && (
                         <motion.div
@@ -1858,7 +1909,7 @@ export default function AddBillsPage() {
 
                                                     const newItems: BillItem[] = breakdownItems.map(item => ({
                                                         id: `pkg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-                                                        type: activeAdmission ? 'ipd_charge' : 'custom',
+                                                        type: activeAdmission ? 'ipd_charge' : 'package_item',
                                                         name: `${pkg.name} — ${item.label}`,
                                                         category: item.cat,
                                                         amount: item.amount,

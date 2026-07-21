@@ -138,11 +138,16 @@ export default function LabResultEntryPage() {
                 }
 
                 .lab-patient-grid {
-                    display: grid !important;
-                    grid-template-columns: 1fr 1fr !important;
-                    gap: 15px !important;
+                    display: table !important;
+                    width: 100% !important;
+                    table-layout: fixed !important;
                     margin: 16px 0 !important;
                     font-size: 12px !important;
+                }
+                .lab-patient-grid > div {
+                    display: table-cell !important;
+                    width: 50% !important;
+                    vertical-align: top !important;
                 }
 
                 .lab-test-title {
@@ -185,6 +190,11 @@ export default function LabResultEntryPage() {
                 tr    { page-break-inside: avoid !important; page-break-after: auto !important; }
                 thead { display: table-header-group !important; }
                 tfoot { display: table-footer-group !important; }
+                thead tr * {
+                    position: static !important;
+                    z-index: auto !important;
+                    transform: none !important;
+                }
             }
         `,
     });

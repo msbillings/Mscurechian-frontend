@@ -26,17 +26,24 @@ export const printPaymentReceipt = (payment: any, summary: any, hospitalDetails?
 
     const printWithHeader = usePrintStore.getState().printWithHeader;
 
-    const receiptDate = format(new Date(payment.date), 'dd-MMM-yyyy hh:mm a');
+    const txDate = payment.createdAt || payment.transactionTime || payment.date || new Date();
+    const receiptDate = format(new Date(txDate), 'dd-MMM-yyyy hh:mm a');
     const amountInWords = numberToWords(Math.round(payment.amount)) + "Only";
 
-    const prefix = summary?.patientObj?.prefix ? `${summary.patientObj.prefix}. ` : '';
+    const prefix = summary?.patientPrefix ? `${summary.patientPrefix}. ` : '';
     const patientName = `${prefix}${summary?.patientName || "Unknown Patient"}`;
-    const age = summary?.patientObj?.age ? `${summary.patientObj.age}Y` : '';
-    const gender = summary?.patientObj?.gender || '';
-    const ageGender = age && gender ? `${age} / ${gender}` : age || gender || 'N/A';
+    const rawAge = summary?.patientAge || summary?.age || "";
+    const rawGender = summary?.patientGender || summary?.gender || "";
+    const ageGender = [rawAge ? `${rawAge}Y` : '', rawGender].filter(Boolean).join(" / ") || "N/A";
+
+    let docNameRaw = summary?.doctorName || summary?.primaryDoctor || summary?.consultantName || summary?.prescribingDoctor || summary?.referredBy || '';
+    if (typeof docNameRaw === 'object' && docNameRaw !== null && (docNameRaw as any).name) {
+        docNameRaw = (docNameRaw as any).name;
+    }
+    const isValidDoctor = typeof docNameRaw === 'string' && docNameRaw.trim() !== '' && docNameRaw.trim() !== '-' && docNameRaw.toLowerCase() !== 'n/a' && !/^[a-f0-9]{24}$/i.test(docNameRaw);
 
     const doctorPrefix = summary?.doctorObj?.prefix ? `${summary.doctorObj.prefix}. ` : 'Dr. ';
-    const doctorName = summary?.doctorName ? `${doctorPrefix}${summary.doctorName}` : "N/A";
+    const doctorName = isValidDoctor ? `${doctorPrefix}${docNameRaw.replace(/^Dr\.\s*/i, '')}` : "N/A";
 
     const hospitalLogo = hospitalDetails?.logo || '';
     const hospitalName = hospitalDetails?.name || 'HOSPITAL NAME';

@@ -8,7 +8,11 @@ function numberToWords(num: number): string {
     const b = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
 
     if ((num = num.toString().replace(/[\, ]/g, "") as any) != parseFloat(num as any)) return "Not a Number";
-    let n = ("000000000" + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+    
+    // Fix for decimals: split by dot and take integer part
+    const intPart = Math.floor(parseFloat(num as any));
+    
+    let n = ("000000000" + intPart).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
     if (!n) return "";
     let str = "";
     str += n[1] != "00" ? (a[Number(n[1])] || b[n[1][0] as any] + " " + a[n[1][1] as any]) + "Crore " : "";
@@ -19,7 +23,8 @@ function numberToWords(num: number): string {
     return str.trim();
 }
 
-export const printIPDLedger = (summary: any, hospitalDetails?: any) => {
+export const printIPDLedger = (summary: any, hospitalDetails?: any, options: { format?: 'summary' | 'detailed' } = { format: 'detailed' }) => {
+    const isSummary = options.format === 'summary';
     // Determine components
     const patientName = summary?.patientName || "Unknown Patient";
     const admissionId = summary?.admissionId || "N/A";
@@ -373,7 +378,7 @@ export const printIPDLedger = (summary: any, hospitalDetails?: any) => {
             </tr>
         </table>
         
-        <div class="bill-title">${summary?.isBillLocked ? 'IP Final Bill-Detailed' : 'IP Interim Bill-Detailed'}</div>
+        <div class="bill-title">${summary?.isBillLocked || !isSummary ? 'IP Final Bill - Detailed' : 'IP Interim Bill - Summary'}</div>
 
         <div class="patient-info-container">
             <div class="info-group">
@@ -467,26 +472,39 @@ export const printIPDLedger = (summary: any, hospitalDetails?: any) => {
                 </tr>
             </thead>
             <tbody>
-                ${activeCategories.map((cat: any) => `
-                    <tr>
-                        <td colspan="6" class="cat-header">${cat.name}</td>
-                    </tr>
-                    ${cat.items.map((item: any, idx: number) => `
+                ${isSummary ? `
+                    ${activeCategories.map((cat: any, idx: number) => `
                         <tr>
                             <td>${idx + 1}</td>
-                            <td>${item.code}</td>
-                            <td>${item.name}</td>
-                            <td class="right">${Number(item.rate).toFixed(2)}</td>
-                            <td class="right">${Number(item.qty).toFixed(2)}</td>
-                            <td class="right">${Number(item.amount).toFixed(2)}</td>
+                            <td>-</td>
+                            <td style="font-weight: bold; color: #1e293b;">${cat.name}</td>
+                            <td class="right"></td>
+                            <td class="right"></td>
+                            <td class="right" style="font-weight: bold; color: #1e293b;">${Number(cat.total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                         </tr>
                     `).join('')}
-                    <tr class="cat-subtotal">
-                        <td colspan="4"></td>
-                        <td class="right" style="border-top: 1px solid #000; border-bottom: 1px solid #000;">Sub Total :</td>
-                        <td class="right" style="border-top: 1px solid #000; border-bottom: 1px solid #000;">${Number(cat.total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                    </tr>
-                `).join('')}
+                ` : `
+                    ${activeCategories.map((cat: any) => `
+                        <tr>
+                            <td colspan="6" class="cat-header">${cat.name}</td>
+                        </tr>
+                        ${cat.items.map((item: any, idx: number) => `
+                            <tr>
+                                <td>${idx + 1}</td>
+                                <td>${item.code}</td>
+                                <td>${item.name}</td>
+                                <td class="right">${Number(item.rate).toFixed(2)}</td>
+                                <td class="right">${Number(item.qty).toFixed(2)}</td>
+                                <td class="right">${Number(item.amount).toFixed(2)}</td>
+                            </tr>
+                        `).join('')}
+                        <tr class="cat-subtotal">
+                            <td colspan="4"></td>
+                            <td class="right" style="border-top: 1px solid #000; border-bottom: 1px solid #000;">Sub Total :</td>
+                            <td class="right" style="border-top: 1px solid #000; border-bottom: 1px solid #000;">${Number(cat.total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                    `).join('')}
+                `}
             </tbody>
         </table>
         
