@@ -21,7 +21,7 @@ import type { LabTest } from '@/lib/integrations/services/lab.service';
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface BillItem {
     id: string;
-    type: 'lab' | 'ipd_charge' | 'custom';
+    type: 'lab' | 'ipd_charge' | 'custom' | 'package_item';
     name: string;
     category: string;
     amount: number;
