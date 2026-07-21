@@ -643,7 +643,8 @@ export default function LabResultEntryPage() {
                                                 </select>
                                             ) : (
                                                 <input
-                                                    type={param.fieldType === 'number' ? 'number' : 'text'}
+                                                    type="text"
+                                                    inputMode={param.fieldType === 'number' ? 'text' : undefined}
                                                     value={formValues[idx]?.[param.label] || ''}
                                                     onChange={(e) => handleInputChange(idx, param.label, e.target.value)}
                                                     placeholder={param.example || `Enter ${param.label}`}

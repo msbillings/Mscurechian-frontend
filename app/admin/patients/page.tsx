@@ -147,7 +147,6 @@ function PatientsList() {
   const handleExport = async () => {
     const loadToast = toast.loading("Preparing export...");
     try {
-      // Fetch all patients for export (large limit)
       const resp = await adminService.getUsersClient({
         role: 'patient',
         page: 1,
@@ -155,28 +154,18 @@ function PatientsList() {
         search: debouncedSearch,
         hospitalId: selectedHospital || undefined
       });
-      
       const allPatients = resp?.users || (Array.isArray(resp) ? resp : []);
 
-      const csvData = allPatients.map((p: any, index: number) => {
-        const slNo = index + 1;
-        const date = p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-IN') : '--';
-        const name = p.name || p.user?.name || '--';
-        const mobile = p.mobile || p.user?.mobile || '--';
-        const age = getPatientAge(p) || '--';
-        
-        return {
-          'SI No': slNo,
-          'Date': date,
-          'Name': name,
-          'Mobile Number': mobile,
-          'Age': age
-        };
-      });
+      const csvData = allPatients.map((p: any, index: number) => ({
+        'SI No': index + 1,
+        'Date': p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-IN') : '--',
+        'Name': p.name || p.user?.name || '--',
+        'Mobile Number': p.mobile || p.user?.mobile || '--',
+        'Age': getPatientAge(p) || '--'
+      }));
 
       const headers = ['SI No', 'Date', 'Name', 'Mobile Number', 'Age'];
       const csvRows = [headers.join(',')];
-      
       for (const row of csvData) {
         const values = headers.map(header => {
           const val = row[header as keyof typeof row] || '';
@@ -184,7 +173,7 @@ function PatientsList() {
         });
         csvRows.push(values.join(','));
       }
-      
+
       const csvString = csvRows.join('\n');
       const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -194,7 +183,6 @@ function PatientsList() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
       toast.success("Export downloaded successfully!", { id: loadToast });
     } catch (err) {
       console.error("Export failed", err);
@@ -295,12 +283,13 @@ function PatientsList() {
             <span className="text-[8px] md:text-[9px] uppercase font-bold text-gray-400 tracking-wider leading-none mb-0.5">Total</span>
             <span className="text-sm md:text-base font-black text-blue-500 leading-none">{totalPatients}</span>
           </div>
-          <button 
+          <button
             onClick={handleExport}
-            className="shrink-0 flex items-center justify-center bg-green-500/10 text-green-600 border border-green-200 rounded-xl px-3 py-[7px] md:px-4 md:py-2 hover:bg-green-500/20 transition-colors"
+            className="shrink-0 flex items-center gap-1.5 bg-green-500/10 text-green-600 border border-green-200 rounded-xl px-3 py-[7px] md:px-4 md:py-2 hover:bg-green-500/20 transition-colors text-xs font-bold"
             title="Export all patients to CSV"
           >
-            <Download size={16} />
+            <Download size={14} />
+            <span className="hidden md:inline">Export</span>
           </button>
         </div>
 

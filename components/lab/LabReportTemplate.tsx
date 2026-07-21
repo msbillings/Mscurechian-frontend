@@ -368,9 +368,20 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
 
                                     return (
                                         <React.Fragment key={testIdx}>
-                                            <tr style={{ pageBreakInside: 'avoid', breakInside: 'avoid', background: '#f1f5f9' }}>
-                                                <td colSpan={4} style={{ padding: '12px 10px 6px', fontWeight: 'bold', fontSize: '14px', color: '#0f172a' }}>
-                                                    {test.departmentName ? `${test.departmentName.toUpperCase()} - ` : ''}{test.testName.toUpperCase()}
+                                            <tr style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                                                <td colSpan={4} style={{ padding: '16px 10px 12px', textAlign: 'center' }}>
+                                                    <div style={{ 
+                                                        display: 'inline-block', 
+                                                        fontWeight: 'bold', 
+                                                        fontSize: '15px', 
+                                                        color: '#1e293b',
+                                                        borderBottom: '2px solid #3b82f6',
+                                                        paddingBottom: '4px',
+                                                        textTransform: 'uppercase',
+                                                        letterSpacing: '0.5px'
+                                                    }}>
+                                                        {test.testName}
+                                                    </div>
                                                 </td>
                                             </tr>
 

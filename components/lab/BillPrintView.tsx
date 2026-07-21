@@ -82,14 +82,24 @@ const BillPrintView: React.FC<BillPrintViewProps> = ({ billData, invoiceId, date
                                 if (!invoiceId) {
                                     return `${effectiveType === 'lab' ? 'L2L' : effectiveType === 'ipd' ? 'IPD' : 'WLK'}-PREVIEW`;
                                 }
+                                
+                                // If it's already a properly formatted invoice (not a raw mongo ID)
+                                if (invoiceId.length < 24 && invoiceId.includes('-')) {
+                                    return invoiceId;
+                                }
+
                                 let cleanId = invoiceId;
-                                if (invoiceId.startsWith('REC')) cleanId = invoiceId.slice(3);
-                                if (invoiceId.startsWith('OPD-')) cleanId = invoiceId.slice(4);
-                                if (invoiceId.length >= 24) cleanId = invoiceId.slice(-6).toUpperCase();
+                                if (invoiceId.length >= 24) {
+                                    cleanId = invoiceId.slice(-6).toUpperCase();
+                                } else {
+                                    // Strip existing prefixes if we're going to re-prefix
+                                    if (invoiceId.startsWith('REC')) cleanId = invoiceId.slice(3);
+                                    if (invoiceId.startsWith('OPD-')) cleanId = invoiceId.slice(4);
+                                }
                                 
                                 if (effectiveType === 'ipd') return `IPD-${cleanId}`;
                                 if (effectiveType === 'lab') return `L2L-${cleanId}`;
-                                return `WLK-${cleanId}`;
+                                return `ORDER-${cleanId}`; // Changed from WLK to ORDER as per user request
                             })()}</span>
 
                             <span className="font-semibold text-black">Date:</span>
