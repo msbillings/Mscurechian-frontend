@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, Suspense } from "react";
-import { Trash2, User, Activity, Edit3, Search, Heart, ShieldAlert, Building2, X } from "lucide-react";
+import { Trash2, User, Activity, Edit3, Search, Heart, ShieldAlert, Building2, X, Download } from "lucide-react";
 import toast from "react-hot-toast";
 import { adminService } from '@/lib/integrations';
 import { useAuthStore } from '@/stores/authStore';
@@ -144,6 +144,64 @@ function PatientsList() {
     }
   };
 
+  const handleExport = async () => {
+    const loadToast = toast.loading("Preparing export...");
+    try {
+      // Fetch all patients for export (large limit)
+      const resp = await adminService.getUsersClient({
+        role: 'patient',
+        page: 1,
+        limit: 10000,
+        search: debouncedSearch,
+        hospitalId: selectedHospital || undefined
+      });
+      
+      const allPatients = resp?.users || (Array.isArray(resp) ? resp : []);
+
+      const csvData = allPatients.map((p: any, index: number) => {
+        const slNo = index + 1;
+        const date = p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-IN') : '--';
+        const name = p.name || p.user?.name || '--';
+        const mobile = p.mobile || p.user?.mobile || '--';
+        const age = getPatientAge(p) || '--';
+        
+        return {
+          'SI No': slNo,
+          'Date': date,
+          'Name': name,
+          'Mobile Number': mobile,
+          'Age': age
+        };
+      });
+
+      const headers = ['SI No', 'Date', 'Name', 'Mobile Number', 'Age'];
+      const csvRows = [headers.join(',')];
+      
+      for (const row of csvData) {
+        const values = headers.map(header => {
+          const val = row[header as keyof typeof row] || '';
+          return `"${String(val).replace(/"/g, '""')}"`;
+        });
+        csvRows.push(values.join(','));
+      }
+      
+      const csvString = csvRows.join('\n');
+      const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Patients_Export_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success("Export downloaded successfully!", { id: loadToast });
+    } catch (err) {
+      console.error("Export failed", err);
+      toast.error("Failed to export patients", { id: loadToast });
+    }
+  };
+
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     setConfirmModal({
@@ -237,6 +295,13 @@ function PatientsList() {
             <span className="text-[8px] md:text-[9px] uppercase font-bold text-gray-400 tracking-wider leading-none mb-0.5">Total</span>
             <span className="text-sm md:text-base font-black text-blue-500 leading-none">{totalPatients}</span>
           </div>
+          <button 
+            onClick={handleExport}
+            className="shrink-0 flex items-center justify-center bg-green-500/10 text-green-600 border border-green-200 rounded-xl px-3 py-[7px] md:px-4 md:py-2 hover:bg-green-500/20 transition-colors"
+            title="Export all patients to CSV"
+          >
+            <Download size={16} />
+          </button>
         </div>
 
         <div className="w-full lg:w-[30%] flex flex-row items-center justify-between gap-3">
