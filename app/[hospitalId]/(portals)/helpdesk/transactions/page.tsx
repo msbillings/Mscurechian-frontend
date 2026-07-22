@@ -782,6 +782,26 @@ export default function TransactionsPage() {
         const doctorNameToPrint = apptData.doctorName || apptData.primaryDoctor || apptData.suggestedDoctorName || apptData.prescribingDoctor || apptData.referredBy || tx.doctorName || '';
         const isValidDoctor = doctorNameToPrint && doctorNameToPrint !== '-' && doctorNameToPrint.toLowerCase() !== 'n/a' && !/^[a-f0-9]{24}$/i.test(doctorNameToPrint);
 
+        const txDiscount = tx.discountAmount || apptData.discountAmount || 0;
+        const txSubtotal = tx.subtotal || apptData.subtotal || (txDiscount > 0 ? (amount + txDiscount) : amount);
+        const txDiscountReason = tx.discountReason || apptData.discountReason || '';
+
+        let financialBreakdownHtml = '';
+        if (txDiscount > 0) {
+            financialBreakdownHtml = `
+            <div style="margin: 15px 0; padding: 12px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px;">
+                <div class="breakdown-row"><span>Gross Subtotal</span><span style="font-weight: 700;">₹${Math.round(txSubtotal).toLocaleString('en-IN')}</span></div>
+                <div class="breakdown-row" style="color: #059669; font-weight: 700;">
+                    <span>Discount ${txDiscountReason ? `(${txDiscountReason})` : ''}</span>
+                    <span>- ₹${Math.round(txDiscount).toLocaleString('en-IN')}</span>
+                </div>
+                <div class="breakdown-row total" style="padding-top: 8px; border-top: 1.5px solid #cbd5e1; font-weight: 900;">
+                    <span>Net Amount Paid</span>
+                    <span style="color: #059669; font-size: 14px;">₹${Math.round(amount).toLocaleString('en-IN')}</span>
+                </div>
+            </div>`;
+        }
+
         const receiptHtml = `<!DOCTYPE html><html><head><title>Receipt - ${patientName}</title><style>
             body{font-family:'Segoe UI',system-ui,sans-serif;padding:20px;color:#1e293b;background:#fff;font-size:12px;}
             .badge{display:inline-block;padding:4px 10px;border-radius:6px;font-weight:900;font-size:10px;text-transform:uppercase;letter-spacing:1px;}
@@ -811,6 +831,7 @@ export default function TransactionsPage() {
             ${isValidDoctor ? `<div class="info-item"><div class="label">Doctor Name</div><div class="value">Dr. ${doctorNameToPrint.replace(/^Dr\.\s*/i, '')}</div></div>` : ''}
         </div>
         ${labTestsHtml}
+        ${financialBreakdownHtml}
         <div class="amount-box">
             <div class="label">Amount Paid</div>
             <div class="amount">₹${Math.round(amount).toLocaleString('en-IN')}</div>
