@@ -433,9 +433,11 @@ export default function AddBillsPage() {
                 }
 
                 try {
-                    const totalLabAmount = effectiveLabItems.reduce((sum, i) => sum + i.amount, 0);
+                    const grossLabAmount = effectiveLabItems.reduce((sum, i) => sum + i.amount, 0);
+                    const labRatio = subtotal > 0 ? grossLabAmount / subtotal : 1;
+                    const labDiscountAmount = Math.round(discountAmount * labRatio);
+                    const netLabAmount = Math.max(0, grossLabAmount - labDiscountAmount);
 
-                    const labRatio = totalAmount > 0 ? totalLabAmount / totalAmount : 1;
                     const labMixed = {
                         cash: Math.round((mixedDetails.cash || 0) * labRatio),
                         card: Math.round((mixedDetails.card || 0) * labRatio),
@@ -455,13 +457,17 @@ export default function AddBillsPage() {
                                 refDoctor: doctorsList.find(d => d._id === selectedDoctorId)?.name || undefined
                             },
                             items: effectiveLabItems.map(i => ({ testName: i.name, amount: i.amount })),
-                            totalAmount: totalLabAmount,
-                            finalAmount: totalLabAmount,
+                            subtotal: grossLabAmount,
+                            discountAmount: labDiscountAmount,
+                            discountReason: discountReason || undefined,
+                            totalAmount: netLabAmount,
+                            finalAmount: netLabAmount,
                             paymentMode: paymentMethod,
-                            paidAmount: paymentMethod === 'due' ? 0 : totalLabAmount,
-                            balance: paymentMethod === 'due' ? totalLabAmount : 0,
+                            paymentDetails: paymentMethod === 'mixed' ? labMixed : undefined,
+                            paidAmount: paymentMethod === 'due' ? 0 : netLabAmount,
+                            balance: paymentMethod === 'due' ? netLabAmount : 0,
                             admissionId: activeAdmission?._id,
-                            notes: `Bill created from Front Desk on ${new Date().toLocaleDateString()}`,
+                            notes: `Bill created from Front Desk on ${new Date().toLocaleDateString()}${discountReason ? ` (Discount: ₹${labDiscountAmount} - ${discountReason})` : ''}`,
                             referredBy: selectedDoctorId || undefined,
                         }),
                     });
@@ -475,7 +481,7 @@ export default function AddBillsPage() {
             // 2 & 3. Create IPD Extra Charges and record the payment
             const combinedIpdCharges = [...ipdItems, ...customItems];
             if (combinedIpdCharges.length > 0 && activeAdmission) {
-                let ipdTotalAmount = 0;
+                let grossIpdAmount = 0;
                 for (const item of combinedIpdCharges) {
                     try {
                         await ipdService.addExtraCharge({
@@ -484,18 +490,21 @@ export default function AddBillsPage() {
                             description: item.name,
                             amount: item.amount,
                         });
-                        ipdTotalAmount += item.amount;
+                        grossIpdAmount += item.amount;
                     } catch (e: any) {
                         console.error(`Failed to add IPD charge: ${item.name}`, e);
                         toast.error(`Failed: ${item.name}`);
                     }
                 }
 
+                const ipdRatio = subtotal > 0 ? grossIpdAmount / subtotal : 1;
+                const ipdDiscountAmount = Math.round(discountAmount * ipdRatio);
+                const netIpdTotalAmount = Math.max(0, grossIpdAmount - ipdDiscountAmount);
+
                 // Record the actual payment against the IPD bill
-                if (ipdTotalAmount > 0 && paymentMethod !== 'due') {
+                if (netIpdTotalAmount > 0 && paymentMethod !== 'due') {
                     try {
                         if (paymentMethod === 'mixed') {
-                            const ipdRatio = totalAmount > 0 ? ipdTotalAmount / totalAmount : 1;
                             const ipdMixed = {
                                 cash: Math.round((mixedDetails.cash || 0) * ipdRatio),
                                 card: Math.round((mixedDetails.card || 0) * ipdRatio),
@@ -513,7 +522,7 @@ export default function AddBillsPage() {
                         } else {
                             await ipdService.addAdvancePayment({
                                 admissionId: activeAdmission._id,
-                                amount: ipdTotalAmount,
+                                amount: netIpdTotalAmount,
                                 mode: paymentMethod,
                                 transactionType: "Advance",
                                 reference: `Frontdesk Bill - ${new Date().toLocaleDateString()}`,
