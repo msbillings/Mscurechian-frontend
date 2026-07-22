@@ -699,8 +699,8 @@ export default function TransactionsPage() {
         const h = hospital || {};
         const patientName = getPatientNameWithPrefix(tx);
         
-        const patientAgeRaw = tx.patientId?.age || (tx.patientId?.dateOfBirth ? Math.floor((Date.now() - new Date(tx.patientId.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 365.25)) : '');
-        const patientGender = tx.patientId?.gender || '';
+        const patientAgeRaw = tx.patientDetails?.age || tx.patientId?.age || (tx.patientDetails?.dateOfBirth ? Math.floor((Date.now() - new Date(tx.patientDetails.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 365.25)) : (tx.patientId?.dateOfBirth ? Math.floor((Date.now() - new Date(tx.patientId.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 365.25)) : ''));
+        const patientGender = tx.patientDetails?.gender || tx.patientId?.gender || '';
         const ageGenderDisplay = [patientAgeRaw ? `${patientAgeRaw}Y` : '', patientGender].filter(Boolean).join(" / ") || "N/A";
         
         const amount = tx.payment?.amount || tx.amount || 0;
@@ -729,14 +729,37 @@ export default function TransactionsPage() {
         const txDate = tx.createdAt || tx.transactionTime || tx.payment?.date || tx.date || new Date();
         const formattedDate = txDate ? new Date(txDate).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
 
+        // Auto-detect discount: from stored fields OR by comparing test totals vs amount paid
+        let computedTestsTotal = 0;
+        let missingCostCount = 0;
+        if (isLab) {
+            const testsArray = apptData.tests || [];
+            if (testsArray.length > 0) {
+                testsArray.forEach((t: any) => {
+                     const c = t.cost || t.price || t.unitCost || t.amount || 0;
+                     if (c > 0) computedTestsTotal += c;
+                     else missingCostCount++;
+                });
+            }
+        }
+        const storedDiscount = tx.discountAmount || apptData.discountAmount || 0;
+        const inferredDiscount = (computedTestsTotal > 0 && computedTestsTotal > amount) ? Math.round(computedTestsTotal - amount) : 0;
+        const txDiscount = storedDiscount > 0 ? storedDiscount : inferredDiscount;
+        const txSubtotal = tx.subtotal || apptData.subtotal || (txDiscount > 0 ? (amount + txDiscount) : amount);
+        const txDiscountReason = tx.discountReason || apptData.discountReason || '';
+
         let labTestsHtml = '';
         if (isLab) {
             const testsArray = apptData.tests || [];
             if (testsArray.length > 0) {
+                const remainingAmount = Math.max(0, txSubtotal - computedTestsTotal);
+                const distributedCost = missingCostCount > 0 ? (remainingAmount / missingCostCount) : 0;
+
                 labTestsHtml = `<div style="margin:15px 0;"><p style="font-size:10px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px;">Test Details (Total: ${testsArray.length})</p>`;
                 testsArray.forEach((t: any) => {
                     const tName = t.name || t.testName || t.investigationName || 'Unknown Test';
-                    const tCost = t.cost || t.price || t.unitCost || t.amount || 0;
+                    let tCost = t.cost || t.price || t.unitCost || t.amount || 0;
+                    if (tCost === 0) tCost = distributedCost;
                     if(tName) {
                        labTestsHtml += `<div class="breakdown-row"><span>${tName}</span><span style="font-weight: 900;">${tCost > 0 ? `₹${Math.round(tCost).toLocaleString('en-IN')}` : '-'}</span></div>`;
                     }
@@ -781,20 +804,6 @@ export default function TransactionsPage() {
 
         const doctorNameToPrint = apptData.doctorName || apptData.primaryDoctor || apptData.suggestedDoctorName || apptData.prescribingDoctor || apptData.referredBy || tx.doctorName || '';
         const isValidDoctor = doctorNameToPrint && doctorNameToPrint !== '-' && doctorNameToPrint.toLowerCase() !== 'n/a' && !/^[a-f0-9]{24}$/i.test(doctorNameToPrint);
-
-        // Auto-detect discount: from stored fields OR by comparing test totals vs amount paid
-        let computedTestsTotal = 0;
-        if (isLab) {
-            const testsArray = apptData.tests || [];
-            if (testsArray.length > 0) {
-                computedTestsTotal = testsArray.reduce((sum: number, t: any) => sum + (t.cost || t.price || t.unitCost || t.amount || 0), 0);
-            }
-        }
-        const storedDiscount = tx.discountAmount || apptData.discountAmount || 0;
-        const inferredDiscount = (computedTestsTotal > 0 && computedTestsTotal > amount) ? Math.round(computedTestsTotal - amount) : 0;
-        const txDiscount = storedDiscount > 0 ? storedDiscount : inferredDiscount;
-        const txSubtotal = tx.subtotal || apptData.subtotal || (txDiscount > 0 ? (amount + txDiscount) : amount);
-        const txDiscountReason = tx.discountReason || apptData.discountReason || '';
 
         let financialBreakdownHtml = '';
         if (txDiscount > 0) {
