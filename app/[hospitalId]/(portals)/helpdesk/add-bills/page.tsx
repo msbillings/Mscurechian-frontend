@@ -1810,9 +1810,24 @@ export default function AddBillsPage() {
                                                     onChange={e => setNewChargeCategory(e.target.value)}
                                                 >
                                                     <option value="Miscellaneous">Miscellaneous</option>
+                                                    <option value="Casualty">Casualty Charges</option>
+                                                    <option value="Emergency">Emergency Charges</option>
                                                     <option value="Consultation">Consultation</option>
                                                     <option value="Procedure">Procedure</option>
-                                                    <option value="Supplies">Supplies</option>
+                                                    <option value="ICU">ICU / NICU Charges</option>
+                                                    <option value="OT">OT / Surgery Charges</option>
+                                                    <option value="Nursing">Nursing Charges</option>
+                                                    <option value="Bed">Bed / Room Charges</option>
+                                                    <option value="Dressing">Dressing Charges</option>
+                                                    <option value="Injection">Injection Charges</option>
+                                                    <option value="Oxygen">Oxygen Charges</option>
+                                                    <option value="Dialysis">Dialysis Charges</option>
+                                                    <option value="Physiotherapy">Physiotherapy</option>
+                                                    <option value="Blood Bank">Blood Bank</option>
+                                                    <option value="Ambulance">Ambulance Charges</option>
+                                                    <option value="Diet">Diet / Food Charges</option>
+                                                    <option value="Registration">Registration Fee</option>
+                                                    <option value="Supplies">Supplies / Consumables</option>
                                                     <option value="Other">Other</option>
                                                 </select>
                                             </div>
