@@ -436,7 +436,17 @@ export default function TransactionsPage() {
             </div>`;
         }
 
-        const txDiscount = tx.discountAmount || apptData.discountAmount || 0;
+        // Auto-detect discount: from stored fields OR by comparing test totals vs amount paid
+        let computedTestsTotal = 0;
+        if (isLab) {
+            const testsArray = apptData.tests || [];
+            if (testsArray.length > 0) {
+                computedTestsTotal = testsArray.reduce((sum: number, t: any) => sum + (t.cost || t.price || t.unitCost || t.amount || 0), 0);
+            }
+        }
+        const storedDiscount = tx.discountAmount || apptData.discountAmount || 0;
+        const inferredDiscount = (computedTestsTotal > 0 && computedTestsTotal > amount) ? Math.round(computedTestsTotal - amount) : 0;
+        const txDiscount = storedDiscount > 0 ? storedDiscount : inferredDiscount;
         const txSubtotal = tx.subtotal || apptData.subtotal || (txDiscount > 0 ? (amount + txDiscount) : amount);
         const txDiscountReason = tx.discountReason || apptData.discountReason || '';
 
@@ -444,7 +454,7 @@ export default function TransactionsPage() {
         if (txDiscount > 0) {
             financialBreakdownHtml = `
             <div style="margin: 15px 0; padding: 12px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px;">
-                <div class="breakdown-row"><span>Gross Subtotal</span><span style="font-weight: 700;">₹${Math.round(txSubtotal).toLocaleString('en-IN')}</span></div>
+                <div class="breakdown-row"><span>Subtotal</span><span style="font-weight: 700;">₹${Math.round(txSubtotal).toLocaleString('en-IN')}</span></div>
                 <div class="breakdown-row" style="color: #059669; font-weight: 700;">
                     <span>Discount ${txDiscountReason ? `(${txDiscountReason})` : ''}</span>
                     <span>- ₹${Math.round(txDiscount).toLocaleString('en-IN')}</span>
