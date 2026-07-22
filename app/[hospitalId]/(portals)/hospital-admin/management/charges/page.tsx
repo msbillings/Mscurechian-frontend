@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Plus, Search, Edit2, Trash2, RotateCcw, Save, X, DollarSign } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, RotateCcw, Save, X, IndianRupee } from "lucide-react";
 import { hospitalAdminService } from "@/lib/integrations/services/hospitalAdmin.service";
 import toast from "react-hot-toast";
 
@@ -192,7 +192,7 @@ export default function ChargesManagement() {
         
         <div className="shrink-0 flex items-center gap-2 px-1">
           <div className="p-1.5 md:p-2 bg-emerald-50 rounded-lg text-emerald-600">
-            <DollarSign className="w-5 h-5 md:w-6 md:h-6" />
+            <IndianRupee className="w-5 h-5 md:w-6 md:h-6" />
           </div>
           <div className="flex flex-col justify-center">
             <h1 className="text-sm md:text-base font-bold text-gray-900 tracking-tight leading-none uppercase">

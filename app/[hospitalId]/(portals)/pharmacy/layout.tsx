@@ -22,13 +22,13 @@ import {
     PlusCircle,
     Users,
     RotateCcw,
-    Undo2,
-    Receipt,
+    CornerDownLeft,
+    BarChart3,
     ShoppingCart,
     ShoppingBag,
     ArrowLeftRight,
     ShieldCheck,
-    Clock
+    Pill,
 } from "lucide-react";
 import { useParams } from "next/navigation";
 
@@ -140,16 +140,18 @@ const PharmacyLayout = ({ children }: { children: React.ReactNode }) => {
     if (isLoginPage) return <React.Fragment key="pharma-login-page-root">{children}</React.Fragment>;
     if (!isAuthenticated || !isPharma) return null;
 
+
+
     const pharmacyMenuItems: any[] = [
         { icon: LayoutDashboard, label: "Dashboard", path: "/pharmacy/dashboard" },
         
         { icon: PlusCircle, label: "Create Invoice", path: "/pharmacy/billing" },
         { icon: ArrowLeftRight, label: "IPD Issuance", path: "/pharmacy/ipd-issuance" },
         { icon: RotateCcw, label: "Medicine Returns", path: "/pharmacy/medicine-return" },
-        { icon: Undo2, label: "General Return", path: "/pharmacy/general-return" },
-        { icon: Package, label: "Products", path: "/pharmacy/products" },
+        { icon: CornerDownLeft, label: "General Return", path: "/pharmacy/general-return" },
+        { icon: Pill, label: "Products", path: "/pharmacy/products" },
         { icon: Users, label: "Suppliers", path: "/pharmacy/suppliers" },
-        { icon: Receipt, label: "EOD Sales Report", path: "/pharmacy/eod-sales" },
+        { icon: BarChart3, label: "EOD Sales Report", path: "/pharmacy/eod-sales" },
     ];
 
     const pharmacyUser = {

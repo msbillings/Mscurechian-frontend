@@ -43,16 +43,32 @@ export const AttendanceButton: React.FC<AttendanceButtonProps> = ({ userRole, cl
     fetchTodayStatus();
   }, [fetchTodayStatus]);
 
+  const [modalMode, setModalMode] = useState<'check-in' | 'check-out'>('check-in');
+
   const handleCheckIn = () => {
+    setModalMode('check-in');
     setIsModalOpen(true);
   };
 
-  const confirmCheckIn = async () => {
+  const handleCheckOutClick = () => {
+    setModalMode('check-out');
+    setIsModalOpen(true);
+  };
+
+  const handleModalConfirm = async (payload: { lat?: number; lng?: number; photo?: string | null }) => {
+    if (modalMode === 'check-in') {
+      await confirmCheckIn(payload);
+    } else {
+      await confirmCheckOut(payload);
+    }
+  };
+
+  const confirmCheckIn = async (payload: { lat?: number; lng?: number; photo?: string | null }) => {
     try {
       setChecking(true);
       const data = await apiClient<any>('/attendance/check-in', {
         method: 'POST',
-        body: JSON.stringify({})
+        body: JSON.stringify(payload)
       });
 
       if (data && data.warning) {
@@ -69,12 +85,12 @@ export const AttendanceButton: React.FC<AttendanceButtonProps> = ({ userRole, cl
     }
   };
 
-  const handleCheckOut = async () => {
+  const confirmCheckOut = async (payload: { lat?: number; lng?: number; photo?: string | null }) => {
     try {
       setChecking(true);
       const data = await apiClient<any>('/attendance/check-out', {
         method: 'POST',
-        body: JSON.stringify({})
+        body: JSON.stringify(payload)
       });
 
       if (data && data.warning) {
@@ -125,7 +141,7 @@ export const AttendanceButton: React.FC<AttendanceButtonProps> = ({ userRole, cl
               </span>
             </div>
             <button
-              onClick={handleCheckOut}
+              onClick={handleCheckOutClick}
               disabled={checking}
               className="flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 shadow-md active:scale-95 disabled:opacity-50 transition-all border border-rose-500/20"
             >
@@ -146,7 +162,7 @@ export const AttendanceButton: React.FC<AttendanceButtonProps> = ({ userRole, cl
         <AttendanceModal 
           isOpen={isModalOpen} 
           onClose={() => setIsModalOpen(false)} 
-          onConfirm={confirmCheckIn} 
+          onConfirm={handleModalConfirm} 
         />
       </div>
     );
@@ -218,7 +234,7 @@ export const AttendanceButton: React.FC<AttendanceButtonProps> = ({ userRole, cl
             </button>
           ) : !hasCheckedOut ? (
             <button
-              onClick={handleCheckOut}
+              onClick={handleCheckOutClick}
               disabled={checking}
               className="w-full bg-slate-900 hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed text-white font-black py-3.5 rounded-2xl shadow-xl transform active:scale-95 flex items-center justify-center gap-2 transition-all uppercase text-sm tracking-widest"
             >
@@ -242,7 +258,7 @@ export const AttendanceButton: React.FC<AttendanceButtonProps> = ({ userRole, cl
       <AttendanceModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        onConfirm={confirmCheckIn} 
+        onConfirm={handleModalConfirm} 
       />
     </div>
   );

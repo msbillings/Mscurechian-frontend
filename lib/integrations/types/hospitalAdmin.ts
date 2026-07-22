@@ -65,29 +65,38 @@ export interface HospitalAdminPatient {
 export interface AttendanceRecord {
   _id: string;
   staff: {
-    _id: string;
-    employeeId?: string;
+    _id?: string;
+    employeeId?: string | null;
     user: {
       _id: string;
       name: string;
       email: string;
+      role?: string;
     };
     designation: string;
   };
   date: string;
-  checkIn: {
+  checkIn?: {
     time: string;
     method?: string;
     location?: string;
-  };
-  checkOut: {
+  } | null;
+  checkOut?: {
     time: string;
     method?: string;
     location?: string;
-  };
+  } | null;
+  photoIn?: string | null;
+  photoOut?: string | null;
+  isAutoClockOut?: boolean;
+  locationIn?: { lat: number; lng: number } | null;
+  locationOut?: { lat: number; lng: number } | null;
+  shiftName?: string;
+  shiftStart?: string;
+  shiftEnd?: string;
   workingHours: number;
   workHours?: number; // Alias for UI
-  status: "present" | "absent" | "late" | "half-day" | "on-leave";
+  status: "present" | "absent" | "late" | "half-day" | "on-leave" | "off-duty" | "auto-clock-out";
   notes?: string;
   location?: { name: string }; // Optional location object for UI
 }

@@ -1,7 +1,6 @@
 import React, { forwardRef } from 'react';
 import { LabSample } from '@/lib/integrations/types/labSample';
 import HeaderPrint from './HeaderPrint';
-import FooterPrint from './FooterPrint';
 
 
 interface LabReportTemplateProps {
@@ -249,7 +248,9 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
                         table.lab-master-print-table > thead > tr > td,
                         table.lab-master-print-table > thead > tr > th,
                         table.lab-master-print-table > tbody > tr > td,
-                        table.lab-master-print-table > tbody > tr > th {
+                        table.lab-master-print-table > tbody > tr > th,
+                        table.lab-master-print-table > tfoot > tr > td,
+                        table.lab-master-print-table > tfoot > tr > th {
                             border: none !important;
                             padding: 0 !important;
                             position: static !important;
@@ -454,6 +455,44 @@ const LabReportTemplate = forwardRef<HTMLDivElement, LabReportTemplateProps>(
                                 })}
 
                             </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colSpan={4} style={{ border: 'none', padding: 0 }}>
+                                        <div 
+                                            className="lab-signature-container"
+                                            style={{
+                                                display: 'flex',
+                                                justifyContent: 'flex-end',
+                                                alignItems: 'center',
+                                                marginTop: '40px',
+                                                marginBottom: '15px',
+                                                paddingRight: '15px',
+                                                pageBreakInside: 'avoid',
+                                                breakInside: 'avoid',
+                                            }}
+                                        >
+                                            <div style={{ textAlign: 'center', minWidth: '200px' }}>
+                                                {/* Blank space for signing after print */}
+                                                <div style={{ height: '45px' }}></div>
+                                                <div style={{ 
+                                                    borderTop: '1.5px solid #000', 
+                                                    paddingTop: '5px', 
+                                                    fontWeight: 'bold', 
+                                                    fontSize: '12px', 
+                                                    color: '#1e293b',
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.5px'
+                                                }}>
+                                                    Lab Incharge Signature
+                                                </div>
+                                                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                                                    (Lab Technician / Incharge)
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 </div>

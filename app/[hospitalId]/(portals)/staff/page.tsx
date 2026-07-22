@@ -89,9 +89,9 @@ const StaffDashboardPage = React.memo(function StaffDashboardPage() {
     }, [dashboard?.staff]);
 
     // ✅ Optimized handlers with useCallback
-    const handleCheckIn = useCallback(async () => {
+    const handleCheckIn = useCallback(async (payload?: any) => {
         try {
-            const result = await checkInMutation.mutateAsync(undefined);
+            const result = await checkInMutation.mutateAsync(payload);
             const checkInTime = result?.attendance?.checkIn?.time
                 ? new Date(result.attendance.checkIn.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })
                 : null;

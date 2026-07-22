@@ -66,7 +66,7 @@ const LogoutModal: React.FC<LogoutModalProps> = ({
                             <LogOut size={18} />
                         </div>
                         <h2 className="text-base font-semibold text-gray-900 dark:text-white">
-                            Sign out
+                            Logout
                         </h2>
                     </div>
 
@@ -83,7 +83,7 @@ const LogoutModal: React.FC<LogoutModalProps> = ({
                 {/* Body */}
                 <div className="px-6 py-5 text-center sm:text-left">
                     <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                        {isLoggingOut ? "Securing your session and redirecting..." : "Are you sure you want to sign out? You’ll need to sign in again to access your account."}
+                        {isLoggingOut ? "Securing your session and redirecting..." : "Are you sure you want to log out? You will need to log in again to access your account."}
                     </p>
                 </div>
 
@@ -111,7 +111,7 @@ const LogoutModal: React.FC<LogoutModalProps> = ({
                                 <span>Logging out...</span>
                             </>
                         ) : (
-                            "Sign out"
+                            "Logout"
                         )}
                     </button>
                 </div>

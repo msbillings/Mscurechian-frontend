@@ -74,9 +74,9 @@ export function PendingDischargesQueue({ searchTerm, page, basePath, onPaginatio
     const filteredDischarges = useMemo(() => {
         let filtered = pendingDischarges;
 
-        // Helpdesk should ONLY see discharges prepared by nurses
+        // Helpdesk should see discharges prepared by nurses or initiated via IPD/billing
         if (basePath.includes('helpdesk')) {
-            filtered = filtered.filter(d => d.status === 'PREPARED_BY_NURSE');
+            filtered = filtered.filter(d => d.status === 'PREPARED_BY_NURSE' || d.status === 'REQUESTED');
         }
 
         filtered = filtered.filter(d =>

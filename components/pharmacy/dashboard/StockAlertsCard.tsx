@@ -1,5 +1,5 @@
-﻿import React from 'react';
-import { AlertTriangle, ChevronRight } from 'lucide-react';
+import React from 'react';
+import { BellRing, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 
 interface StockAlertsCardProps {
@@ -14,8 +14,8 @@ const StockAlertsCard: React.FC<StockAlertsCardProps> = ({ lowStockCount, expiri
             <div>
                 <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-50 dark:border-gray-700">
                     <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-red-50 dark:bg-red-950/20 text-red-600 rounded-xl">
-                            <AlertTriangle size={18} />
+                        <div className="p-2.5 bg-amber-50 dark:bg-amber-950/20 text-amber-600 rounded-xl">
+                            <BellRing size={18} />
                         </div>
                         <div>
                             <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">Stock Alerts</h3>

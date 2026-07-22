@@ -194,7 +194,7 @@ const SharedNavbar: React.FC<SharedNavbarProps> = ({
                                 className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-all rounded-lg group"
                             >
                                 <LogOut size={16} className="group-hover:translate-x-0.5 transition-transform" />
-                                <span>Terminate Session</span>
+                                <span>Logout</span>
                             </button>
                         </div>
                     )}

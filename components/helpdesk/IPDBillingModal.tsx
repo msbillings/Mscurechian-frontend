@@ -25,6 +25,7 @@ import {
 import { ipdService } from '@/lib/integrations/services/ipd.service';
 import { toast } from 'react-hot-toast';
 import { format } from 'date-fns';
+import { useRouter } from 'next/navigation';
 import { printIPDLedger } from '@/lib/utils/print-ipd-ledger';
 import { printPaymentReceipt } from '@/lib/utils/print-payment-receipt';
 import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
@@ -37,6 +38,7 @@ interface IPDBillingModalProps {
 }
 
 export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClose, admissionId, hidePaymentActions }) => {
+    const router = useRouter();
     const [summary, setSummary] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'summary' | 'charges' | 'advances'>('summary');
@@ -241,11 +243,11 @@ export const IPDBillingModal: React.FC<IPDBillingModalProps> = ({ isOpen, onClos
     const handleDischargeConfirm = async () => {
         try {
             setSubmitting(true);
-            await ipdService.dischargePatient(admissionId);
-            toast.success("Patient successfully discharged!");
+            await ipdService.confirmDischarge(admissionId);
+            toast.success("Discharge confirmed! Patient moved to Discharge Queue.", { duration: 4000, icon: '📋' });
             setShowDischargeConfirm(false);
-            setShowPostDischarge(true);
-            fetchSummary(); // Update the background state
+            if (onClose) onClose();
+            router.push('/helpdesk/discharge');
         } catch (error: any) {
             toast.error(error.message || "Failed to discharge patient");
         } finally {

@@ -7,7 +7,7 @@ import {
     Edit2,
     Cpu,
     Calendar,
-    DollarSign,
+    IndianRupee,
     Settings,
     ShieldAlert,
     AlertTriangle,
@@ -238,7 +238,7 @@ function EquipmentDetailsPage() {
                     {/* SECTION 2: Purchase Information */}
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm space-y-4">
                         <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2 border-b pb-2">
-                            <DollarSign className="w-4 h-4 text-emerald-600" />
+                            <IndianRupee className="w-4 h-4 text-emerald-600" />
                             Purchase Information
                         </h3>
                         <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-xs">

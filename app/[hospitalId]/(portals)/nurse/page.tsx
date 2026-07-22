@@ -112,14 +112,14 @@ export default function NurseDashboard() {
 
     const expiryAlert = checkLicenseExpiry();
 
-    const handleCheckIn = async () => {
+    const handleCheckIn = async (payload?: any) => {
         try {
-            await checkInMutation.mutateAsync(undefined);
+            await checkInMutation.mutateAsync(payload);
             toast.success('Shift started');
             refetchAttendance();
             setIsAttendanceModalOpen(false);
-        } catch (e) {
-            toast.error('Failed to clock in');
+        } catch (e: any) {
+            toast.error(e?.message || 'Failed to clock in');
         }
     };
 

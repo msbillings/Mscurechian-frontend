@@ -116,9 +116,9 @@ function HelpdeskDashboard() {
     const checkOutMutation = useCheckOut();
     const { data: helpdeskProfile } = useHelpdeskProfile();
 
-    const handleCheckIn = useCallback(async () => {
+    const handleCheckIn = useCallback(async (payload?: any) => {
         try {
-            await checkInMutation.mutateAsync(undefined);
+            await checkInMutation.mutateAsync(payload);
             toast.success("Clocked in successfully!");
             setIsAttendanceModalOpen(false);
         } catch (err: any) {

@@ -16,12 +16,13 @@ import { useAuthStore } from '@/stores/authStore';
 interface AttendanceModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: () => void;
+    onConfirm: (payload: { lat?: number; lng?: number; photo?: string | null }) => void;
 }
 
 export const AttendanceModal: React.FC<AttendanceModalProps> = ({ isOpen, onClose, onConfirm }) => {
     const [step, setStep] = useState<'location' | 'camera'>('location');
     const [location, setLocation] = useState<string>('');
+    const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
     const [isCameraActive, setIsCameraActive] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
     const [capturing, setCapturing] = useState(false);
@@ -37,6 +38,7 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({ isOpen, onClos
             console.log("[AttendanceModal] Modal Opened. Initializing Step 1: Location...");
             setStep('location');
             setLocation('');
+            setCoords(null);
             setIsCameraActive(false);
             setCameraError(null);
             
@@ -50,6 +52,7 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({ isOpen, onClos
                 navigator.geolocation.getCurrentPosition(
                     async (position) => {
                         const { latitude, longitude } = position.coords;
+                        setCoords({ lat: latitude, lng: longitude });
                         try {
                             const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
                             const data = await res.json();
@@ -86,7 +89,6 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({ isOpen, onClos
                 }
 
                 try {
-                    // Try with ideal constraints first
                     const constraints = { 
                         video: { 
                             facingMode: 'user',
@@ -138,9 +140,29 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({ isOpen, onClos
 
     const handleCapture = () => {
         setCapturing(true);
+        let photoDataUrl: string | null = null;
+        if (videoRef.current) {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = videoRef.current.videoWidth || 640;
+                canvas.height = videoRef.current.videoHeight || 480;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    // Draw non-mirrored image
+                    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+                    photoDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                }
+            } catch (err) {
+                console.error("[AttendanceModal] Photo capture error:", err);
+            }
+        }
         setTimeout(() => {
             setCapturing(false);
-            onConfirm();
+            onConfirm({
+                lat: coords?.lat,
+                lng: coords?.lng,
+                photo: photoDataUrl
+            });
             onClose();
         }, 800);
     };

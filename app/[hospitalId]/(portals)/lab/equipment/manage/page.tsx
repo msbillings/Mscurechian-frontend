@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useTransition, useRef } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Save, Plus, X, Cpu, DollarSign, ChevronDown, Search, Check } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, Cpu, IndianRupee, ChevronDown, Search, Check } from 'lucide-react';
 import { LabEquipmentService } from '@/lib/integrations/services/labEquipment.service';
 import { DepartmentService } from '@/lib/integrations/services/department.service';
 import { Department } from '@/lib/integrations/types/department';
@@ -491,7 +491,7 @@ function ManageEquipmentPage() {
                     {/* ── SECTION 2: Purchase Details ── */}
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm space-y-4">
                         <h2 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2 border-b pb-3">
-                            <DollarSign className="w-4 h-4 text-emerald-600" />
+                            <IndianRupee className="w-4 h-4 text-emerald-600" />
                             Purchase Details
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

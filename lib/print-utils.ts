@@ -3660,10 +3660,27 @@ export const generateAddBillsReceiptHtml = (data: any) => {
                         <td style="text-align: right;">₹ ${Math.round(item.amount || 0).toLocaleString()}</td>
                       </tr>
                     `).join('')}
-                    <tr class="total-row">
-                      <td>TOTAL AMOUNT</td>
-                      <td style="text-align: right;">₹ ${Math.round(payment.amount).toLocaleString()}</td>
-                    </tr>
+                    ${payment.discountAmount && payment.discountAmount > 0 ? `
+                      <tr>
+                        <td><strong>SUBTOTAL</strong></td>
+                        <td style="text-align: right;">₹ ${Math.round(payment.subtotal || payment.amount).toLocaleString()}</td>
+                      </tr>
+                      <tr>
+                        <td style="color: #059669; font-weight: 700;">
+                          DISCOUNT ${payment.discountReason ? `(${payment.discountReason})` : ''}
+                        </td>
+                        <td style="text-align: right; color: #059669; font-weight: 700;">- ₹ ${Math.round(payment.discountAmount).toLocaleString()}</td>
+                      </tr>
+                      <tr class="total-row">
+                        <td>NET AMOUNT PAYABLE</td>
+                        <td style="text-align: right;">₹ ${Math.round(payment.amount).toLocaleString()}</td>
+                      </tr>
+                    ` : `
+                      <tr class="total-row">
+                        <td>TOTAL AMOUNT</td>
+                        <td style="text-align: right;">₹ ${Math.round(payment.amount).toLocaleString()}</td>
+                      </tr>
+                    `}
                   </tbody>
                 </table>
                 <div style="margin-top: 10px; font-size: 9.5px; font-weight: 700; display: flex; justify-content: space-between; padding: 8px; background-color: #f8fafc; border-radius: 6px;">

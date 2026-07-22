@@ -5,11 +5,12 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
     LayoutDashboard,
-    Activity,
+    IndianRupee,
     FlaskConical,
     Settings,
     X,
-    ClipboardList,
+    Building2,
+    FileEdit,
     Wrench,
     Package,
 } from "lucide-react";
@@ -116,7 +117,7 @@ function LabSidebar({ isOpen, onClose, activeTestCount = 0, onLogout, isPending,
                                 : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
                             }`}
                     >
-                        <Activity
+                        <IndianRupee
                             size={20}
                             className={`transition-colors duration-200 ${pathname === '/lab/billing/transactions' ? "text-blue-600 dark:text-blue-400" : "text-gray-400 group-hover:text-blue-500"}`}
                         />
@@ -139,7 +140,7 @@ function LabSidebar({ isOpen, onClose, activeTestCount = 0, onLogout, isPending,
                                 : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
                             }`}
                     >
-                        <ClipboardList
+                        <Building2
                             size={20}
                             className={`transition-colors duration-200 ${pathname === '/lab/departments' ? "text-blue-600 dark:text-blue-400" : "text-gray-400 group-hover:text-blue-500"}`}
                         />
@@ -171,7 +172,7 @@ function LabSidebar({ isOpen, onClose, activeTestCount = 0, onLogout, isPending,
                                 : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
                             }`}
                     >
-                        <ClipboardList
+                        <FileEdit
                             size={20}
                             className={`transition-colors duration-200 ${pathname === '/lab/edited-results' ? "text-blue-600 dark:text-blue-400" : "text-gray-400 group-hover:text-blue-500"}`}
                         />

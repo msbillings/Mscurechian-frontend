@@ -5,6 +5,10 @@ import {
     IndianRupee,
     Package,
     AlertTriangle,
+    AlertCircle,
+    Boxes,
+    ShieldAlert,
+    Receipt,
     FileText,
     ChevronRight,
     PlusCircle,
@@ -215,7 +219,7 @@ const PharmacyDashboard = () => {
                         onClick={() => setIsExpiryModalOpen(true)}
                         className="flex items-center gap-1.5 px-2.5 py-1.5 bg-red-50 text-red-600 border border-red-100 rounded-lg text-[9px] font-black uppercase hover:bg-red-100 transition-all relative shadow-sm"
                     >
-                        <AlertTriangle size={12} strokeWidth={3} />
+                        <AlertCircle size={12} strokeWidth={3} />
                         <span className="hidden sm:inline">Alerts</span>
                         {stats && stats.inventoryStats.expiringSoonCount ? (
                             <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[8px] font-black text-white shadow-sm">
@@ -241,7 +245,7 @@ const PharmacyDashboard = () => {
                 {[
                     { label: "Total Sales", value: formatCurrency(stats?.requestedStats.revenue || 0), sub: `${stats?.requestedStats.billCount || 0} Bills Generated`, icon: IndianRupee, color: "teal", detail: "Daily Target: 92%" },
                     { label: "Available Medicines", value: stats?.inventoryStats.totalProducts.toString() || "0", sub: "Total Medicines", icon: Package, color: "teal", detail: "New Medicines Added" },
-                    { label: "Low Stock Items", value: stats?.inventoryStats.lowStockCount.toString() || "0", sub: stats?.inventoryStats.outOfStockCount ? `${stats.inventoryStats.outOfStockCount} Out of Stock` : "Stock levels normal", icon: AlertTriangle, color: "red", detail: "Needs reorder" },
+                    { label: "Low Stock Items", value: stats?.inventoryStats.lowStockCount.toString() || "0", sub: stats?.inventoryStats.outOfStockCount ? `${stats.inventoryStats.outOfStockCount} Out of Stock` : "Stock levels normal", icon: AlertCircle, color: "red", detail: "Needs reorder" },
                     { label: "Total Bills", value: stats?.requestedStats.billCount.toString() || "0", sub: "Bills Generated", icon: FileText, color: "teal", detail: "Processed today" },
                 ].map((stat, idx) => {
                     const Icon = stat.icon;
@@ -302,7 +306,7 @@ const PharmacyDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                 {[
                     { title: "Billing", desc: "Create Bill", icon: PlusCircle, href: `/${hospitalId}/pharmacy/billing`, label: "NEW BILL" },
-                    { title: "Medicine Inventory", desc: "Manage Medicines", icon: Package, href: `/${hospitalId}/pharmacy/products`, label: "MEDICINES" },
+                    { title: "Medicine Inventory", desc: "Manage Medicines", icon: Boxes, href: `/${hospitalId}/pharmacy/products`, label: "MEDICINES" },
                     { title: "Sales History", desc: "View Transactions", icon: TrendingUp, href: `/${hospitalId}/pharmacy/transactions`, label: "HISTORY" },
                 ].map((action, i) => (
                     <Link key={`quick-action-${i}`} href={action.href} className="group">
@@ -337,7 +341,7 @@ const PharmacyDashboard = () => {
                     <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm h-full overflow-hidden">
                         <div className="p-4 md:px-6 border-b border-gray-50 dark:border-gray-700 flex items-center justify-between bg-gray-50/30 dark:bg-gray-800/20">
                             <div className="flex items-center gap-2">
-                                <AlertTriangle size={14} className="text-red-500 animate-pulse" />
+                                <ShieldAlert size={14} className="text-red-500 animate-pulse" />
                                 <span className="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest">Urgent Low Stock</span>
                             </div>
                             <Link href={`/${hospitalId}/pharmacy/products`}>
@@ -359,7 +363,7 @@ const PharmacyDashboard = () => {
                         {/* Revenue Node Summary */}
                         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col h-full hover:shadow-md transition-all">
                             <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-3 bg-gray-50/20 dark:bg-gray-800/10">
-                                <FileText size={18} className="text-teal-600" />
+                                <Receipt size={18} className="text-teal-600" />
                                 <h4 className="text-[10px] md:text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">Sales Summary</h4>
                             </div>
                             <div className="p-6 flex-1 space-y-5">

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Receipt, Beaker, FileText, ArrowRight } from 'lucide-react';
+import { IndianRupee, Beaker, FileText, ArrowRight } from 'lucide-react';
 import { useTenantLink } from "@/hooks/useTenantLink";
 
 interface LabQuickActionsProps {
@@ -19,7 +19,7 @@ const LabQuickActions: React.FC<LabQuickActionsProps> = ({ activeTestCount = 0, 
     const actions = [
         {
             label: 'Billing',
-            icon: Receipt,
+            icon: IndianRupee,
             path: '/lab/billing',
         },
         {

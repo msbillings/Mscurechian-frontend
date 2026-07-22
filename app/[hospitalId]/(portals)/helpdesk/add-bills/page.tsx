@@ -7,7 +7,7 @@ import {
     Search, User, FileText, Plus, Trash2, Loader2, ArrowLeft,
     CheckCircle2, AlertTriangle, Receipt, TestTube, Activity,
     Building2, IndianRupee, Clock, Stethoscope, X, ChevronDown,
-    Sparkles, Package, Heart, Microscope, Printer
+    Sparkles, Package, Heart, Microscope, Printer, Percent, Tag
 } from 'lucide-react';
 import { helpdeskService, ipdService } from '@/lib/integrations';
 import { apiClient } from '@/lib/integrations/api/apiClient';
@@ -76,10 +76,13 @@ export default function AddBillsPage() {
     const [newChargeDescription, setNewChargeDescription] = useState('');
     const [newChargeAmount, setNewChargeAmount] = useState('');
 
-    // ── Submission ──
+    // ── Submission & Discount ──
     const [submitting, setSubmitting] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'upi' | 'mixed' | 'due'>('cash');
     const [mixedDetails, setMixedDetails] = useState({ cash: 0, card: 0, upi: 0 });
+    const [discountType, setDiscountType] = useState<'flat' | 'percent'>('flat');
+    const [discountValue, setDiscountValue] = useState<string>('');
+    const [discountReason, setDiscountReason] = useState<string>('');
 
     // ── Print Preview ──
     const [showPrintModal, setShowPrintModal] = useState(false);
@@ -351,8 +354,16 @@ export default function AddBillsPage() {
         setBillItems(prev => prev.filter(i => i.id !== id));
     };
 
-    // ── Total ──
-    const totalAmount = billItems.reduce((sum, item) => sum + item.amount, 0);
+    // ── Total & Discount Calculation ──
+    const subtotal = billItems.reduce((sum, item) => sum + item.amount, 0);
+    const numericDiscountValue = parseFloat(discountValue) || 0;
+    const discountAmount = Math.min(
+        subtotal,
+        discountType === 'percent'
+            ? (subtotal * numericDiscountValue) / 100
+            : numericDiscountValue
+    );
+    const totalAmount = Math.max(0, subtotal - discountAmount);
 
     // ── Filtered Lab Tests ──
     const filteredLabTests = labTestSearch.length >= 1
@@ -564,6 +575,9 @@ export default function AddBillsPage() {
         setActiveAdmission(null);
         setPaymentMethod('cash');
         setMixedDetails({ cash: 0, card: 0, upi: 0 });
+        setDiscountType('flat');
+        setDiscountValue('');
+        setDiscountReason('');
     };
 
     const handlePrint = async () => {
@@ -595,6 +609,9 @@ export default function AddBillsPage() {
                 },
                 items: billItems,
                 payment: {
+                    subtotal: subtotal,
+                    discountAmount: discountAmount,
+                    discountReason: discountReason,
                     amount: totalAmount,
                     method: paymentMethod,
                     receiptNo: 'EST-' + Math.floor(Math.random() * 1000000)
@@ -2046,18 +2063,95 @@ export default function AddBillsPage() {
                                         })()}
                                     </AnimatePresence>
 
-                                    {/* Total */}
-                                    <div className="bill-total-section">
-                                        <div className="bill-total-row">
-                                            <div className="bill-total-label">Total Amount</div>
-                                            <div className="bill-total-value">₹{Math.round(totalAmount).toLocaleString()}</div>
+                                    {/* ── DISCOUNT SECTION (Professional Card) ── */}
+                                    <div className="p-3.5 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3 mt-4">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                                                <Tag size={13} className="text-teal-600" /> Apply Discount
+                                            </label>
+
+                                            {/* Segmented Control */}
+                                            <div className="flex bg-slate-200/70 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setDiscountType('flat')}
+                                                    className={`px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase transition-all ${
+                                                        discountType === 'flat'
+                                                            ? 'bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 shadow-sm'
+                                                            : 'text-slate-500 hover:text-slate-700'
+                                                    }`}
+                                                >
+                                                    ₹ Flat
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setDiscountType('percent')}
+                                                    className={`px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase transition-all ${
+                                                        discountType === 'percent'
+                                                            ? 'bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 shadow-sm'
+                                                            : 'text-slate-500 hover:text-slate-700'
+                                                    }`}
+                                                >
+                                                    % Percent
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
-                                            <span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>{billItems.length} item(s)</span>
-                                            <span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>
-                                                {billItems.filter(i => i.type === 'lab').length > 0 && `${billItems.filter(i => i.type === 'lab').length} Lab`}
-                                                {billItems.filter(i => i.type === 'ipd_charge').length > 0 && ` · ${billItems.filter(i => i.type === 'ipd_charge').length} IPD`}
-                                            </span>
+
+                                        {/* Input Fields */}
+                                        <div className="grid grid-cols-12 gap-2">
+                                            <div className="col-span-5">
+                                                <div className="relative flex items-center">
+                                                    <span className="absolute left-2.5 text-xs font-bold text-slate-400">
+                                                        {discountType === 'flat' ? '₹' : '%'}
+                                                    </span>
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        placeholder="0"
+                                                        value={discountValue}
+                                                        onChange={e => setDiscountValue(e.target.value)}
+                                                        className="w-full pl-6 pr-2 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="col-span-7">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Reason (e.g. Staff Concession)"
+                                                    value={discountReason}
+                                                    onChange={e => setDiscountReason(e.target.value)}
+                                                    className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-white outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* ── TOTAL & NET BREAKDOWN CARD ── */}
+                                    <div className="p-4 bg-slate-900 text-white rounded-2xl shadow-lg space-y-3 mt-4">
+                                        <div className="flex justify-between items-center text-xs font-bold text-slate-400">
+                                            <span className="uppercase tracking-wider">Subtotal</span>
+                                            <span className="text-sm font-extrabold text-white">₹{Math.round(subtotal).toLocaleString()}</span>
+                                        </div>
+
+                                        {discountAmount > 0 && (
+                                            <div className="flex justify-between items-center text-xs font-bold text-emerald-400 pt-1">
+                                                <span className="uppercase tracking-wider flex items-center gap-1">
+                                                    <Tag size={12} /> Discount {discountType === 'percent' ? `(${discountValue}%)` : ''}
+                                                </span>
+                                                <span className="text-sm font-extrabold">- ₹{Math.round(discountAmount).toLocaleString()}</span>
+                                            </div>
+                                        )}
+
+                                        <div className="pt-3 border-t border-slate-800 flex justify-between items-center">
+                                            <div>
+                                                <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Net Payable Amount</div>
+                                                <div className="text-[10px] font-medium text-slate-400 mt-0.5">
+                                                    {billItems.length} item(s) {billItems.filter(i => i.type === 'lab').length > 0 && `· ${billItems.filter(i => i.type === 'lab').length} Lab`}
+                                                </div>
+                                            </div>
+                                            <div className="text-2xl font-black text-white tracking-tight">
+                                                ₹{Math.round(totalAmount).toLocaleString()}
+                                            </div>
                                         </div>
                                     </div>
 

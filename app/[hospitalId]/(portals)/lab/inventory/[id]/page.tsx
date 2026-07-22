@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useTransition } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Edit, AlertTriangle, Calendar, ShieldAlert, Package, Info, FileSpreadsheet, DollarSign } from 'lucide-react';
+import { ArrowLeft, Edit, AlertTriangle, Calendar, ShieldAlert, Package, Info, FileSpreadsheet, IndianRupee } from 'lucide-react';
 import { LabInventoryService } from '@/lib/integrations/services/labInventory.service';
 import { LabInventory } from '@/lib/integrations/types/labInventory';
 import { toast } from 'react-hot-toast';
@@ -220,7 +220,7 @@ function InventoryDetailsPage() {
                     {/* Purchase Info */}
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm space-y-4">
                         <h2 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest border-b pb-2 flex items-center gap-2">
-                            <DollarSign className="w-4 h-4 text-emerald-600" />
+                            <IndianRupee className="w-4 h-4 text-emerald-600" />
                             Pricing Information
                         </h2>
                         <div className="grid grid-cols-2 gap-y-4 gap-x-6">

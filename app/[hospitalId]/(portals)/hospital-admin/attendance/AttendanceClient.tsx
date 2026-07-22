@@ -31,7 +31,8 @@ const STATUS_CONFIG = {
   late: { icon: AlertCircle, color: "text-yellow-500", bg: "bg-yellow-50", label: "Late" },
   "half-day": { icon: Clock, color: "text-orange-500", bg: "bg-orange-50", label: "Half Day" },
   "on-leave": { icon: Calendar, color: "text-blue-500", bg: "bg-blue-50", label: "On Leave" },
-  "off-duty": { icon: Clock, color: "text-gray-500", bg: "bg-gray-50", label: "Off Duty" }
+  "off-duty": { icon: Clock, color: "text-gray-500", bg: "bg-gray-50", label: "Off Duty" },
+  "auto-clock-out": { icon: Clock, color: "text-amber-600", bg: "bg-amber-50", label: "Auto Clock-Out" }
 };
 
 interface AttendanceClientProps {
@@ -102,14 +103,29 @@ const AttendanceRow = React.memo(({
 
   const staffName = resolveStaffName(record);
   const staffDesignation = resolveStaffDesignation(record);
+  const photoIn = (record as any).photoIn || (record as any).capturedPhoto || null;
+  const photoOut = (record as any).photoOut || null;
 
   return (
     <tr className="hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors">
       <td className="py-4 px-3 md:px-6">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center font-bold text-xs text-gray-400">
-            {staffName.charAt(0).toUpperCase()}
-          </div>
+          {photoIn ? (
+            <div className="relative group cursor-pointer">
+              <img 
+                src={photoIn} 
+                alt={staffName} 
+                className="w-10 h-10 rounded-xl object-cover border border-emerald-200 shadow-sm" 
+              />
+              <div className="hidden group-hover:block absolute left-12 top-0 z-50 p-1 bg-white rounded-xl shadow-2xl border border-slate-200 w-32 h-32">
+                <img src={photoIn} alt={staffName} className="w-full h-full object-cover rounded-lg" />
+              </div>
+            </div>
+          ) : (
+            <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center font-bold text-xs text-gray-400">
+              {staffName.charAt(0).toUpperCase()}
+            </div>
+          )}
           <div>
             <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">{staffName}</p>
             <p className="text-[10px] text-gray-400 font-medium">{staffDesignation}</p>

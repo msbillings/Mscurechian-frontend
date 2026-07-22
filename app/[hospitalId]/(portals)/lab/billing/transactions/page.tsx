@@ -5,7 +5,7 @@ import { LabBillingService } from '@/lib/integrations/services/labBilling.servic
 import { BillResponse } from '@/lib/integrations/types/labBilling';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import { Download, Eye, Printer, Filter, Calendar, Receipt, ChevronLeft, ChevronRight, Search, X, RefreshCw } from 'lucide-react';
+import { Download, Eye, Printer, Filter, Calendar, IndianRupee, ChevronLeft, ChevronRight, Search, X, RefreshCw } from 'lucide-react';
 import { useReactToPrint } from 'react-to-print';
 import BillPrintView from '@/components/lab/BillPrintView';
 import { toast } from 'react-hot-toast';
@@ -496,7 +496,7 @@ function TransactionsPage() {
                 {/* Heading */}
                 <div className="shrink-0 flex items-center gap-2 px-1">
                     <div className="p-1.5 md:p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-indigo-600">
-                        <Receipt className="w-5 h-5 md:w-6 md:h-6" />
+                        <IndianRupee className="w-5 h-5 md:w-6 md:h-6" />
                     </div>
                     <div>
                         <h1 className="text-sm md:text-base font-bold text-gray-900 dark:text-white leading-tight uppercase tracking-wide">

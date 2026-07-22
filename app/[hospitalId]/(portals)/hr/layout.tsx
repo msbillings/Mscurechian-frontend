@@ -14,6 +14,10 @@ import {
   Bell,
   ShieldCheck,
   BedDouble,
+  HeartPulse,
+  DoorOpen,
+  Hospital,
+  Megaphone,
 } from "lucide-react";
 import LicenseLock from "@/components/License/LicenseLock";
 import LogoutModal from "@/components/auth/LogoutModal";
@@ -34,15 +38,15 @@ const hrMenuLinks = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/hr" },
   { icon: Users, label: "Staff Directory", path: "/hr/staff" },
   { icon: Stethoscope, label: "Doctors", path: "/hr/doctors" },
-  { icon: Users, label: "Nursing Registry", path: "/hr/nurses" },
+  { icon: HeartPulse, label: "Nursing Registry", path: "/hr/nurses" },
   { icon: Headphones, label: "Helpdesk", path: "/hr/helpdesks" },
   { icon: Briefcase, label: "Recruitment", path: "/hr/recruitment" },
   { icon: Building2, label: "Departments", path: "/hr/departments" },
-  { icon: Building2, label: "Rooms", path: "/hr/rooms" },
+  { icon: DoorOpen, label: "Rooms", path: "/hr/rooms" },
   { icon: BedDouble, label: "Beds", path: "/hr/beds" },
   { icon: FileText, label: "Document Vault", path: "/hr/documents" },
-  { icon: BedDouble, label: "Inpatients", path: "/hr/inpatients" },
-  { icon: Bell, label: "Announcements", path: "/hr/announcements" },
+  { icon: Hospital, label: "Inpatients", path: "/hr/inpatients" },
+  { icon: Megaphone, label: "Announcements", path: "/hr/announcements" },
 ];
 
 export function HRLayout({ children }: { children: React.ReactNode }) {

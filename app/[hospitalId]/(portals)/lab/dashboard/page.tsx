@@ -15,6 +15,7 @@ import {
   CreditCard,
   Smartphone,
   Banknote,
+  IndianRupee,
   Beaker,
   Sparkles
 } from "lucide-react";
@@ -456,7 +457,7 @@ function LabDashboard() {
                 Revenue Sources
               </h3>
               <div className="p-2.5 bg-gradient-to-br from-indigo-100 to-indigo-50 dark:from-indigo-900/50 dark:to-indigo-900/20 rounded-xl shadow-sm">
-                <Banknote className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <IndianRupee className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
               </div>
             </div>
 
@@ -467,7 +468,7 @@ function LabDashboard() {
                   value: stats?.paymentBreakdown.Cash || 0,
                   color: "bg-emerald-500",
                   bg: "bg-emerald-100",
-                  icon: Banknote,
+                  icon: IndianRupee,
                   iconColor: "text-emerald-600"
                 },
                 {

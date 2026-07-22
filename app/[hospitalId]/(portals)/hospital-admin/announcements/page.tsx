@@ -351,9 +351,9 @@ function AnnouncementManagement() {
               <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-100">
                 <Megaphone className="text-slate-200 w-8 h-8" />
               </div>
-              <h3 className="text-sm md:text-lg font-black text-slate-900 italic">Static Channel</h3>
+              <h3 className="text-sm md:text-lg font-black text-slate-900 italic">No Announcements</h3>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 max-w-[240px] mx-auto">
-                No active broadcasts detected within the current transmission cycle.
+                There are currently no active announcements.
               </p>
             </div>
           )}
@@ -381,14 +381,14 @@ function AnnouncementManagement() {
             <form onSubmit={handleCreate} className="p-2 md:p-6 space-y-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
               <div className="space-y-3">
                 <div>
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block px-1">Notice Headline</label>
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block px-1">Announcement Title</label>
                   <input
                     required
                     type="text"
                     maxLength={80}
                     value={newAnnouncement.title}
                     onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
-                    placeholder="e.g. SYSTEM_MAINTENANCE_ID_094"
+                    placeholder="e.g. Hospital Staff Meeting tomorrow at 10:00 AM"
                     className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                   />
                   <div className="flex justify-end mt-1 px-1">
@@ -397,14 +397,14 @@ function AnnouncementManagement() {
                 </div>
 
                 <div>
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block px-1">Broadcast Details</label>
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block px-1">Announcement Details</label>
                   <textarea
                     required
                     rows={3}
                     maxLength={400}
                     value={newAnnouncement.content}
                     onChange={(e) => setNewAnnouncement({ ...newAnnouncement, content: e.target.value })}
-                    placeholder="Provide concise operational information..."
+                    placeholder="Enter detailed notice or instructions for hospital staff..."
                     className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500/20 outline-none resize-none transition-all"
                   ></textarea>
                   <div className="flex justify-end mt-1 px-1">
@@ -414,14 +414,14 @@ function AnnouncementManagement() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block px-1">Target Sector</label>
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block px-1">Send Notice To</label>
                     <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                       {[
-                        { id: 'all', label: 'All' },
-                        { id: 'doctor', label: 'Medical Consultants (Doctors)' },
+                        { id: 'all', label: 'All Hospital Staff' },
+                        { id: 'doctor', label: 'Doctors' },
                         { id: 'nurse', label: 'Nurses' },
-                        { id: 'staff', label: 'Staff' },
-                        { id: 'helpdesk', label: 'Frontdesk' }
+                        { id: 'staff', label: 'General Staff' },
+                        { id: 'helpdesk', label: 'Helpdesk / Reception' }
                       ].map((role) => (
                         <label key={role.id} className="flex items-center gap-3 group cursor-pointer">
                           <div className="relative flex items-center justify-center">
@@ -432,17 +432,14 @@ function AnnouncementManagement() {
                               onChange={(e) => {
                                 let roles = [...newAnnouncement.targetRoles];
                                 if (e.target.checked) {
-                                  // If 'all' is being checked, unique selection
                                   if (role.id === 'all') {
                                     roles = ['all'];
                                   } else {
-                                    // Remove 'all' if another specific role is checked
                                     roles = roles.filter(r => r !== 'all');
                                     roles.push(role.id);
                                   }
                                 } else {
                                   roles = roles.filter(r => r !== role.id);
-                                  // Default back to all if nothing selected? Let's leave it empty for now.
                                 }
                                 setNewAnnouncement({ ...newAnnouncement, targetRoles: roles });
                               }}
@@ -456,20 +453,20 @@ function AnnouncementManagement() {
                   </div>
                   <div className="space-y-4">
                     <div>
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block px-1">Priority Rating</label>
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block px-1">Priority Level</label>
                       <select
                         className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                         value={newAnnouncement.priority}
                         onChange={(e) => setNewAnnouncement({ ...newAnnouncement, priority: e.target.value as any })}
                       >
-                        <option value="low">Standard Aware</option>
-                        <option value="medium">Action Recom</option>
-                        <option value="high">Urgent Respond</option>
+                        <option value="low">General Notice</option>
+                        <option value="medium">Important / Action Required</option>
+                        <option value="high">Urgent / High Priority</option>
                       </select>
                     </div>
                     <div>
                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block px-1">
-                         Expiry Sector <span className="text-amber-500 ml-1">(Date &amp; Time)</span>
+                         Expiry Date & Time <span className="text-amber-500 ml-1">(Optional)</span>
                        </label>
                        <input
                          type="datetime-local"
@@ -479,7 +476,7 @@ function AnnouncementManagement() {
                          className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                        />
                        <p className="text-[8px] font-bold text-slate-400 px-1 mt-1">
-                         Leave empty for no expiry. Set a near time to test.
+                         Leave empty for no expiry.
                        </p>
                     </div>
                   </div>

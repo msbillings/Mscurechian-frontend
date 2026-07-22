@@ -6,6 +6,7 @@ import {
     Calendar,
     Clock,
     Briefcase,
+    Building2,
     CheckCircle2,
     XCircle,
     ChevronRight,
@@ -45,9 +46,9 @@ export default function HRDashboard() {
         {
             title: 'Departments',
             value: stats?.breakdown?.filter((item: any) => item.role !== 'emergency').length || 0,
-            icon: Briefcase,
-            color: 'bg-blue-500',
-            link: `/${hospitalId}/hr/staff`,
+            icon: Building2,
+            color: 'bg-purple-500',
+            link: `/${hospitalId}/hr/departments`,
         },
     ], [stats, hospitalId]);
 

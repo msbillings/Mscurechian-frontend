@@ -4,7 +4,7 @@ import React, { useEffect, useState, useTransition, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { LabSample } from '@/lib/integrations/types/labSample';
 import { LabSampleService } from '@/lib/integrations/services/labSample.service';
-import { FlaskConical, RefreshCw, CheckCircle2, AlertCircle, PlayCircle, ChevronLeft, ChevronRight, Receipt, Printer, Filter } from 'lucide-react';
+import { FlaskConical, RefreshCw, CheckCircle2, AlertCircle, PlayCircle, ChevronLeft, ChevronRight, IndianRupee, Printer, Filter } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { invalidateCachePattern, clearApiCache } from '@/lib/integrations/api/apiClient';
 import { getSocket } from '@/lib/integrations/api/socket';
@@ -712,7 +712,7 @@ export default function SampleCollectionPage() {
                                                                 onClick={() => handleGenerateBill(sample)}
                                                                 className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shadow-sm"
                                                             >
-                                                                <Receipt className="w-3.5 h-3.5" />
+                                                                <IndianRupee className="w-3.5 h-3.5" />
                                                                 Bill
                                                             </button>
                                                         )}
@@ -733,7 +733,7 @@ export default function SampleCollectionPage() {
                                                                 onClick={() => handleGenerateBill(sample)}
                                                                 className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shadow-sm"
                                                             >
-                                                                <Receipt className="w-3.5 h-3.5" />
+                                                                <IndianRupee className="w-3.5 h-3.5" />
                                                                 Bill
                                                             </button>
                                                         ) : (

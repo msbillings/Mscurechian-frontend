@@ -4,7 +4,7 @@ import React, { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { LabSample } from '@/lib/integrations/types/labSample';
 import { LabSampleService } from '@/lib/integrations/services/labSample.service';
-import { Activity, RefreshCw, Trash2, User, TestTube, Clock, AlertCircle, CheckCircle2, Receipt } from 'lucide-react';
+import { Activity, RefreshCw, Trash2, User, TestTube, Clock, AlertCircle, CheckCircle2, IndianRupee } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 function ActiveTestsPage() {
@@ -228,7 +228,7 @@ function ActiveTestsPage() {
                                             disabled={isNavigating}
                                             className={`px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium shadow-sm transition-all flex items-center gap-2 ${isNavigating ? 'opacity-70 cursor-wait' : ''}`}
                                         >
-                                            {isNavigating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Receipt className="w-4 h-4" />}
+                                            {isNavigating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <IndianRupee className="w-4 h-4" />}
                                             Generate Bill
                                         </button>
 
