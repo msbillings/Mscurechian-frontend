@@ -287,7 +287,7 @@ export default function PatientRegistration() {
         if (formData.honorific === 'Mr' || formData.honorific === 'Master') setFormData(prev => ({ ...prev, gender: 'male' }));
         else if (formData.honorific === 'Mrs' || formData.honorific === 'Ms') setFormData(prev => ({ ...prev, gender: 'female' }));
         
-        if (formData.honorific === 'Baby of') {
+        if (formData.honorific === 'Baby of' || formData.honorific === 'Baby') {
             setFormData(prev => ({ ...prev, ageUnit: 'Months' }));
         } else {
             setFormData(prev => ({ ...prev, ageUnit: 'Years' }));
@@ -584,6 +584,7 @@ export default function PatientRegistration() {
                                             <option value="Mrs">Mrs.</option>
                                             <option value="Ms">Ms.</option>
                                             <option value="Master">Master</option>
+                                            <option value="Baby">Baby</option>
                                             <option value="Baby of">Baby of (B/o)</option>
                                             <option value="Dr">Dr.</option>
                                         </select>
