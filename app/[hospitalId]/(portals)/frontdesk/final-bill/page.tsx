@@ -298,7 +298,7 @@ export default function FinalBillPage() {
                         <td class="lbl">IP No</td><td class="val">: ${adm?.admissionId || ''}</td>
                     </tr>
                     <tr>
-                        <td class="lbl">Age/Sex</td><td class="val">: ${pt.age || ''} / ${(pt.gender || '').charAt(0).toUpperCase() + (pt.gender || '').slice(1)}</td>
+                        <td class="lbl">Age/Sex</td><td class="val">: ${[pt?.age || pt?.profile?.age || pt?.patientDetails?.age || calculateAge(pt?.dob || pt?.profile?.dob || pt?.patientDetails?.dob) ? (pt?.age || pt?.profile?.age || pt?.patientDetails?.age || calculateAge(pt?.dob || pt?.profile?.dob || pt?.patientDetails?.dob)) + 'Y' : '', pt?.gender || pt?.profile?.gender || pt?.patientDetails?.gender ? (pt?.gender || pt?.profile?.gender || pt?.patientDetails?.gender).charAt(0).toUpperCase() + (pt?.gender || pt?.profile?.gender || pt?.patientDetails?.gender).slice(1) : ''].filter(Boolean).join(' / ') || 'N/A'}</td>
                         <td class="lbl">UMR No</td><td class="val">: ${pt.mrn || ''}</td>
                     </tr>
                     <tr>
