@@ -697,10 +697,17 @@ export default function TransactionsPage() {
         if (!win) { toast.error('Please allow popups to print'); return; }
 
         const h = hospital || {};
-        const patientName = getPatientNameWithPrefix(tx);
+        const honorific = tx.patient?.honorific || tx.patient?.profile?.honorific || tx.referenceId?.honorific || tx.referenceId?.patientHonorific || tx.honorific || tx.patientPrefix || tx.patientDetails?.honorific || "";
+        const rawPatientName = tx.patientName || tx.patient?.name || tx.referenceId?.patientName || "Unknown";
+        const upHonorific = honorific ? honorific.toUpperCase() : "";
+        const prefixStr = ["MR", "MRS", "MS", "DR"].includes(upHonorific) ? `${upHonorific}.` : upHonorific;
+        const patientName = `${prefixStr} ${rawPatientName}`.trim().toUpperCase();
         
-        const patientAgeRaw = tx.patientDetails?.age || tx.patientId?.age || (tx.patientDetails?.dateOfBirth ? Math.floor((Date.now() - new Date(tx.patientDetails.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 365.25)) : (tx.patientId?.dateOfBirth ? Math.floor((Date.now() - new Date(tx.patientId.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 365.25)) : ''));
-        const patientGender = tx.patientDetails?.gender || tx.patientId?.gender || '';
+        const pAge = tx.patientDetails?.age || tx.patientId?.age || tx.patient?.age || tx.patient?.profile?.age;
+        const pDob = tx.patientDetails?.dateOfBirth || tx.patientId?.dateOfBirth || tx.patient?.dob || tx.patient?.profile?.dob;
+        const patientAgeRaw = pAge || (pDob ? Math.floor((Date.now() - new Date(pDob).getTime()) / (1000 * 60 * 60 * 24 * 365.25)) : '');
+        const patientGenderRaw = tx.patientDetails?.gender || tx.patientId?.gender || tx.patient?.gender || tx.patient?.profile?.gender || '';
+        const patientGender = patientGenderRaw ? patientGenderRaw.charAt(0).toUpperCase() + patientGenderRaw.slice(1) : '';
         const ageGenderDisplay = [patientAgeRaw ? `${patientAgeRaw}Y` : '', patientGender].filter(Boolean).join(" / ") || "N/A";
         
         const amount = tx.payment?.amount || tx.amount || 0;
