@@ -87,6 +87,8 @@ interface Medicine {
     mgPerKg?: string;
     calculatedDose?: string;
     eye?: 'BE' | 'RE' | 'LE';
+    dropCount?: string;
+    timesPerDay?: string;
 }
 
 
@@ -240,15 +242,15 @@ interface PrescriptionForm {
         iop:    { od: string; os: string; };
         pupils:  'PERRLA' | 'Sluggish' | 'Fixed' | '';
         slitLamp: {
-            conjunctiva:     'Normal' | 'Congested' | 'Pale' | '';
-            cornea:          'Clear'  | 'Ulcer'     | 'Opacity' | '';
-            anteriorChamber: 'Normal' | 'Shallow'   | 'Deep' | '';
-            lens:            'Clear'  | 'Cataract'  | 'Mature cataract' | '';
+            conjunctiva:     { re: string, le: string, notes: string } | any;
+            cornea:          { re: string, le: string, notes: string } | any;
+            anteriorChamber: { re: string, le: string, notes: string } | any;
+            lens:            { re: string, le: string, notes: string } | any;
         };
         fundus: {
-            retina:    'Normal' | 'Detachment' | 'Degeneration' | '';
-            opticDisc: 'Normal' | 'Cupping increased' | '';
-            macula:    'Normal' | 'Edema' | '';
+            retina:    { re: string, le: string, notes: string } | any;
+            opticDisc: { re: string, le: string, notes: string } | any;
+            macula:    { re: string, le: string, notes: string } | any;
         };
         diagnosis: 'Conjunctivitis' | 'Dry Eye' | 'Cataract' | 'Glaucoma' | 'Refractive Error' | 'Corneal Ulcer' | '';
         notes:     string;
@@ -626,8 +628,8 @@ const INITIAL_FORM: PrescriptionForm = {
         iop:        { od: '', os: '' },
         pupils:     '',
         symptoms:   [],
-        slitLamp:   { conjunctiva: '', cornea: '', anteriorChamber: '', lens: '' },
-        fundus:     { retina: '', opticDisc: '', macula: '' },
+        slitLamp:   { conjunctiva: {re:'',le:'',notes:''}, cornea: {re:'',le:'',notes:''}, anteriorChamber: {re:'',le:'',notes:''}, lens: {re:'',le:'',notes:''} },
+        fundus:     { retina: {re:'',le:'',notes:''}, opticDisc: {re:'',le:'',notes:''}, macula: {re:'',le:'',notes:''} },
         diagnosis:  '',
         notes:      '',
     },
@@ -2407,8 +2409,8 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                 iop: { od: '', os: '' },
                                 pupils: '',
                                 symptoms: [],
-                                slitLamp: { conjunctiva: '', cornea: '', anteriorChamber: '', lens: '' },
-                                fundus: { retina: '', opticDisc: '', macula: '' },
+                                slitLamp: { conjunctiva: {re:'',le:'',notes:''}, cornea: {re:'',le:'',notes:''}, anteriorChamber: {re:'',le:'',notes:''}, lens: {re:'',le:'',notes:''} },
+                                fundus: { retina: {re:'',le:'',notes:''}, opticDisc: {re:'',le:'',notes:''}, macula: {re:'',le:'',notes:''} },
                                 diagnosis: '',
                                 notes: '',
                             };
@@ -2428,10 +2430,13 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                             if (maxIOP > 30) assessments.push('CRITICAL: Extremely High IOP — Glaucoma Emergency');
                             else if (maxIOP > 21) assessments.push('High Intraocular Pressure — Glaucoma Suspect');
                             
-                            if (o.slitLamp?.cornea === 'Ulcer') assessments.push('Active Corneal Ulcer — Urgent Treatment');
-                            if (o.fundus?.retina === 'Detachment') assessments.push('Retinal Detachment — Surgical Emergency');
-                            if (o.fundus?.opticDisc === 'Cupping increased') assessments.push('Increased C/D Ratio — Glaucomatous Disc');
-                            if (o.slitLamp?.lens?.includes('Cataract')) assessments.push(o.slitLamp.lens === 'Mature cataract' ? 'Mature Cataract — Surgical Evaluation' : 'Cataract detected');
+                            const isMatch = (field: any, val: string) => typeof field === 'string' ? field.includes(val) : (field?.re?.includes(val) || field?.le?.includes(val));
+                            const getExactMatch = (field: any, val: string) => typeof field === 'string' ? field === val : (field?.re === val || field?.le === val);
+
+                            if (getExactMatch(o.slitLamp?.cornea, 'Ulcer')) assessments.push('Active Corneal Ulcer — Urgent Treatment');
+                            if (getExactMatch(o.fundus?.retina, 'Detachment')) assessments.push('Retinal Detachment — Surgical Emergency');
+                            if (getExactMatch(o.fundus?.opticDisc, 'Cupping increased')) assessments.push('Increased C/D Ratio — Glaucomatous Disc');
+                            if (isMatch(o.slitLamp?.lens, 'Cataract')) assessments.push(getExactMatch(o.slitLamp?.lens, 'Mature cataract') ? 'Mature Cataract — Surgical Evaluation' : 'Cataract detected');
                             
                             return `
                         <div style="margin-bottom:15px; page-break-inside:avoid; font-family: sans-serif; color: #000;">
@@ -2481,22 +2486,47 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                     <td style="padding: 4px; font-weight:bold;">V/A</td>
                                 </tr>
                                 <tr>
-                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9; text-align:center;">DV</td>
+                            <div style="font-size:9px; font-weight:bold; margin-bottom: 2px;">Visual Acuity & Refraction</div>
+                            <table style="width:100%; border-collapse:collapse; font-size:9px; text-align:center; margin-bottom:15px; border: 1px solid #000;">
+                                <tr style="background:#e2e8f0; border-bottom: 1px solid #000;">
+                                    <th style="border-right: 1px solid #000; padding: 4px;">Eye</th>
+                                    <th style="border-right: 1px solid #000; padding: 4px;">Vision (Unaided)</th>
+                                    <th style="border-right: 1px solid #000; padding: 4px;">Vision (Corrected)</th>
+                                    <th style="border-right: 1px solid #000; padding: 4px;">Type</th>
+                                    <th style="border-right: 1px solid #000; padding: 4px;">SPH</th>
+                                    <th style="border-right: 1px solid #000; padding: 4px;">CYL</th>
+                                    <th style="border-right: 1px solid #000; padding: 4px;">AXIS</th>
+                                    <th style="padding: 4px;">VA</th>
+                                </tr>
+                                <tr style="border-bottom: 1px dotted #ccc;">
+                                    <td rowspan="2" style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9; border-bottom: 1px solid #000;">Right Eye (OD)</td>
+                                    <td rowspan="2" style="border-right: 1px solid #000; padding: 4px; border-bottom: 1px solid #000;">${o.vision?.od?.unaided || '--'}</td>
+                                    <td rowspan="2" style="border-right: 1px solid #000; padding: 4px; border-bottom: 1px solid #000;">${o.vision?.od?.corrected || '--'}</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9;">DV</td>
                                     <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.od?.distant?.sph || '--'}</td>
                                     <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.od?.distant?.cyl || '--'}</td>
                                     <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.od?.distant?.axis || '--'}</td>
                                     <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.od?.distant?.va || '--'}</td>
-                                    <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.os?.distant?.sph || '--'}</td>
-                                    <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.os?.distant?.cyl || '--'}</td>
-                                    <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.os?.distant?.axis || '--'}</td>
-                                    <td style="padding: 4px;">${o.refraction?.os?.distant?.va || '--'}</td>
                                 </tr>
-                                <tr style="border-top: 1px solid #000;">
-                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9; text-align:center;">NV</td>
+                                <tr style="border-bottom: 1px solid #000;">
+                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9;">NV</td>
                                     <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.od?.near?.sph || '--'}</td>
                                     <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.od?.near?.cyl || '--'}</td>
                                     <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.od?.near?.axis || '--'}</td>
                                     <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.od?.near?.va || '--'}</td>
+                                </tr>
+                                <tr style="border-bottom: 1px dotted #ccc;">
+                                    <td rowspan="2" style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9;">Left Eye (OS)</td>
+                                    <td rowspan="2" style="border-right: 1px solid #000; padding: 4px;">${o.vision?.os?.unaided || '--'}</td>
+                                    <td rowspan="2" style="border-right: 1px solid #000; padding: 4px;">${o.vision?.os?.corrected || '--'}</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9;">DV</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.os?.distant?.sph || '--'}</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.os?.distant?.cyl || '--'}</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.os?.distant?.axis || '--'}</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.os?.distant?.va || '--'}</td>
+                                </tr>
+                                <tr>
+                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9;">NV</td>
                                     <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.os?.near?.sph || '--'}</td>
                                     <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.os?.near?.cyl || '--'}</td>
                                     <td style="border-right: 1px solid #000; padding: 4px;">${o.refraction?.os?.near?.axis || '--'}</td>
@@ -2504,7 +2534,6 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                 </tr>
                             </table>
 
-                            <!-- EXAMINATION TABLE -->
                             <div style="font-size:9px; font-weight:bold; margin-bottom: 2px;">Examination</div>
                             <table style="width:100%; border-collapse:collapse; font-size:9px; text-align:center; margin-bottom:15px; border: 1px solid #000;">
                                 <tr style="background:#e2e8f0; border-bottom: 1px solid #000;">
@@ -2512,38 +2541,17 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                     <th style="border-right: 1px solid #000; padding: 4px; font-weight:bold; width:40%;">Right Eye</th>
                                     <th style="padding: 4px; font-weight:bold; width:40%;">Left Eye</th>
                                 </tr>
-                                <tr style="border-bottom: 1px solid #000;">
-                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9;">Conjunctiva</td>
-                                    <td colspan="2" style="padding: 4px;">${o.slitLamp?.conjunctiva || '--'}</td>
-                                </tr>
-                                <tr style="border-bottom: 1px solid #000;">
-                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9;">Cornea</td>
-                                    <td colspan="2" style="padding: 4px;">${o.slitLamp?.cornea || '--'}</td>
-                                </tr>
-                                <tr style="border-bottom: 1px solid #000;">
-                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9;">Anterior Chamber</td>
-                                    <td colspan="2" style="padding: 4px;">${o.slitLamp?.anteriorChamber || '--'}</td>
-                                </tr>
+                                ${printEyeRow('Conjunctiva', o.slitLamp?.conjunctiva)}
+                                ${printEyeRow('Cornea', o.slitLamp?.cornea)}
+                                ${printEyeRow('Anterior Chamber', o.slitLamp?.anteriorChamber)}
                                 <tr style="border-bottom: 1px solid #000;">
                                     <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9;">Pupil</td>
                                     <td colspan="2" style="padding: 4px;">${o.pupils || '--'}</td>
                                 </tr>
-                                <tr style="border-bottom: 1px solid #000;">
-                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9;">Lens</td>
-                                    <td colspan="2" style="padding: 4px;">${o.slitLamp?.lens || '--'}</td>
-                                </tr>
-                                <tr style="border-bottom: 1px solid #000;">
-                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9;">Fundus</td>
-                                    <td colspan="2" style="padding: 4px;">
-                                        ${o.fundus?.retina || o.fundus?.opticDisc || o.fundus?.macula ? 
-                                            [
-                                                o.fundus?.retina ? `Retina: ${o.fundus.retina}` : null,
-                                                o.fundus?.opticDisc ? `Disc: ${o.fundus.opticDisc}` : null,
-                                                o.fundus?.macula ? `Macula: ${o.fundus.macula}` : null
-                                            ].filter(Boolean).join(' | ') 
-                                        : '--'}
-                                    </td>
-                                </tr>
+                                ${printEyeRow('Lens', o.slitLamp?.lens)}
+                                ${printEyeRow('Retina', o.fundus?.retina)}
+                                ${printEyeRow('Optic Disc', o.fundus?.opticDisc)}
+                                ${printEyeRow('Macula', o.fundus?.macula)}
                                 <tr>
                                     <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9;">IOP (mmHg)</td>
                                     <td style="border-right: 1px solid #000; padding: 4px;">${o.iop?.od || '--'}</td>
@@ -2989,6 +2997,9 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                     <th style="font-size: 8px; padding: 12px 5px; color: #be123c;">mg/kg</th>
                                     <th style="font-size: 8px; padding: 12px 5px; color: #be123c;">Calc. Dose</th>
                                     ` : ''}
+                                    ${(activeSpecialty.toUpperCase().includes('EYE') || activeSpecialty.toUpperCase().includes('OPHTHA') || formData.medicines.some((m: Medicine) => m.eye || m.dropCount || m.timesPerDay)) ? `
+                                    <th style="padding: 12px 10px; color: #475569; font-size: 9px; font-weight: 900; text-transform: uppercase;">Instillation</th>
+                                    ` : ''}
                                     <th style="text-align: right; padding: 12px 10px; color: #475569; font-size: 9px; font-weight: 900; text-transform: uppercase;">Qty</th>
                                 </tr>
                             </thead>
@@ -3005,6 +3016,14 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                     ${activeSpecialty.toUpperCase().includes('PEDIATRI') ? `
                                     <td style="padding: 14px 5px; font-size: 11px; font-weight: 700; color: #be123c;">${med.mgPerKg || '--'}</td>
                                     <td style="padding: 14px 5px; font-size: 11px; font-weight: 800; color: #0f172a;">${med.calculatedDose || '--'} <small>mg</small></td>
+                                    ` : ''}
+                                    ${(activeSpecialty.toUpperCase().includes('EYE') || activeSpecialty.toUpperCase().includes('OPHTHA') || formData.medicines.some((m: Medicine) => m.eye || m.dropCount || m.timesPerDay)) ? `
+                                    <td style="padding: 14px 10px; font-weight: 700; color: #334155; font-size: 12px;">
+                                        ${med.eye ? `<span style="font-size: 10px; color: #fff; background: #0ea5e9; padding: 2px 6px; border-radius: 4px; margin-right: 4px;">${med.eye}</span>` : ''}
+                                        ${med.dropCount ? `<span style="color: #1e293b; margin-right: 4px;">${med.dropCount}</span>` : ''}
+                                        ${med.timesPerDay ? `<span style="color: #64748b;">${med.timesPerDay}</span>` : ''}
+                                        ${(!med.eye && !med.dropCount && !med.timesPerDay) ? '--' : ''}
+                                    </td>
                                     ` : ''}
                                     <td style="padding: 14px 10px; font-weight: 900; text-align: right; color: #0f172a; font-size: 13px;">${med.quantity}</td>
                                 </tr>
@@ -3748,7 +3767,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                     <div className="overflow-visible pb-4">
                       <div className="w-full space-y-3">
                         {/* Column Headers */}
-                        <div className="grid-cols-12 gap-3 px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden lg:grid">
+                        <div className={`gap-3 px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden lg:grid ${activeSpecialty.toUpperCase().includes('PEDIATRI') ? 'lg:grid-cols-[15]' : 'lg:grid-cols-12'}`}>
                             <div className="col-span-3">Medicine</div>
                             <div className="col-span-1">Form</div>
                             <div className="col-span-1">Dosage</div>
@@ -3761,14 +3780,12 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                     <div className="col-span-2 text-center">Calc. Dose</div>
                                 </>
                             )}
-                            {(activeSpecialty.toUpperCase().includes('EYE') || activeSpecialty.toUpperCase().includes('OPHTHA')) && (
-                                <div className="col-span-2 text-center">Eye</div>
-                            )}
+                            <div className="col-span-3 text-center">Eye / Instillation</div>
                         </div>
 
                         {formData.medicines.map((med, idx) => (
                             <div key={idx} className={`relative group bg-slate-50 hover:bg-white hover:shadow-md border border-transparent hover:border-slate-100 rounded-xl p-3 transition-all ${activeMedIndex === idx ? 'z-50 shadow-lg' : 'z-10'}`}>
-                                <div className="grid grid-cols-2 lg:grid-cols-12 gap-4 lg:gap-3 items-start lg:items-center">
+                                <div className={`grid grid-cols-2 ${activeSpecialty.toUpperCase().includes('PEDIATRI') ? 'lg:grid-cols-[15]' : 'lg:grid-cols-12'} gap-4 lg:gap-3 items-start lg:items-center`}>
                                     <div className="col-span-2 lg:col-span-3 relative">
                                         <div className="absolute inset-y-0 left-2 flex items-center pointer-events-none text-slate-400">
                                             <Search size={12} className="sm:size-[14px]" />
@@ -3930,27 +3947,36 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                             </>
                                         )}
 
-                                        {(activeSpecialty.toUpperCase().includes('EYE') || activeSpecialty.toUpperCase().includes('OPHTHA')) && (
-                                            <div className="col-span-2 lg:col-span-2 order-8 lg:order-8 space-y-1">
-                                                <div className="lg:hidden text-[9px] font-bold text-slate-400 uppercase px-1">Eye</div>
-                                                {med.form && ['drop', 'oint', 'gel', 'sol'].some(t => med.form?.toLowerCase().includes(t)) ? (
+                                        <div className="col-span-2 lg:col-span-3 order-8 lg:order-8 space-y-1">
+                                                <div className="lg:hidden text-[9px] font-bold text-slate-400 uppercase px-1">Instillation</div>
+                                                <div className="flex gap-1 w-full">
                                                     <select
                                                         value={med.eye || ''}
-                                                        onChange={(e) => updateMedicine(idx, 'eye', e.target.value)}
-                                                        className="w-full px-1 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:outline-none focus:border-teal-500 text-center"
+                                                        onChange={(e) => updateMedicine(idx, 'eye', e.target.value as 'BE'|'RE'|'LE')}
+                                                        className="w-1/3 px-1 py-2 bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-700 focus:outline-none focus:border-teal-500 text-center"
                                                     >
-                                                        <option value="">- Eye -</option>
+                                                        <option value="">Eye</option>
                                                         <option value="BE">BE (Both)</option>
                                                         <option value="RE">RE (Right)</option>
                                                         <option value="LE">LE (Left)</option>
                                                     </select>
-                                                ) : (
-                                                    <div className="w-full px-1 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold text-slate-300 text-center cursor-not-allowed">
-                                                        -
-                                                    </div>
-                                                )}
+                                                    <input
+                                                        type="text"
+                                                        value={med.dropCount || ''}
+                                                        onChange={(e) => updateMedicine(idx, 'dropCount', e.target.value)}
+                                                        placeholder="Drops"
+                                                        className="w-1/3 px-1 py-2 bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-center focus:outline-none focus:border-teal-500"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        value={med.timesPerDay || ''}
+                                                        onChange={(e) => updateMedicine(idx, 'timesPerDay', e.target.value)}
+                                                        placeholder="Times"
+                                                        className="w-1/3 px-1 py-2 bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-center focus:outline-none focus:border-teal-500"
+                                                    />
+                                                </div>
                                             </div>
-                                        )}
+
 
                                         <div className="col-span-1 lg:col-span-1 order-9 lg:order-9 flex items-center justify-center pt-1 lg:pt-0">
                                             <button onClick={() => removeMedicine(idx)} className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg shrink-0 transition-colors">

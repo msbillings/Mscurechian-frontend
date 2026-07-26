@@ -161,6 +161,7 @@ export async function getAllAppointmentsAction(params?: {
       pagination
     };
   } catch (error: any) {
+    console.error('getAllAppointmentsAction error:', error);
     return { success: false, error: error.message || 'Failed to fetch appointments' };
   }
 }

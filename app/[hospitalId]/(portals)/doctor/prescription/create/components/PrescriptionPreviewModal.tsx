@@ -21,9 +21,11 @@ interface Medicine {
     unitsPerPack?: number;
     availableUnits?: number;
     pricePerUnit?: number;
-    error?: string;
     mgPerKg?: string;
     calculatedDose?: string;
+    eye?: 'BE' | 'RE' | 'LE' | string;
+    dropCount?: string;
+    timesPerDay?: string;
 }
 
 interface PrescriptionPreviewModalProps {
@@ -766,8 +768,9 @@ return (
                                     
                                     if (iopOD > 21 || iopOS > 21) assessments.push('🚨 ELEVATED IOP — Possible Glaucoma');
                                     if (o.vision?.od?.unaided === 'PL+' || o.vision?.os?.unaided === 'PL+') assessments.push('CRITICAL: Extremely Low Vision Detected');
-                                    if (o.slitLamp?.cornea === 'Ulcer') assessments.push('🚨 EMERGENCY: Corneal Ulcer Detected');
-                                    if (o.fundus?.retina === 'Detachment') assessments.push('🚨 EMERGENCY: Retinal Detachment suspected');
+                                    const isMatch = (field: any, val: string) => typeof field === 'string' ? field === val : (field?.re === val || field?.le === val);
+                                    if (isMatch(o.slitLamp?.cornea, 'Ulcer')) assessments.push('🚨 EMERGENCY: Corneal Ulcer Detected');
+                                    if (isMatch(o.fundus?.retina, 'Detachment')) assessments.push('🚨 EMERGENCY: Retinal Detachment suspected');
 
                                     return (
                                         <div className="mb-[25px] p-[18px] border-2 border-emerald-100 rounded-[20px] bg-emerald-50/20 shadow-sm transition-all duration-300 hover:shadow-md">
@@ -825,15 +828,25 @@ return (
                                                 <div className="p-3 bg-white rounded-xl border border-emerald-100">
                                                     <span className="text-[8px] font-black text-emerald-600 uppercase block mb-1">Slit Lamp Exam</span>
                                                     <div className="text-[10px] font-bold text-slate-700">
-                                                        Cornea: {o.slitLamp?.cornea} | Lens: {o.slitLamp?.lens}<br/>
-                                                        AC: {o.slitLamp?.anteriorChamber}
+                                                        {['Conjunctiva', 'Cornea', 'Anterior Chamber', 'Lens'].map(key => {
+                                                            const k = key.charAt(0).toLowerCase() + key.slice(1).replace(' ', '');
+                                                            const v = o.slitLamp?.[k as keyof typeof o.slitLamp];
+                                                            if (!v || (typeof v === 'object' && !v.re && !v.le)) return null;
+                                                            if (typeof v === 'string') return <div key={key}>{key}: {v}</div>;
+                                                            return <div key={key}>{key}: {v.re ? `RE ${v.re}` : ''} {v.le ? `LE ${v.le}` : ''}</div>;
+                                                        })}
                                                     </div>
                                                 </div>
                                                 <div className="p-3 bg-white rounded-xl border border-emerald-100">
                                                     <span className="text-[8px] font-black text-emerald-600 uppercase block mb-1">Fundus & Posterior Segment</span>
                                                     <div className="text-[10px] font-bold text-slate-700">
-                                                        Disc: {o.fundus?.opticDisc} | Retina: {o.fundus?.retina}<br/>
-                                                        Macula: {o.fundus?.macula}
+                                                        {['Retina', 'Optic Disc', 'Macula'].map(key => {
+                                                            const k = key.charAt(0).toLowerCase() + key.slice(1).replace(' ', '');
+                                                            const v = o.fundus?.[k as keyof typeof o.fundus];
+                                                            if (!v || (typeof v === 'object' && !v.re && !v.le)) return null;
+                                                            if (typeof v === 'string') return <div key={key}>{key}: {v}</div>;
+                                                            return <div key={key}>{key}: {v.re ? `RE ${v.re}` : ''} {v.le ? `LE ${v.le}` : ''}</div>;
+                                                        })}
                                                     </div>
                                                 </div>
                                             </div>
@@ -1315,6 +1328,9 @@ return (
                                                             <th className="text-left text-[8px] font-[900] text-pink-600 uppercase py-[12px] px-[8px]">Calc</th>
                                                         </>
                                                     )}
+                                                    {(activeSpecialty.toUpperCase().includes('OPHTHAL') || activeSpecialty.toUpperCase().includes('EYE') || formData.medicines.some((m: Medicine) => m.eye || m.dropCount || m.timesPerDay)) && (
+                                                        <th className="text-left text-[9px] font-[900] text-slate-500 uppercase py-[12px] px-[10px]">Instillation</th>
+                                                    )}
                                                     <th className="text-right text-[9px] font-[900] text-slate-500 uppercase py-[12px] px-[12px]">Qty</th>
                                                 </tr>
                                             </thead>
@@ -1333,6 +1349,14 @@ return (
                                                                 <td className="py-[14px] px-[5px] text-[11px] font-[700] text-rose-600">{med.mgPerKg || '--'}</td>
                                                                 <td className="py-[14px] px-[5px] text-[11px] font-[800] text-slate-900">{med.calculatedDose || '--'} <small className="text-[9px] font-[600]">mg</small></td>
                                                             </>
+                                                        )}
+                                                        {(activeSpecialty.toUpperCase().includes('OPHTHAL') || activeSpecialty.toUpperCase().includes('EYE') || formData.medicines.some((m: Medicine) => m.eye || m.dropCount || m.timesPerDay)) && (
+                                                            <td className="py-[14px] px-[10px] text-[12px] font-[700] text-slate-700">
+                                                                {med.eye && <span className="text-[10px] font-black text-indigo-600 uppercase mr-1">{med.eye}</span>}
+                                                                {med.dropCount && <span className="text-slate-800 mr-1">{med.dropCount}</span>}
+                                                                {med.timesPerDay && <span className="text-slate-500">{med.timesPerDay}</span>}
+                                                                {(!med.eye && !med.dropCount && !med.timesPerDay) && '--'}
+                                                            </td>
                                                         )}
                                                         <td className="py-[14px] px-[10px] text-right text-[13px] font-[900] text-slate-900">{med.quantity}</td>
                                                     </tr>

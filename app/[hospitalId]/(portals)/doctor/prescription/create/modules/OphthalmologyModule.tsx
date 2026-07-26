@@ -174,8 +174,75 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
         );
     };
 
+    const EyeExamRow = ({ label, category, field, options, getBtnClass, emojiFn }: { label: string, category: 'slitLamp' | 'fundus', field: string, options: readonly string[], getBtnClass: (opt: string, active: boolean) => string, emojiFn?: (opt: string) => string }) => {
+        const getVal = (eye?: 're' | 'le') => {
+            const val = o[category]?.[field];
+            if (typeof val === 'string') return eye === 're' ? val : '';
+            return val?.[eye || 'notes'] || '';
+        };
+
+        const setVal = (eye: 're' | 'le' | 'notes', value: string) => {
+            let current = o[category]?.[field] || { re: '', le: '', notes: '' };
+            if (typeof current === 'string') current = { re: current, le: current, notes: '' };
+            updateNested(category, field, { ...current, [eye]: value });
+        };
+
+        const renderEyeRow = (eye: 're' | 'le', eyeLabel: string) => (
+            <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-slate-400 w-5">{eyeLabel}</span>
+                <div className="flex flex-1 gap-1">
+                    {options.map(opt => (
+                        <button key={opt} type="button"
+                            onClick={() => setVal(eye, getVal(eye) === opt ? '' : opt)}
+                            className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase transition-all border ${getBtnClass(opt, getVal(eye) === opt)}`}
+                        >
+                            {emojiFn ? emojiFn(opt) : ''}{opt}
+                        </button>
+                    ))}
+                </div>
+            </div>
+        );
+
+        return (
+            <div>
+                <label className="block text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">{label}</label>
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 space-y-2">
+                    {renderEyeRow('re', 'RE')}
+                    {renderEyeRow('le', 'LE')}
+                    <input type="text" placeholder="Additional notes..."
+                        value={getVal('notes')}
+                        onChange={e => setVal('notes', e.target.value)}
+                        className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[10px] font-bold text-slate-700 focus:ring-2 focus:ring-blue-300 outline-none"
+                    />
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="space-y-4">
+
+            {/* ── SYMPTOMS ───────────────────────────────────────────── */}
+            {sectionCard(
+                <>
+                    {sectionHeader(<ClipboardList size={17} />, 'Symptoms', 'select all that apply')}
+                    <div className="flex flex-wrap gap-2">
+                        {SYMPTOMS.map(sym => {
+                            const isEmergency = EMERGENCY_SYMS.includes(sym);
+                            const isDanger    = DANGER_SYMS.includes(sym);
+                            return (
+                                <button key={sym} type="button"
+                                    onClick={() => toggleSymptom(sym)}
+                                    className={btnPill(syms.includes(sym), isEmergency, isDanger)}
+                                >
+                                    {isEmergency ? '🚨 ' : isDanger ? '⚠️ ' : ''}{sym}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </>,
+                'border-red-50',
+            )}
 
             {/* ── PATIENT HISTORY ─────────────────────────────────────────── */}
             {sectionCard(
@@ -440,104 +507,24 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
                 'border-slate-200',
             )}
 
-            {/* ── E. SYMPTOMS ───────────────────────────────────────────── */}
-            {sectionCard(
-                <>
-                    {sectionHeader(<ClipboardList size={17} />, 'E. Symptoms', 'select all that apply')}
-                    <div className="flex flex-wrap gap-2">
-                        {SYMPTOMS.map(sym => {
-                            const isEmergency = EMERGENCY_SYMS.includes(sym);
-                            const isDanger    = DANGER_SYMS.includes(sym);
-                            return (
-                                <button key={sym} type="button"
-                                    onClick={() => toggleSymptom(sym)}
-                                    className={btnPill(syms.includes(sym), isEmergency, isDanger)}
-                                >
-                                    {isEmergency ? '🚨 ' : isDanger ? '⚠️ ' : ''}{sym}
-                                </button>
-                            );
-                        })}
-                    </div>
-                </>,
-                'border-red-50',
-            )}
-
             {/* ── F. SLIT LAMP ──────────────────────────────────────────── */}
             {sectionCard(
                 <>
                     {sectionHeader(<FlaskConical size={17} />, 'F. Slit Lamp Examination')}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        {/* Conjunctiva */}
-                        <div>
-                            <label className="block text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Conjunctiva</label>
-                            <div className="flex gap-2">
-                                {CONJUNCTIVA_OPTS.map(opt => (
-                                    <button key={opt} type="button"
-                                        onClick={() => updateNested('slitLamp', 'conjunctiva', o.slitLamp?.conjunctiva === opt ? '' : opt)}
-                                        className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all ${
-                                            o.slitLamp?.conjunctiva === opt
-                                                ? opt === 'Normal' ? 'bg-emerald-500 text-white shadow-md' : 'bg-amber-500 text-white shadow-md'
-                                                : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
-                                        }`}
-                                    >{opt}</button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Cornea */}
-                        <div>
-                            <label className="block text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Cornea</label>
-                            <div className="flex gap-2">
-                                {CORNEA_OPTS.map(opt => (
-                                    <button key={opt} type="button"
-                                        onClick={() => updateNested('slitLamp', 'cornea', o.slitLamp?.cornea === opt ? '' : opt)}
-                                        className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all ${
-                                            o.slitLamp?.cornea === opt
-                                                ? opt === 'Clear' ? 'bg-emerald-500 text-white shadow-md' : 'bg-red-600 text-white shadow-md'
-                                                : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
-                                        }`}
-                                    >
-                                        {opt !== 'Clear' ? '🔴 ' : ''}{opt}
-                                    </button>
-                                ))}
-                            </div>
-                            </div>
-
-                        {/* Anterior Chamber */}
-                        <div>
-                            <label className="block text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Anterior Chamber</label>
-                            <div className="flex gap-2">
-                                {ANTE_CHAMBER_OPTS.map(opt => (
-                                    <button key={opt} type="button"
-                                        onClick={() => updateNested('slitLamp', 'anteriorChamber', o.slitLamp?.anteriorChamber === opt ? '' : opt)}
-                                        className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all ${
-                                            o.slitLamp?.anteriorChamber === opt
-                                                ? opt === 'Normal' ? 'bg-emerald-500 text-white shadow-md' : 'bg-amber-500 text-white shadow-md'
-                                                : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
-                                        }`}
-                                    >{opt}</button>
-                                ))}
-                            </div>
-                            </div>
-
-                        {/* Lens */}
-                        <div>
-                            <label className="block text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Lens</label>
-                            <div className="flex gap-2">
-                                {LENS_OPTS.map(opt => (
-                                    <button key={opt} type="button"
-                                        onClick={() => updateNested('slitLamp', 'lens', o.slitLamp?.lens === opt ? '' : opt)}
-                                        className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all border ${
-                                            o.slitLamp?.lens === opt
-                                                ? opt === 'Clear' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md'
-                                                  : opt === 'Mature cataract' ? 'bg-red-600 text-white border-red-600 shadow-md'
-                                                  : 'bg-amber-500 text-white border-amber-500 shadow-md'
-                                                : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
-                                        }`}
-                                    >{opt}</button>
-                                ))}
-                            </div>
-                            </div>
+                        <EyeExamRow label="Conjunctiva" category="slitLamp" field="conjunctiva" options={CONJUNCTIVA_OPTS} 
+                            getBtnClass={(opt, active) => active ? (opt === 'Normal' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : 'bg-amber-500 text-white border-amber-500 shadow-md') : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100'} 
+                        />
+                        <EyeExamRow label="Cornea" category="slitLamp" field="cornea" options={CORNEA_OPTS} 
+                            getBtnClass={(opt, active) => active ? (opt === 'Clear' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : 'bg-red-600 text-white border-red-600 shadow-md') : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100'}
+                            emojiFn={opt => opt !== 'Clear' ? '🔴 ' : ''}
+                        />
+                        <EyeExamRow label="Anterior Chamber" category="slitLamp" field="anteriorChamber" options={ANTE_CHAMBER_OPTS} 
+                            getBtnClass={(opt, active) => active ? (opt === 'Normal' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : 'bg-amber-500 text-white border-amber-500 shadow-md') : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100'} 
+                        />
+                        <EyeExamRow label="Lens" category="slitLamp" field="lens" options={LENS_OPTS} 
+                            getBtnClass={(opt, active) => active ? (opt === 'Clear' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : (opt === 'Mature cataract' ? 'bg-red-600 text-white border-red-600 shadow-md' : 'bg-amber-500 text-white border-amber-500 shadow-md')) : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100'} 
+                        />
                     </div>
                 </>,
                 'border-blue-100',
@@ -547,59 +534,17 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
             {sectionCard(
                 <>
                     {sectionHeader(<Target size={17} />, 'G. Fundus Examination')}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {/* Retina */}
-                        <div>
-                            <label className="block text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Retina</label>
-                            <div className="flex flex-col gap-2">
-                                {RETINA_OPTS.map(opt => (
-                                    <button key={opt} type="button"
-                                        onClick={() => updateNested('fundus', 'retina', o.fundus?.retina === opt ? '' : opt)}
-                                        className={`py-2 rounded-xl text-[10px] font-black uppercase transition-all border ${
-                                            o.fundus?.retina === opt
-                                                ? opt === 'Normal' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : 'bg-red-600 text-white border-red-600 shadow-md'
-                                                : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
-                                        }`}
-                                    >
-                                        {opt !== 'Normal' ? '🔴 ' : ''}{opt}
-                                    </button>
-                                ))}
-                            </div>
-                            </div>
-
-                        {/* Optic Disc */}
-                        <div>
-                            <label className="block text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Optic Disc</label>
-                            <div className="flex flex-col gap-2">
-                                {OPTIC_DISC_OPTS.map(opt => (
-                                    <button key={opt} type="button"
-                                        onClick={() => updateNested('fundus', 'opticDisc', o.fundus?.opticDisc === opt ? '' : opt)}
-                                        className={`py-2 rounded-xl text-[10px] font-black uppercase transition-all border ${
-                                            o.fundus?.opticDisc === opt
-                                                ? opt === 'Normal' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : 'bg-amber-500 text-white border-amber-500 shadow-md'
-                                                : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
-                                        }`}
-                                    >{opt}</button>
-                                ))}
-                            </div>
-                            </div>
-
-                        {/* Macula */}
-                        <div>
-                            <label className="block text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Macula</label>
-                            <div className="flex flex-col gap-2">
-                                {MACULA_OPTS.map(opt => (
-                                    <button key={opt} type="button"
-                                        onClick={() => updateNested('fundus', 'macula', o.fundus?.macula === opt ? '' : opt)}
-                                        className={`py-2 rounded-xl text-[10px] font-black uppercase transition-all border ${
-                                            o.fundus?.macula === opt
-                                                ? opt === 'Normal' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : 'bg-amber-500 text-white border-amber-500 shadow-md'
-                                                : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
-                                        }`}
-                                    >{opt}</button>
-                                ))}
-                            </div>
-                            </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <EyeExamRow label="Retina" category="fundus" field="retina" options={RETINA_OPTS} 
+                            getBtnClass={(opt, active) => active ? (opt === 'Normal' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : 'bg-red-600 text-white border-red-600 shadow-md') : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100'}
+                            emojiFn={opt => opt !== 'Normal' ? '🔴 ' : ''}
+                        />
+                        <EyeExamRow label="Optic Disc" category="fundus" field="opticDisc" options={OPTIC_DISC_OPTS} 
+                            getBtnClass={(opt, active) => active ? (opt === 'Normal' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : 'bg-amber-500 text-white border-amber-500 shadow-md') : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100'} 
+                        />
+                        <EyeExamRow label="Macula" category="fundus" field="macula" options={MACULA_OPTS} 
+                            getBtnClass={(opt, active) => active ? (opt === 'Normal' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : 'bg-amber-500 text-white border-amber-500 shadow-md') : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100'} 
+                        />
                     </div>
                 </>,
                 'border-indigo-100',

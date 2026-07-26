@@ -89,6 +89,33 @@
       "suggested_tests": ["IgE Levels", "Allergy Panel"],
       "avoid": ["Known allergens", "Harsh soaps", "Synthetic fabrics"],
       "follow_up": "Review after 1 week"
+    },
+    {
+      "symptom": "dry eye",
+      "keywords": ["eye burning sensation", "gritty feeling", "dryness", "tired eyes", "itching", "eye burning"],
+      "medicine": ["Carboxymethylcellulose 0.5% eye drops (1-1-1)", "Lubricating eye ointment (0-0-1)"],
+      "diet_advice": ["Increase Omega-3 intake", "Stay hydrated"],
+      "suggested_tests": ["Schirmer's test", "Tear breakup time (TBUT)"],
+      "avoid": ["Prolonged screen time without breaks", "Direct AC air on face", "Dust and smoke"],
+      "follow_up": "Review after 2 weeks"
+    },
+    {
+      "symptom": "conjunctivitis",
+      "keywords": ["pink eye", "red eye", "eye discharge", "sticky eyes", "watering"],
+      "medicine": ["Moxifloxacin 0.5% eye drops (1-1-1-1)", "Artificial tears (1-1-1)"],
+      "diet_advice": ["Maintain hygiene", "Wash hands frequently"],
+      "suggested_tests": [],
+      "avoid": ["Touching or rubbing eyes", "Sharing towels or pillows", "Contact lenses"],
+      "follow_up": "Review after 3 days"
+    },
+    {
+      "symptom": "blurred vision",
+      "keywords": ["poor vision", "decreased vision", "blurry", "refractive error"],
+      "medicine": [],
+      "diet_advice": ["Green leafy vegetables", "Vitamin A rich foods"],
+      "suggested_tests": ["Refraction test", "Fundus examination", "Slit lamp examination"],
+      "avoid": ["Reading in dim light", "Holding screens too close"],
+      "follow_up": "Immediate refraction correction or detailed examination"
     }
   ]
 }

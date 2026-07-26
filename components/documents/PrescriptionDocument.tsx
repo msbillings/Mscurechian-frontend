@@ -209,6 +209,9 @@ export const PrescriptionDocument: React.FC<PrescriptionDocumentProps> = ({
                                 <th style={{ textAlign: 'left', fontSize: '8px', fontWeight: '700', textTransform: 'uppercase', color: '#777', padding: '0 0 6px 0', width: '15%' }}>DOSAGE</th>
                                 <th style={{ textAlign: 'left', fontSize: '8px', fontWeight: '700', textTransform: 'uppercase', color: '#777', padding: '0 0 6px 0', width: '20%' }}>FREQUENCY</th>
                                 <th style={{ textAlign: 'left', fontSize: '8px', fontWeight: '700', textTransform: 'uppercase', color: '#777', padding: '0 0 6px 0', width: '10%' }}>DAYS</th>
+                                {rx.medicines?.some((m: Medicine) => m.eye || m.dropCount || m.timesPerDay) && (
+                                    <th style={{ textAlign: 'left', fontSize: '8px', fontWeight: '700', textTransform: 'uppercase', color: '#777', padding: '0 0 6px 0', width: '15%' }}>INSTILLATION</th>
+                                )}
                                 <th style={{ textAlign: 'right', fontSize: '8px', fontWeight: '700', textTransform: 'uppercase', color: '#777', padding: '0 0 6px 0', width: '10%' }}>QTY</th>
                             </tr>
                         </thead>
@@ -227,6 +230,14 @@ export const PrescriptionDocument: React.FC<PrescriptionDocumentProps> = ({
                                         {formatFrequency(med.frequency)}
                                     </td>
                                     <td style={{ padding: '8px 0', verticalAlign: 'top', fontSize: '10px', color: '#444' }}>{med.duration}</td>
+                                    {rx.medicines?.some((m: Medicine) => m.eye || m.dropCount || m.timesPerDay) && (
+                                        <td style={{ padding: '8px 0', verticalAlign: 'top', fontSize: '10px', color: '#444' }}>
+                                            {med.eye && <span style={{ fontWeight: '700', color: '#4f46e5', marginRight: '4px' }}>{med.eye}</span>}
+                                            {med.dropCount && <span style={{ marginRight: '4px' }}>{med.dropCount}</span>}
+                                            {med.timesPerDay && <span>{med.timesPerDay}</span>}
+                                            {(!med.eye && !med.dropCount && !med.timesPerDay) && '--'}
+                                        </td>
+                                    )}
                                     <td style={{ padding: '8px 0', textAlign: 'right', verticalAlign: 'top', fontSize: '10px', color: '#444' }}>
                                         {calculateQty(typeof med.frequency === 'object' && med.frequency !== null ? '1-1-1' : med.frequency, med.duration)}
                                     </td>

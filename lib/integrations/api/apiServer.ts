@@ -94,7 +94,8 @@ export async function apiServer<T>(
     
   const sessionId = cookieStore.get('sessionId')?.value ?? null;
 
-  const fullUrl = `${API_CONFIG.BASE_URL}${path}`;
+  const backendBase = process.env.BACKEND_INTERNAL_URL?.replace(/\/+$/, "") || "http://43.204.32.80:5002/api";
+  const fullUrl = `${backendBase}${path}`;
   // ✅ ENHANCED LOGGING: Track token source for debugging
   const tokenSource = headerStore.get('X-Access-Token') ? 'MIDDLEWARE-HEADER' : (cookieStore.get('accessToken') ? 'STALE-COOKIE' : 'MISSING');
   console.log(`[apiServer] Request: ${path} | Hospital: ${hospitalId || 'global'} | Token: ${tokenSource} | CSRF: ${csrfToken ? 'YES' : 'NO'}`);
@@ -178,7 +179,12 @@ export async function apiServer<T>(
   }
 
   if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: 'API Server Error' }));
+    const textData = await res.text().catch(() => 'Failed to read response body');
+    let errorData = { message: 'API Server Error' };
+    try {
+      errorData = JSON.parse(textData);
+    } catch(e) {}
+    console.error('BACKEND ERROR DATA:', res.status, textData);
     throw new Error(errorData.message || `HTTP ${res.status}`);
   }
 

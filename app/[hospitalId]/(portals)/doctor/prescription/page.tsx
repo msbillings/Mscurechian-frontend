@@ -3208,9 +3208,7 @@ function CreatePrescriptionPage() {
                             <div className="col-span-3 text-center">Frequency</div>
                             <div className="col-span-1">Days</div>
                             <div className="col-span-1">Qty</div>
-                            {(activeSpecialty.toUpperCase().includes('EYE') || activeSpecialty.toUpperCase().includes('OPHTHA')) && (
-                                <div className="col-span-2 text-center">Eye</div>
-                            )}
+                            <div className="col-span-3 text-center">Eye / Instillation</div>
                         </div>
 
                         {formData.medicines.map((med, idx) => (
@@ -3352,27 +3350,35 @@ function CreatePrescriptionPage() {
                                             )}
                                         </div>
 
-                                        {(activeSpecialty.toUpperCase().includes('EYE') || activeSpecialty.toUpperCase().includes('OPHTHA')) && (
-                                            <div className="col-span-2 lg:col-span-2 order-6 lg:order-6 space-y-1 mt-2 lg:mt-0">
-                                                <div className="lg:hidden text-[9px] font-bold text-slate-400 uppercase px-1">Eye</div>
-                                                {med.form && ['drop', 'oint', 'gel', 'sol'].some(t => med.form?.toLowerCase().includes(t)) ? (
-                                                    <select
-                                                        value={med.eye || ''}
-                                                        onChange={(e) => updateMedicine(idx, 'eye', e.target.value)}
-                                                        className="w-full px-1 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:outline-none focus:border-teal-500 text-center"
-                                                    >
-                                                        <option value="">- Eye -</option>
-                                                        <option value="BE">BE (Both)</option>
-                                                        <option value="RE">RE (Right)</option>
-                                                        <option value="LE">LE (Left)</option>
-                                                    </select>
-                                                ) : (
-                                                    <div className="w-full px-1 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold text-slate-300 text-center cursor-not-allowed">
-                                                        -
-                                                    </div>
-                                                )}
+                                        <div className="col-span-2 lg:col-span-3 order-6 lg:order-6 space-y-1 mt-2 lg:mt-0">
+                                            <div className="lg:hidden text-[9px] font-bold text-slate-400 uppercase px-1">Instillation</div>
+                                            <div className="flex gap-1 w-full">
+                                                <select
+                                                    value={med.eye || ''}
+                                                    onChange={(e) => updateMedicine(idx, 'eye', e.target.value)}
+                                                    className="w-1/3 px-1 py-2 bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-700 focus:outline-none focus:border-teal-500 text-center"
+                                                >
+                                                    <option value="">Eye</option>
+                                                    <option value="BE">BE (Both)</option>
+                                                    <option value="RE">RE (Right)</option>
+                                                    <option value="LE">LE (Left)</option>
+                                                </select>
+                                                <input
+                                                    type="text"
+                                                    value={med.dropCount || ''}
+                                                    onChange={(e) => updateMedicine(idx, 'dropCount', e.target.value)}
+                                                    placeholder="Drops"
+                                                    className="w-1/3 px-1 py-2 bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-center focus:outline-none focus:border-teal-500"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={med.timesPerDay || ''}
+                                                    onChange={(e) => updateMedicine(idx, 'timesPerDay', e.target.value)}
+                                                    placeholder="Times"
+                                                    className="w-1/3 px-1 py-2 bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-center focus:outline-none focus:border-teal-500"
+                                                />
                                             </div>
-                                        )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
