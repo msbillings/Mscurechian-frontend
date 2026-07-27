@@ -2085,6 +2085,61 @@ function CreatePrescriptionPage() {
                         </div>
                         ` : ''}
 
+                        ${(() => {
+                            const renderEyeField = (label: string, data: any) => {
+                                if (!data || (typeof data === 'object' && !data.re && !data.le && !data.notes) || (typeof data === 'string' && !data)) return '';
+                                let re = typeof data === 'object' ? data.re : data;
+                                let le = typeof data === 'object' ? data.le : data;
+                                let notes = typeof data === 'object' ? data.notes : '';
+                                if(!re && !le && !notes) return '';
+                                return \`
+                                    <div style="margin-bottom:6px;">
+                                        <span style="font-size:8px;color:#94a3b8;font-weight:800;display:block;">\${label}</span>
+                                        <div style="font-size:10px;font-weight:700;color:#1e293b;">
+                                            \${re ? \`<span style="color:#0ea5e9">RE:</span> \${re} &nbsp;&nbsp;\` : ''}
+                                            \${le ? \`<span style="color:#10b981">LE:</span> \${le}\` : ''}
+                                            \${notes ? \`<div style="font-size:9px;color:#64748b;margin-top:2px;font-weight:600;">\${notes}</div>\` : ''}
+                                        </div>
+                                    </div>
+                                \`;
+                            };
+                            
+                            const slitLampHTML = o.slitLamp ? ['conjunctiva', 'cornea', 'anteriorChamber', 'lens'].map(f => renderEyeField(f.charAt(0).toUpperCase() + f.slice(1).replace(/([A-Z])/g, ' $1'), (o.slitLamp as any)[f])).join('') : '';
+                            const fundusHTML = o.fundus ? ['retina', 'opticDisc', 'macula'].map(f => renderEyeField(f.charAt(0).toUpperCase() + f.slice(1).replace(/([A-Z])/g, ' $1'), (o.fundus as any)[f])).join('') : '';
+                            
+                            if (!slitLampHTML.trim() && !fundusHTML.trim() && !o.pupils && !o.notes) return '';
+                            
+                            return \`
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:15px;padding-top:10px;border-top:1px dashed #bae6fd;">
+                                \${slitLampHTML.trim() ? \`
+                                <div>
+                                    <span style="font-size:8px;color:#0369a1;font-weight:800;text-transform:uppercase;display:block;margin-bottom:5px;">Slit Lamp Examination</span>
+                                    \${slitLampHTML}
+                                </div>\` : '<div></div>'}
+                                
+                                <div>
+                                    \${fundusHTML.trim() ? \`
+                                    <div style="margin-bottom:10px;">
+                                        <span style="font-size:8px;color:#0369a1;font-weight:800;text-transform:uppercase;display:block;margin-bottom:5px;">Fundus Examination</span>
+                                        \${fundusHTML}
+                                    </div>\` : ''}
+                                    
+                                    \${o.pupils ? \`
+                                    <div>
+                                        <span style="font-size:8px;color:#0369a1;font-weight:800;text-transform:uppercase;display:block;margin-bottom:5px;">Pupil Response</span>
+                                        <span style="font-size:10px;font-weight:700;color:#1e293b;">\${o.pupils}</span>
+                                    </div>\` : ''}
+                                </div>
+                            </div>
+                            
+                            \${o.notes ? \`
+                            <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #bae6fd;">
+                                <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;">Clinical Notes:</span>
+                                <span style="font-size:10px;font-weight:600;color:#334155;margin-left:6px;">\${o.notes}</span>
+                            </div>\` : ''}
+                            \`;
+                        })()}
+
                         ${o.diagnosis ? `
                         <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #bae6fd;">
                             <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;">Assessment:</span>
