@@ -199,6 +199,13 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
                             {emojiFn ? emojiFn(opt) : ''}{opt}
                         </button>
                     ))}
+                    <input 
+                        type="text" 
+                        placeholder="Other..."
+                        value={!options.includes(getVal(eye) as any) ? getVal(eye) : ''}
+                        onChange={e => setVal(eye, e.target.value)}
+                        className={`flex-1 min-w-[60px] py-1 px-2 rounded-lg text-[9px] font-black uppercase transition-all border outline-none ${!options.includes(getVal(eye) as any) && getVal(eye) ? 'bg-blue-50 border-blue-300 text-blue-700 focus:ring-2 focus:ring-blue-400' : 'bg-white text-slate-700 border-slate-200 focus:ring-2 focus:ring-blue-300'}`}
+                    />
                 </div>
             </div>
         );
