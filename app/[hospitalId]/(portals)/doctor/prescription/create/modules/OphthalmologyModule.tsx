@@ -121,7 +121,7 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
     );
 
     // Vision selection row (pills + free text)
-    const VisionRow = ({ eye, label }: { eye: 'od' | 'os'; label: string }) => {
+    const renderVisionRow = ({ eye, label }: { eye: 'od' | 'os'; label: string }) => {
         const sev = visionSeverity(o.vision?.[eye]?.unaided || '');
         return (
             <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
@@ -174,7 +174,7 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
         );
     };
 
-    const EyeExamRow = ({ label, category, field, options, getBtnClass, emojiFn }: { label: string, category: 'slitLamp' | 'fundus', field: string, options: readonly string[], getBtnClass: (opt: string, active: boolean) => string, emojiFn?: (opt: string) => string }) => {
+    const renderEyeExamRow = ({ label, category, field, options, getBtnClass, emojiFn }: { label: string, category: 'slitLamp' | 'fundus', field: string, options: readonly string[], getBtnClass: (opt: string, active: boolean) => string, emojiFn?: (opt: string) => string }) => {
         const getVal = (eye?: 're' | 'le') => {
             const val = o[category]?.[field];
             if (typeof val === 'string') return eye === 're' ? val : '';
@@ -314,8 +314,8 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
                 <>
                     {sectionHeader(<Eye size={17} />, 'A. Visual Acuity', 'OD = Right Eye | OS = Left Eye')}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <VisionRow eye="od" label="🔵 OD — Right Eye (Oculus Dexter)" />
-                        <VisionRow eye="os" label="🟢 OS — Left Eye (Oculus Sinister)" />
+                        {renderVisionRow({ eye: "od", label: "🔵 OD — Right Eye (Oculus Dexter)" })}
+                        {renderVisionRow({ eye: "os", label: "🟢 OS — Left Eye (Oculus Sinister)" })}
                     </div>
                     {/* Summary row */}
                     {(o.vision?.od?.unaided || o.vision?.os?.unaided) && (
@@ -519,19 +519,19 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
                 <>
                     {sectionHeader(<FlaskConical size={17} />, 'F. Slit Lamp Examination')}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <EyeExamRow label="Conjunctiva" category="slitLamp" field="conjunctiva" options={CONJUNCTIVA_OPTS} 
-                            getBtnClass={(opt, active) => active ? (opt === 'Normal' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : 'bg-amber-500 text-white border-amber-500 shadow-md') : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100'} 
-                        />
-                        <EyeExamRow label="Cornea" category="slitLamp" field="cornea" options={CORNEA_OPTS} 
-                            getBtnClass={(opt, active) => active ? (opt === 'Clear' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : 'bg-red-600 text-white border-red-600 shadow-md') : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100'}
-                            emojiFn={opt => opt !== 'Clear' ? '🔴 ' : ''}
-                        />
-                        <EyeExamRow label="Anterior Chamber" category="slitLamp" field="anteriorChamber" options={ANTE_CHAMBER_OPTS} 
-                            getBtnClass={(opt, active) => active ? (opt === 'Normal' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : 'bg-amber-500 text-white border-amber-500 shadow-md') : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100'} 
-                        />
-                        <EyeExamRow label="Lens" category="slitLamp" field="lens" options={LENS_OPTS} 
-                            getBtnClass={(opt, active) => active ? (opt === 'Clear' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : (opt === 'Mature cataract' ? 'bg-red-600 text-white border-red-600 shadow-md' : 'bg-amber-500 text-white border-amber-500 shadow-md')) : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100'} 
-                        />
+                        {renderEyeExamRow({ label: "Conjunctiva", category: "slitLamp", field: "conjunctiva", options: CONJUNCTIVA_OPTS, 
+                            getBtnClass: (opt, active) => active ? (opt === 'Normal' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : 'bg-amber-500 text-white border-amber-500 shadow-md') : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100' 
+                        })}
+                        {renderEyeExamRow({ label: "Cornea", category: "slitLamp", field: "cornea", options: CORNEA_OPTS, 
+                            getBtnClass: (opt, active) => active ? (opt === 'Clear' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : 'bg-red-600 text-white border-red-600 shadow-md') : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100',
+                            emojiFn: opt => opt !== 'Clear' ? '🔴 ' : ''
+                        })}
+                        {renderEyeExamRow({ label: "Anterior Chamber", category: "slitLamp", field: "anteriorChamber", options: ANTE_CHAMBER_OPTS, 
+                            getBtnClass: (opt, active) => active ? (opt === 'Normal' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : 'bg-amber-500 text-white border-amber-500 shadow-md') : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100' 
+                        })}
+                        {renderEyeExamRow({ label: "Lens", category: "slitLamp", field: "lens", options: LENS_OPTS, 
+                            getBtnClass: (opt, active) => active ? (opt === 'Clear' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : (opt === 'Mature cataract' ? 'bg-red-600 text-white border-red-600 shadow-md' : 'bg-amber-500 text-white border-amber-500 shadow-md')) : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100' 
+                        })}
                     </div>
                 </>,
                 'border-blue-100',
@@ -542,16 +542,16 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
                 <>
                     {sectionHeader(<Target size={17} />, 'G. Fundus Examination')}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                        <EyeExamRow label="Retina" category="fundus" field="retina" options={RETINA_OPTS} 
-                            getBtnClass={(opt, active) => active ? (opt === 'Normal' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : 'bg-red-600 text-white border-red-600 shadow-md') : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100'}
-                            emojiFn={opt => opt !== 'Normal' ? '🔴 ' : ''}
-                        />
-                        <EyeExamRow label="Optic Disc" category="fundus" field="opticDisc" options={OPTIC_DISC_OPTS} 
-                            getBtnClass={(opt, active) => active ? (opt === 'Normal' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : 'bg-amber-500 text-white border-amber-500 shadow-md') : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100'} 
-                        />
-                        <EyeExamRow label="Macula" category="fundus" field="macula" options={MACULA_OPTS} 
-                            getBtnClass={(opt, active) => active ? (opt === 'Normal' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : 'bg-amber-500 text-white border-amber-500 shadow-md') : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100'} 
-                        />
+                        {renderEyeExamRow({ label: "Retina", category: "fundus", field: "retina", options: RETINA_OPTS, 
+                            getBtnClass: (opt, active) => active ? (opt === 'Normal' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : 'bg-red-600 text-white border-red-600 shadow-md') : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100',
+                            emojiFn: opt => opt !== 'Normal' ? '🔴 ' : ''
+                        })}
+                        {renderEyeExamRow({ label: "Optic Disc", category: "fundus", field: "opticDisc", options: OPTIC_DISC_OPTS, 
+                            getBtnClass: (opt, active) => active ? (opt === 'Normal' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : 'bg-amber-500 text-white border-amber-500 shadow-md') : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100' 
+                        })}
+                        {renderEyeExamRow({ label: "Macula", category: "fundus", field: "macula", options: MACULA_OPTS, 
+                            getBtnClass: (opt, active) => active ? (opt === 'Normal' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : 'bg-amber-500 text-white border-amber-500 shadow-md') : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100' 
+                        })}
                     </div>
                 </>,
                 'border-indigo-100',
