@@ -2438,6 +2438,20 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                             if (getExactMatch(o.fundus?.opticDisc, 'Cupping increased')) assessments.push('Increased C/D Ratio — Glaucomatous Disc');
                             if (isMatch(o.slitLamp?.lens, 'Cataract')) assessments.push(getExactMatch(o.slitLamp?.lens, 'Mature cataract') ? 'Mature Cataract — Surgical Evaluation' : 'Cataract detected');
                             
+                            const printEyeRow = (label: string, data: any) => {
+                                if (!data || (typeof data === 'object' && !data.re && !data.le && !data.notes) || (typeof data === 'string' && !data)) return '';
+                                let re = typeof data === 'object' ? data.re : data;
+                                let le = typeof data === 'object' ? data.le : data;
+                                let notes = typeof data === 'object' ? data.notes : '';
+                                if (!re && !le && !notes) return '';
+                                return `
+                                <tr style="border-bottom: 1px solid #000;">
+                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9; text-align:center;">${label}</td>
+                                    <td style="border-right: 1px solid #000; padding: 4px;">${re || '--'}</td>
+                                    <td style="padding: 4px;">${le || '--'} ${notes ? `<br/><span style="font-size:7px;color:#666;">${notes}</span>` : ''}</td>
+                                </tr>`;
+                            };
+
                             return `
                         <div style="margin-bottom:15px; page-break-inside:avoid; font-family: sans-serif; color: #000;">
                             ${(o.chiefComplaints || o.hopi) ? `

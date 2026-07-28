@@ -175,7 +175,7 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
     };
 
     const renderEyeExamRow = ({ label, category, field, options, getBtnClass, emojiFn }: { label: string, category: 'slitLamp' | 'fundus', field: string, options: readonly string[], getBtnClass: (opt: string, active: boolean) => string, emojiFn?: (opt: string) => string }) => {
-        const getVal = (eye?: 're' | 'le') => {
+        const getVal = (eye?: 're' | 'le' | 'notes') => {
             const val = o[category]?.[field];
             if (typeof val === 'string') return eye === 're' ? val : '';
             return val?.[eye || 'notes'] || '';

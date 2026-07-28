@@ -81,7 +81,9 @@ interface Medicine {
     availableUnits?: number;
     pricePerUnit?: number;
     error?: string;
-    eye?: 'BE' | 'RE' | 'LE';
+    eye?: 'BE' | 'RE' | 'LE' | string;
+    dropCount?: string;
+    timesPerDay?: string;
 }
 
 interface PrescriptionForm {

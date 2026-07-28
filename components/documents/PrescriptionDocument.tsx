@@ -11,6 +11,9 @@ interface Medicine {
     frequency: string;
     duration: string;
     freq?: string;
+    eye?: string;
+    dropCount?: string;
+    timesPerDay?: string;
 }
 
 interface PrescriptionDocumentProps {
