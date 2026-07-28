@@ -2013,13 +2013,49 @@ function CreatePrescriptionPage() {
                             ◆ Ophthalmology Assessment
                         </span>
                         
+                        ${o.chiefComplaints || o.hopi || o.pastHistory || o.familyHistory || (o.symptoms && o.symptoms.length > 0) ? `
+                        <div style="margin-bottom:15px;padding-bottom:12px;border-bottom:1px dashed #bae6fd;">
+                            ${o.symptoms && o.symptoms.length > 0 ? `
+                            <div style="margin-bottom:8px;">
+                                <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;display:block;margin-bottom:2px;">Ocular Symptoms</span>
+                                <div style="font-size:10px;font-weight:700;color:#1e293b;">${o.symptoms.join(', ')}</div>
+                            </div>` : ''}
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+                                ${o.chiefComplaints ? `
+                                <div>
+                                    <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;display:block;margin-bottom:2px;">Chief Complaints</span>
+                                    <div style="font-size:10px;font-weight:700;color:#1e293b;">${o.chiefComplaints}</div>
+                                </div>` : ''}
+                                ${o.hopi ? `
+                                <div>
+                                    <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;display:block;margin-bottom:2px;">History of Presenting Illness (HOPI)</span>
+                                    <div style="font-size:10px;font-weight:700;color:#1e293b;">${o.hopi}</div>
+                                </div>` : ''}
+                                ${o.pastHistory ? `
+                                <div>
+                                    <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;display:block;margin-bottom:2px;">Past Ocular History</span>
+                                    <div style="font-size:10px;font-weight:700;color:#1e293b;">${o.pastHistory}</div>
+                                </div>` : ''}
+                                ${o.familyHistory ? `
+                                <div>
+                                    <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;display:block;margin-bottom:2px;">Family History</span>
+                                    <div style="font-size:10px;font-weight:700;color:#1e293b;">${o.familyHistory}</div>
+                                </div>` : ''}
+                            </div>
+                        </div>` : ''}
+                        
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:15px;">
                             <div>
-                                <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;display:block;margin-bottom:3px;">Visual Acuity (Unaided)</span>
-                                <div style="display:flex;gap:15px;">
-                                    <div><span style="font-size:9px;color:#0ea5e9;font-weight:800;">OD (Right):</span> <span style="font-size:11px;font-weight:700;">${o.vision?.od?.unaided || '—'}</span></div>
-                                    <div><span style="font-size:9px;color:#10b981;font-weight:800;">OS (Left):</span> <span style="font-size:11px;font-weight:700;">${o.vision?.os?.unaided || '—'}</span></div>
+                                <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;display:block;margin-bottom:3px;">Visual Acuity</span>
+                                <div style="display:flex;gap:15px;margin-bottom:6px;">
+                                    <div><span style="font-size:9px;color:#0ea5e9;font-weight:800;">OD (Right):</span> <span style="font-size:11px;font-weight:700;">${o.vision?.od?.unaided || '—'}</span> <span style="font-size:8px;color:#94a3b8;">(Unaided)</span></div>
+                                    <div><span style="font-size:9px;color:#10b981;font-weight:800;">OS (Left):</span> <span style="font-size:11px;font-weight:700;">${o.vision?.os?.unaided || '—'}</span> <span style="font-size:8px;color:#94a3b8;">(Unaided)</span></div>
                                 </div>
+                                ${o.vision?.od?.corrected || o.vision?.os?.corrected ? `
+                                <div style="display:flex;gap:15px;">
+                                    <div><span style="font-size:9px;color:#0ea5e9;font-weight:800;">OD:</span> <span style="font-size:11px;font-weight:700;">${o.vision?.od?.corrected || '—'}</span> <span style="font-size:8px;color:#94a3b8;">(Corrected)</span></div>
+                                    <div><span style="font-size:9px;color:#10b981;font-weight:800;">OS:</span> <span style="font-size:11px;font-weight:700;">${o.vision?.os?.corrected || '—'}</span> <span style="font-size:8px;color:#94a3b8;">(Corrected)</span></div>
+                                </div>` : ''}
                             </div>
                             <div>
                                 <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;display:block;margin-bottom:3px;">Intraocular Pressure (IOP)</span>
@@ -2092,16 +2128,16 @@ function CreatePrescriptionPage() {
                                 let le = typeof data === 'object' ? data.le : data;
                                 let notes = typeof data === 'object' ? data.notes : '';
                                 if(!re && !le && !notes) return '';
-                                return \`
+                                return `
                                     <div style="margin-bottom:6px;">
-                                        <span style="font-size:8px;color:#94a3b8;font-weight:800;display:block;">\${label}</span>
+                                        <span style="font-size:8px;color:#94a3b8;font-weight:800;display:block;">${label}</span>
                                         <div style="font-size:10px;font-weight:700;color:#1e293b;">
-                                            \${re ? \`<span style="color:#0ea5e9">RE:</span> \${re} &nbsp;&nbsp;\` : ''}
-                                            \${le ? \`<span style="color:#10b981">LE:</span> \${le}\` : ''}
-                                            \${notes ? \`<div style="font-size:9px;color:#64748b;margin-top:2px;font-weight:600;">\${notes}</div>\` : ''}
+                                            ${re ? `<span style="color:#0ea5e9">RE:</span> ${re} &nbsp;&nbsp;` : ''}
+                                            ${le ? `<span style="color:#10b981">LE:</span> ${le}` : ''}
+                                            ${notes ? `<div style="font-size:9px;color:#64748b;margin-top:2px;font-weight:600;">${notes}</div>` : ''}
                                         </div>
                                     </div>
-                                \`;
+                                `;
                             };
                             
                             const slitLampHTML = o.slitLamp ? ['conjunctiva', 'cornea', 'anteriorChamber', 'lens'].map(f => renderEyeField(f.charAt(0).toUpperCase() + f.slice(1).replace(/([A-Z])/g, ' $1'), (o.slitLamp as any)[f])).join('') : '';
@@ -2109,35 +2145,35 @@ function CreatePrescriptionPage() {
                             
                             if (!slitLampHTML.trim() && !fundusHTML.trim() && !o.pupils && !o.notes) return '';
                             
-                            return \`
+                            return `
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:15px;padding-top:10px;border-top:1px dashed #bae6fd;">
-                                \${slitLampHTML.trim() ? \`
+                                ${slitLampHTML.trim() ? `
                                 <div>
                                     <span style="font-size:8px;color:#0369a1;font-weight:800;text-transform:uppercase;display:block;margin-bottom:5px;">Slit Lamp Examination</span>
-                                    \${slitLampHTML}
-                                </div>\` : '<div></div>'}
+                                    ${slitLampHTML}
+                                </div>` : '<div></div>'}
                                 
                                 <div>
-                                    \${fundusHTML.trim() ? \`
+                                    ${fundusHTML.trim() ? `
                                     <div style="margin-bottom:10px;">
                                         <span style="font-size:8px;color:#0369a1;font-weight:800;text-transform:uppercase;display:block;margin-bottom:5px;">Fundus Examination</span>
-                                        \${fundusHTML}
-                                    </div>\` : ''}
+                                        ${fundusHTML}
+                                    </div>` : ''}
                                     
-                                    \${o.pupils ? \`
+                                    ${o.pupils ? `
                                     <div>
                                         <span style="font-size:8px;color:#0369a1;font-weight:800;text-transform:uppercase;display:block;margin-bottom:5px;">Pupil Response</span>
-                                        <span style="font-size:10px;font-weight:700;color:#1e293b;">\${o.pupils}</span>
-                                    </div>\` : ''}
+                                        <span style="font-size:10px;font-weight:700;color:#1e293b;">${o.pupils}</span>
+                                    </div>` : ''}
                                 </div>
                             </div>
                             
-                            \${o.notes ? \`
+                            ${o.notes ? `
                             <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #bae6fd;">
                                 <span style="font-size:8px;color:#94a3b8;font-weight:800;text-transform:uppercase;">Clinical Notes:</span>
-                                <span style="font-size:10px;font-weight:600;color:#334155;margin-left:6px;">\${o.notes}</span>
-                            </div>\` : ''}
-                            \`;
+                                <span style="font-size:10px;font-weight:600;color:#334155;margin-left:6px;">${o.notes}</span>
+                            </div>` : ''}
+                            `;
                         })()}
 
                         ${o.diagnosis ? `
