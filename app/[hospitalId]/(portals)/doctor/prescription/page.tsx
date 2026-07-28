@@ -3348,7 +3348,10 @@
                                         {/* Suggestions Dropdown */}
                                         {activeMedIndex === idx && suggestions.length > 0 && (
                                             <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-slate-100 z-[200] max-h-72 overflow-y-auto ring-1 ring-black/5">
-                                                <div className="p-2 border-b border-slate-50 text-[10px] font-bold text-slate-400 uppercase bg-slate-50/50">Pharmacy Inventory</div>
+                                                <div className="p-2 border-b border-slate-50 text-[10px] font-bold text-slate-400 uppercase bg-slate-50/50 flex justify-between items-center">
+                                                    <span>Medicine Catalog & Inventory</span>
+                                                    <span className="text-[9px] text-teal-600 font-bold lowercase">🟢 Pharmacy Stock &nbsp;|&nbsp; 🔵 General Catalog</span>
+                                                </div>
                                                 {suggestions.map((medicine: any, mIdx: number) => (
                                                     <button
                                                         key={mIdx}
@@ -3357,31 +3360,52 @@
                                                     >
                                                         <div className="flex justify-between items-start">
                                                             <div>
-                                                                <div className="font-bold text-slate-800 text-sm">{medicine.brand}</div>
-                                                                <div className="text-xs text-slate-500 leading-tight">{medicine.generic}</div>
-                                                                <div className="mt-1 text-[10px] font-bold text-slate-400">
-                                                                    {medicine.unitsPerPack} units per pack
+                                                                <div className="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                                                                    {medicine.brand || medicine.name}
+                                                                    {medicine.isPharmacyStock === false ? (
+                                                                        <span className="text-[9px] font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200">
+                                                                            🔵 General / Custom
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                                                                            🟢 Pharmacy Stock
+                                                                        </span>
+                                                                    )}
                                                                 </div>
+                                                                <div className="text-xs text-slate-500 leading-tight">{medicine.generic}</div>
+                                                                {medicine.unitsPerPack ? (
+                                                                    <div className="mt-1 text-[10px] font-bold text-slate-400">
+                                                                        {medicine.unitsPerPack} units per pack
+                                                                    </div>
+                                                                ) : null}
                                                             </div>
                                                             <div className="text-right">
-                                                                {medicine.stock > 0 ? (
-                                                                    <div className="flex flex-col items-end gap-1">
-                                                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                                                                            {Number(medicine.stock).toFixed(2)} Packs Available
+                                                                {medicine.isPharmacyStock !== false ? (
+                                                                    medicine.stock > 0 ? (
+                                                                        <div className="flex flex-col items-end gap-1">
+                                                                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                                                                                {Number(medicine.stock).toFixed(2)} Packs Available
+                                                                            </span>
+                                                                            <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">
+                                                                                Total: {(medicine.stock * (medicine.unitsPerPack || 1)).toFixed(2)} Units
+                                                                            </span>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
+                                                                            Out of Stock
                                                                         </span>
-                                                                        <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">
-                                                                            Total: {(medicine.stock * (medicine.unitsPerPack || 1)).toFixed(2)} Units
-                                                                        </span>
-                                                                    </div>
+                                                                    )
                                                                 ) : (
-                                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
-                                                                        Out of Stock
+                                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
+                                                                        Non-Pharmacy Item
                                                                     </span>
                                                                 )}
-                                                                <div className="text-xs font-bold text-slate-700 mt-1">₹{medicine.mrp} <span className="text-[10px] font-normal text-slate-400">/ pack</span></div>
-                                                                {medicine.unitsPerPack > 1 && (
+                                                                {medicine.mrp ? (
+                                                                    <div className="text-xs font-bold text-slate-700 mt-1">₹{medicine.mrp} <span className="text-[10px] font-normal text-slate-400">/ pack</span></div>
+                                                                ) : null}
+                                                                {medicine.unitsPerPack && medicine.unitsPerPack > 1 && medicine.mrp ? (
                                                                     <div className="text-[9px] font-bold text-indigo-500 mt-0.5">₹{(medicine.mrp / medicine.unitsPerPack).toFixed(2)} per unit</div>
-                                                                )}
+                                                                ) : null}
                                                             </div>
                                                         </div>
                                                     </button>
