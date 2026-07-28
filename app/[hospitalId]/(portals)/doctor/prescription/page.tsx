@@ -1,878 +1,880 @@
-'use client';
+    'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useQuery} from '@tanstack/react-query';
-import {
-    Printer,
-    Sparkles,
-    User,
-    Stethoscope,
-    CheckCircle2,
-    Activity,
-    X,
-    FlaskConical,
-    Heart,
-    AlertCircle,
-    Eraser,
-    Loader2,
-    Pill,
-    Calendar,
-    Plus,
-    Trash2,
-    Search,
-    ArrowLeft,
-    Zap,
-    ZapIcon,
-    Mic2,
-    BabyIcon,
-    Eye,
-    Wind,
-    Beaker,
-    ShieldAlert,
-    Scan,
-    PenTool,
-    History,
-    Building,
-    FileText,
-    ChevronRight,
-    Clock,
-    Pause,
-    CheckCircle
-} from 'lucide-react';
-import { CardiologyModule } from './create/modules/CardiologyModule';
-import { DermatologyModule, DermatologyData, INITIAL_DERMATOLOGY_DATA } from './create/modules/DermatologyModule';
-import { OrthopedicModule } from './create/modules/OrthopedicModule';
-import { PediatricsModule } from './create/modules/PediatricsModule';
-import { ENTModule } from './create/modules/ENTModule';
-import { OphthalmologyModule } from './create/modules/OphthalmologyModule';
-import { GynecologyModule } from './create/modules/GynecologyModule';
-import { NeurologyModule } from './create/modules/NeurologyModule';
-import { PulmonologyModule } from './create/modules/PulmonologyModule';
-import { GastroModule } from './create/modules/GastroModule';
-import { NephrologyModule } from './create/modules/NephrologyModule';
-import { PsychiatryModule } from './create/modules/PsychiatryModule';
-import { EndocrinologyModule } from './create/modules/EndocrinologyModule';
-import { HematologyModule } from './create/modules/HematologyModule';
-import toast from 'react-hot-toast';
-import { useRouter, useSearchParams, useParams } from 'next/navigation';
-import { doctorService } from '@/lib/integrations/services/doctor.service';
-import { Frequency, StandardFrequency, CustomFrequency, FoodTiming, INITIAL_FREQUENCY, mapFrequency, formatFrequency } from '@/lib/frequencyUtils';
-import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
-import medicineData from '@/medicine.json';
-import { renderToStaticMarkup } from 'react-dom/server';
-import MainHeader from '@/components/printers/MainHeader';
-import MainFooter from '@/components/printers/MainFooter';
-import { OncologyModule } from './create/modules/OncologyModule';
-import { DentistryModule } from './create/modules/DentistryModule';
-import { UrologyModule } from './create/modules/UrologyModule';
-import { RadiologyModule } from './create/modules/RadiologyModule';
+    import React, { useState, useEffect, useRef, useMemo } from 'react';
+    import { useQuery} from '@tanstack/react-query';
+    import {
+        Printer,
+        Sparkles,
+        User,
+        Stethoscope,
+        CheckCircle2,
+        Activity,
+        X,
+        FlaskConical,
+        Heart,
+        AlertCircle,
+        Eraser,
+        Loader2,
+        Pill,
+        Calendar,
+        Plus,
+        Trash2,
+        Search,
+        ArrowLeft,
+        Zap,
+        ZapIcon,
+        Mic2,
+        BabyIcon,
+        Eye,
+        Wind,
+        Beaker,
+        ShieldAlert,
+        Scan,
+        PenTool,
+        History,
+        Building,
+        FileText,
+        ChevronRight,
+        Clock,
+        Pause,
+        CheckCircle
+    } from 'lucide-react';
+    import { CardiologyModule } from './create/modules/CardiologyModule';
+    import { DermatologyModule, DermatologyData, INITIAL_DERMATOLOGY_DATA } from './create/modules/DermatologyModule';
+    import { OrthopedicModule } from './create/modules/OrthopedicModule';
+    import { PediatricsModule } from './create/modules/PediatricsModule';
+    import { ENTModule } from './create/modules/ENTModule';
+    import { OphthalmologyModule } from './create/modules/OphthalmologyModule';
+    import { GynecologyModule } from './create/modules/GynecologyModule';
+    import { NeurologyModule } from './create/modules/NeurologyModule';
+    import { PulmonologyModule } from './create/modules/PulmonologyModule';
+    import { GastroModule } from './create/modules/GastroModule';
+    import { NephrologyModule } from './create/modules/NephrologyModule';
+    import { PsychiatryModule } from './create/modules/PsychiatryModule';
+    import { EndocrinologyModule } from './create/modules/EndocrinologyModule';
+    import { HematologyModule } from './create/modules/HematologyModule';
+    import toast from 'react-hot-toast';
+    import { useRouter, useSearchParams, useParams } from 'next/navigation';
+    import { doctorService } from '@/lib/integrations/services/doctor.service';
+    import { Frequency, StandardFrequency, CustomFrequency, FoodTiming, INITIAL_FREQUENCY, mapFrequency, formatFrequency } from '@/lib/frequencyUtils';
+    import { hospitalAdminService } from '@/lib/integrations/services/hospitalAdmin.service';
+    import medicineData from '@/medicine.json';
+    import { renderToStaticMarkup } from 'react-dom/server';
+    import MainHeader from '@/components/printers/MainHeader';
+    import MainFooter from '@/components/printers/MainFooter';
+    import { OncologyModule } from './create/modules/OncologyModule';
+    import { DentistryModule } from './create/modules/DentistryModule';
+    import { UrologyModule } from './create/modules/UrologyModule';
+    import { RadiologyModule } from './create/modules/RadiologyModule';
 
-// --- Types ---
-interface Medicine {
-    productId?: string;
-    name: string;
-    form: string;
-    dosage: string;
-    freq: Frequency;
-    duration: string;
-    quantity: string;
-    price: number;
-    unitsPerPack?: number;
-    availableUnits?: number;
-    pricePerUnit?: number;
-    error?: string;
-    eye?: 'BE' | 'RE' | 'LE' | string;
-    dropCount?: string;
-    timesPerDay?: string;
-}
-
-interface PrescriptionForm {
-    patientName: string;
-    age: string;
-    gender: string;
-    duration: string;
-    mrn: string;
-    date: string;
-    symptoms: string;
-    diagnosis: string;
-    medicines: Medicine[];
-    dietAdvice: string[];
-    suggestedTests: string[];
-    followUp: string;
-    followUpDate: string;
-    avoid: string[];
-    doctorName: string;
-    doctorSpecialization: string;
-    doctorSignature?: string; // URL or base64
-    subtotal: number;
-    tax: number;
-    total: number;
-    cardiologyData?: {
-        bpSystolic: string;
-        bpDiastolic: string;
-        heartRate: string;
-        rhythm: string;
-        symptoms: string[];
-        riskFactors: string[];
-        ecgType: string;
-        ecgLeads: string[];
-        ecgNotes: string;
-        s1: string;
-        s2: string;
-        murmur: string;
-        murmurType: string;
-        riskLevel: 'Low' | 'Moderate' | 'High';
-        nyhaClass: string;
-        notes: string;
-    };
-    dermatologyData?: DermatologyData;
-    orthopedicData?: {
-        joint: string;
-        side: string;
-        symptoms: string[];
-        pain: { score: number; type: string; };
-        rom: string;
-        exam: { swelling: string; tenderness: string; deformity: string; spasm: string; };
-        motorPower: number;
-        neurovascular: { sensation: string; pulse: string; };
-        specialTests: string[];
-        imaging: { xray: string; mri: string; };
-        diagnosis: string;
-        notes?: string;
-    };
-    pediatricData?: {
-        weight: string;
-        height: string;
-        headCircumference: string;
-        temperature: string;
-        heartRate: string;
-        respRate: string;
-        growth: { weightForAge: string; heightForAge: string; };
-        milestones: 'Normal' | 'Delayed' | 'Borderline';
-        milestoneNotes: string;
-        immunizationStatus: string;
-        dueVaccines: string[];
-        symptoms: string[];
-        redFlags: string[];
-        notes?: string;
-    };
-    entData?: {
-        ear: {
-            left:  { externalEar: string; earCanal: string[]; tympanicMembrane: string; };
-            right: { externalEar: string; earCanal: string[]; tympanicMembrane: string; };
-        };
-        hearing: { status: string; tuningForkTest: string[]; };
-        nose:   { mucosa: string; septum: string; discharge: string; };
-        throat: { tonsils: string; pharynx: string; uvula: string; };
-        lymphNodes: { cervical: string; sizeCm: string; tender: string; mobility: string; };
-        voice:  { quality: string; airway: string; };
-        symptoms: string[];
+    // --- Types ---
+    interface Medicine {
+        productId?: string;
+        name: string;
+        form: string;
+        dosage: string;
+        freq: Frequency;
         duration: string;
-        notes?: string;
-    };
-    ophthaData?: {
-        chiefComplaints?: string;
-        hopi?: string;
-        pastHistory?: string;
-        familyHistory?: string;
-        symptoms: string[];
-        vision: {
-            od: { unaided: string; corrected: string; };
-            os: { unaided: string; corrected: string; };
-        };
-        refraction: {
-            od: {
-                distant?: { sph: string; cyl: string; axis: string; va: string; };
-                near?: { sph: string; cyl: string; axis: string; va: string; };
-            };
-            os: {
-                distant?: { sph: string; cyl: string; axis: string; va: string; };
-                near?: { sph: string; cyl: string; axis: string; va: string; };
-            };
-        };
-        iop:    { od: string; os: string; };
-        pupils: string;
-        slitLamp: { conjunctiva: string; cornea: string; anteriorChamber: string; lens: string; };
-        fundus:   { retina: string; opticDisc: string; macula: string; };
-        diagnosis: string;
-        notes?: string;
-    };
-    gynaecData?: {
-        lmp: string;
-        cycleLength: string;
-        cycleRegularity: string;
-        flowDuration: string;
-        flowType: string;
-        pregnant: 'Yes' | 'No' | 'Suspected';
-        gestationalAge: string;
-        edd: string;
-        symptoms: string[];
-        vitals: { bp: string; pulse: string; weight: string; temperature: string; };
-        obstetric: { gravida: string; para: string; living: string; abortions: string; };
-        obstetricExam: { uterineSize: string; fetalPosition: string; fetalHeartRate: string; };
-        gynExam: { cervix: string; discharge: string; tenderness: string; };
-        investigations: string[];
-        notes?: string;
-    };
-    neuroData?: {
-        gcs: { eye: string; verbal: string; motor: string; };
-        mentalStatus: string;
-        motorPower: { ru: string; lu: string; rl: string; ll: string; };
-        reflexes: string;
-        cranialNerves: string;
-        cranialNerveDeficits: string[];
-        sensory: string;
-        coordination: string;
-        symptoms: string[];
-        onset: string;
-        notes?: string;
-    };
-    pulmoData?: {
-        vitals: { respRate: string; spo2: string; oxygenSupport: string; };
-        symptoms: string[];
-        mmrcGrade: number | null;
-        exam: { chestExpansion: string; accessoryMuscles: string; };
-        auscultation: { airEntry: string; sounds: string[]; };
-        peakFlow: string;
-        diagnosis: string;
-        severity: string;
-        notes?: string;
-    };
-    gastroData?: {
-        symptoms: string[];
-        painLocation: 'Epigastric' | 'RUQ' | 'RLQ' | 'LLQ' | 'Diffuse' | '';
-        painType: 'Burning' | 'Colicky' | 'Sharp' | '';
-        bowelHabits: 'Normal' | 'Constipation' | 'Diarrhea' | 'Alternating' | '';
-        stoolType: 'Normal' | 'Loose' | 'Hard' | 'Black (Melena)' | 'Blood-stained' | '';
-        bowelSounds: 'Normal' | 'Hyperactive' | 'Sluggish' | 'Absent' | '';
-        distention: 'None' | 'Mild' | 'Severe' | '';
-        tenderness: 'None' | 'Epigastric' | 'RUQ' | 'RLQ' | 'Diffuse' | '';
-        liver: { status: 'Not palpable' | 'Enlarged' | ''; size?: number | string; };
-        spleen: { status: 'Not palpable' | 'Enlarged' | ''; };
-        guarding: 'None' | 'Guarding' | 'Rigidity' | 'Palpable Mass' | '';
-        diagnosis: 'GERD' | 'Gastritis' | 'PUD' | 'IBS' | 'IBD' | 'Hepatitis' | 'Fatty Liver' | 'Cirrhosis' | 'Pancreatitis' | '';
-        notes: string;
-    };
-    nephroData?: {
-        urineOutput: string;
-        creatinine: string;
-        urea: string;
-        egfr: string;
-        edema: 'None' | 'Trace' | '1+' | '2+' | '3+' | '4+';
-        electrolytes: { sodium: string; potassium: string; bicarbonate: string; };
-        urineAnalysis: { protein: string; sugar: string; rbc: string; };
-        fluidBalance: { intake: string; output: string; };
-        dialysis: { status: string; frequency: string; lastSession: string; access: string; };
-        symptoms: string[];
-        ckdStage: string;
-        notes?: string;
-    };
-    psychiatryData?: {
-        complaints: string[];
-        severity: string;
-        duration: string;
-        mse: {
-            behavior: string;
-            speech: string;
-            mood: string;
-            thought: string[];
-            perception: string;
-            insight: string;
-            judgment: string;
-        };
-        suicideRisk: string;
-        scores: { phq9: string; gad7: string; };
-        substanceUse: string[];
-        medicationCompliance: string;
-        sideEffects: string[];
-        counseling: string;
-        notes: string;
-    };
-    endocrinologyData?: {
-        glycemic: { fbs: string; ppbs: string; hba1c: string; };
-        thyroid: { tsh: string; t3: string; t4: string; };
-        weight: string;
-        height: string;
-        bmi: string;
-        symptoms: string[];
-        pcos: { irregularCycles: boolean; hirsutism: boolean; acne: boolean; infertility: boolean; };
-        complications: string[];
-        medicationType: string[];
-        diabetes?: {
-            hypoglycemia?: string;
-            footExam?: { sensation?: string; ulcer?: string; pulse?: string; };
-            treatment?: { type?: string; insulinType?: string; dose?: string; };
-            complications?: string[];
-        };
-        notes: string;
-    };
-    hematologyData?: any;
-    oncologyData?: {
-        body: { weight: string; height: string; bsa: string; };
-        diagnosis: string;
-        site: string;
-        ecog: string;
-        biomarkers: string[];
-        tnm: { t: string; n: string; m: string; stage: string; };
-        treatment: { intent: string; regimen: string; };
-        chemo: any[];
-        labs: { hb: string; anc: string; platelets: string; creatinine: string; lft: string; };
-        toxicity: string[];
-        notes: string;
-    };
-    dentistryData?: {
-        painScale: number;
-        duration: string;
-        teeth: {
-            toothNumber: string;
-            condition: string;
-            mobilityGrade: number;
-            tenderness: boolean;
-            cariesDepth: 'None' | 'Mild' | 'Moderate' | 'Deep' | '';
-            diagnosis: string;
-        }[];
-        oralFindings: {
-            caries: 'None' | 'Mild' | 'Moderate' | 'Deep' | '';
-            gingivitis: 'None' | 'Mild' | 'Severe' | '';
-            abscess: boolean;
-            mobility: 'None' | 'Grade 1' | 'Grade 2' | 'Grade 3' | '';
-            plaqueIndex: 'Low' | 'Moderate' | 'High' | '';
-        };
-        extraOral: {
-            facialSwelling: boolean;
-            lymphNodes: boolean;
-            tmjPain: boolean;
-        };
-        systemicRisks: {
-            onBloodThinners: boolean;
-            diabetic: boolean;
-            diabetesControl: 'Controlled' | 'Uncontrolled' | 'N/A' | '';
-        };
-        procedure: string;
-        notes: string;
-    };
-    urologyData?: {
-        symptoms: string[];
-        ipss: { score: string; };
-        urine: { pusCells: string; rbc: string; protein: string; nitrite: boolean; };
-        renal: { creatinine: string; urea: string; };
-        stone: { size: string; location: string; };
-        prostate: { size: string; consistency: string; nodules: boolean; };
-        pvr: string;
-        catheter: { present: boolean; type: string; duration: string; reason: string; };
-        diagnosis: string;
-        notes: string;
-    };
-    radiologyOrder?: {
-        priority: string;
-        modality: string;
-        bodyPart: string;
-        protocol: string;
-        contrast: {
-            requested: boolean;
-            type: string;
-            creatinine: string;
-            allergy: boolean;
-        };
-        safety: {
-            pregnancy: boolean;
-            implants: boolean;
-        };
-        clinicalIndication: string;
-        notes: string;
-    };
-}
-
-const INITIAL_FORM: PrescriptionForm = {
-    patientName: '',
-    age: '',
-    gender: 'Male',
-    duration: '',
-    mrn: '',
-    date: new Date().toLocaleDateString('en-GB'), // DD/MM/YYYY
-    symptoms: '',
-    diagnosis: '',
-    medicines: [],
-    dietAdvice: [],
-    suggestedTests: [],
-    followUp: '',
-    followUpDate: '',
-    avoid: [],
-    doctorName: '',
-    doctorSpecialization: '',
-    subtotal: 0,
-    tax: 0,
-    total: 0,
-    cardiologyData: {
-        bpSystolic: '',
-        bpDiastolic: '',
-        heartRate: '',
-        rhythm: 'Regular',
-        symptoms: [],
-        riskFactors: [],
-        ecgType: 'Normal',
-        ecgLeads: [],
-        ecgNotes: '',
-        s1: 'Normal',
-        s2: 'Normal',
-        murmur: 'None',
-        murmurType: '',
-        riskLevel: 'Low',
-        nyhaClass: 'I',
-        notes: ''
-    },
-    dermatologyData: { ...INITIAL_DERMATOLOGY_DATA },
-    orthopedicData: {
-        joint: '',
-        side: '',
-        symptoms: [],
-        pain: { score: 0, type: '' },
-        rom: 'Normal',
-        exam: { swelling: '', tenderness: '', deformity: '', spasm: '' },
-        motorPower: 5,
-        neurovascular: { sensation: '', pulse: '' },
-        specialTests: [],
-        imaging: { xray: '', mri: '' },
-        diagnosis: '',
-    },
-    pediatricData: {
-        weight: '',
-        height: '',
-        headCircumference: '',
-        temperature: '',
-        heartRate: '',
-        respRate: '',
-        growth: { weightForAge: '', heightForAge: '' },
-        milestones: 'Normal',
-        milestoneNotes: '',
-        immunizationStatus: '',
-        dueVaccines: [],
-        symptoms: [],
-        redFlags: []
-    },
-    entData: {
-        ear: {
-            left:  { externalEar: '', earCanal: [], tympanicMembrane: '' },
-            right: { externalEar: '', earCanal: [], tympanicMembrane: '' }
-        },
-        hearing: { status: '', tuningForkTest: [] },
-        nose:    { mucosa: '', septum: '', discharge: '' },
-        throat:  { tonsils: '', pharynx: '', uvula: '' },
-        lymphNodes: { cervical: '', sizeCm: '', tender: '', mobility: '' },
-        voice:   { quality: '', airway: '' },
-        symptoms: [],
-        duration: ''
-    },
-    ophthaData: {
-        chiefComplaints: '',
-        hopi: '',
-        pastHistory: '',
-        familyHistory: '',
-        symptoms: [],
-        vision: {
-            od: { unaided: '', corrected: '' },
-            os: { unaided: '', corrected: '' }
-        },
-        refraction: {
-            od: {
-                distant: { sph: '', cyl: '', axis: '', va: '' },
-                near: { sph: '', cyl: '', axis: '', va: '' }
-            },
-            os: {
-                distant: { sph: '', cyl: '', axis: '', va: '' },
-                near: { sph: '', cyl: '', axis: '', va: '' }
-            }
-        },
-        iop:    { od: '', os: '' },
-        pupils: 'PERRLA',
-        slitLamp: { conjunctiva: '', cornea: '', anteriorChamber: '', lens: '' },
-        fundus:   { retina: '', opticDisc: '', macula: '' },
-        diagnosis: ''
-    },
-    gynaecData: {
-        lmp: '',
-        cycleLength: '',
-        cycleRegularity: '',
-        flowDuration: '',
-        flowType: '',
-        pregnant: 'No',
-        gestationalAge: '',
-        edd: '',
-        symptoms: [],
-        vitals: { bp: '', pulse: '', weight: '', temperature: '' },
-        obstetric: { gravida: '', para: '', living: '', abortions: '' },
-        obstetricExam: { uterineSize: '', fetalPosition: '', fetalHeartRate: '' },
-        gynExam: { cervix: '', discharge: '', tenderness: '' },
-        investigations: []
-    },
-    neuroData: {
-        gcs: { eye: '', verbal: '', motor: '' },
-        mentalStatus: '',
-        motorPower: { ru: '', lu: '', rl: '', ll: '' },
-        reflexes: '',
-        cranialNerves: '',
-        cranialNerveDeficits: [],
-        sensory: '',
-        coordination: '',
-        symptoms: [],
-        onset: ''
-    },
-    pulmoData: {
-        vitals: { respRate: '', spo2: '', oxygenSupport: 'Room Air' },
-        symptoms: [],
-        mmrcGrade: null,
-        exam: { chestExpansion: '', accessoryMuscles: '' },
-        auscultation: { airEntry: '', sounds: [] },
-        peakFlow: '',
-        diagnosis: '',
-        severity: ''
-    },
-    gastroData: {
-        symptoms: [],
-        painLocation: '',
-        painType: '',
-        bowelHabits: '',
-        stoolType: 'Normal',
-        bowelSounds: 'Normal',
-        distention: 'None',
-        tenderness: 'None',
-        liver: { status: 'Not palpable', size: '' },
-        spleen: { status: 'Not palpable' },
-        guarding: 'None',
-        diagnosis: '',
-        notes: '',
-    },
-    nephroData: {
-        creatinine: '',
-        urea: '',
-        egfr: '',
-        urineOutput: '',
-        edema: 'None',
-        electrolytes: { sodium: '', potassium: '', bicarbonate: '' },
-        urineAnalysis: { protein: 'Nil', sugar: 'Nil', rbc: 'Nil' },
-        fluidBalance: { intake: '', output: '' },
-        dialysis: { status: 'Not on dialysis', frequency: '', lastSession: '', access: '' },
-        symptoms: [],
-        ckdStage: ''
-    },
-    psychiatryData: {
-        complaints: [],
-        severity: '',
-        duration: '',
-        mse: {
-            behavior: '', speech: '', mood: '',
-            thought: [], perception: '',
-            insight: '1', judgment: '1'
-        },
-        suicideRisk: 'None',
-        scores: { phq9: '0', gad7: '0' },
-        substanceUse: [],
-        medicationCompliance: '',
-        sideEffects: [],
-        counseling: '',
-        notes: ''
-    },
-    endocrinologyData: {
-        glycemic: { fbs: '', ppbs: '', hba1c: '' },
-        thyroid: { tsh: '', t3: '', t4: '' },
-        weight: '',
-        height: '',
-        bmi: '',
-        symptoms: [],
-        pcos: { irregularCycles: false, hirsutism: false, acne: false, infertility: false },
-        complications: [],
-        medicationType: [],
-        diabetes: {
-            hypoglycemia: 'None',
-            footExam: { sensation: 'Normal', ulcer: 'Absent', pulse: 'Normal' },
-            treatment: { type: 'Oral', insulinType: '', dose: '' },
-            complications: []
-        },
-        notes: ''
-    },
-    hematologyData: {
-        cbc: { hb: '', tlc: '', platelets: '', esr: '' },
-        rbcIndices: { mcv: '', mch: '', mchc: '' },
-        coagulation: { pt: '', inr: '', aptt: '' },
-        symptoms: [],
-        transfusion: { product: '', units: '0', indication: '' },
-        diagnosis: '',
-        notes: ''
-    },
-    oncologyData: {
-        body: { weight: '', height: '', bsa: '0.00' },
-        diagnosis: '',
-        site: '',
-        ecog: '0',
-        biomarkers: [],
-        tnm: { t: '', n: '', m: '', stage: '' },
-        treatment: { intent: 'Curative', regimen: '' },
-        chemo: [],
-        labs: { hb: '', anc: '', platelets: '', creatinine: '', lft: '' },
-        toxicity: [],
-        notes: ''
-    },
-    dentistryData: {
-        painScale: 0,
-        duration: '',
-        teeth: [],
-        oralFindings: {
-            caries: 'None',
-            gingivitis: 'None',
-            abscess: false,
-            mobility: 'None',
-            plaqueIndex: 'Low'
-        },
-        extraOral: {
-            facialSwelling: false,
-            lymphNodes: false,
-            tmjPain: false
-        },
-        systemicRisks: {
-            onBloodThinners: false,
-            diabetic: false,
-            diabetesControl: 'N/A'
-        },
-        procedure: '',
-        notes: ''
-    },
-    urologyData: {
-        symptoms: [],
-        ipss: { score: '' },
-        urine: { pusCells: '', rbc: '', protein: 'Nil', nitrite: false },
-        renal: { creatinine: '', urea: '' },
-        stone: { size: '', location: 'None' },
-        prostate: { size: 'Normal', consistency: 'Fibroadenomatous', nodules: false },
-        pvr: '',
-        catheter: { present: false, type: '', duration: '', reason: '' },
-        diagnosis: '',
-        notes: ''
-    },
-    radiologyOrder: {
-        priority: 'Routine',
-        modality: '',
-        bodyPart: '',
-        protocol: '',
-        contrast: {
-            requested: false,
-            type: '',
-            creatinine: '',
-            allergy: false
-        },
-        safety: {
-            pregnancy: false,
-            implants: false
-        },
-        clinicalIndication: '',
-        notes: ''
+        quantity: string;
+        price: number;
+        unitsPerPack?: number;
+        availableUnits?: number;
+        pricePerUnit?: number;
+        error?: string;
+        eye?: 'BE' | 'RE' | 'LE' | string;
+        dropCount?: string;
+        timesPerDay?: string;
     }
-};
 
-const FrequencySelector = ({ value, onChange }: { value: Frequency, onChange: (val: Frequency) => void }) => {
-    const freq = mapFrequency(value);
-
-    const toggleStandard = (slot: keyof StandardFrequency) => {
-        const current = freq.standard[slot];
-        const nextMap: Record<string, FoodTiming | 'off'> = {
-            off: 'after',
-            after: 'before',
-            before: 'with',
-            with: 'anytime',
-            anytime: 'off'
+    interface PrescriptionForm {
+        patientName: string;
+        age: string;
+        gender: string;
+        duration: string;
+        mrn: string;
+        date: string;
+        symptoms: string;
+        diagnosis: string;
+        advice: string;
+        medicines: Medicine[];
+        dietAdvice: string[];
+        suggestedTests: string[];
+        followUp: string;
+        followUpDate: string;
+        avoid: string[];
+        doctorName: string;
+        doctorSpecialization: string;
+        doctorSignature?: string; // URL or base64
+        subtotal: number;
+        tax: number;
+        total: number;
+        cardiologyData?: {
+            bpSystolic: string;
+            bpDiastolic: string;
+            heartRate: string;
+            rhythm: string;
+            symptoms: string[];
+            riskFactors: string[];
+            ecgType: string;
+            ecgLeads: string[];
+            ecgNotes: string;
+            s1: string;
+            s2: string;
+            murmur: string;
+            murmurType: string;
+            riskLevel: 'Low' | 'Moderate' | 'High';
+            nyhaClass: string;
+            notes: string;
         };
-        onChange({
-            ...freq,
-            standard: {
-                ...freq.standard,
-                [slot]: nextMap[current] || 'anytime'
-            }
-        });
+        dermatologyData?: DermatologyData;
+        orthopedicData?: {
+            joint: string;
+            side: string;
+            symptoms: string[];
+            pain: { score: number; type: string; };
+            rom: string;
+            exam: { swelling: string; tenderness: string; deformity: string; spasm: string; };
+            motorPower: number;
+            neurovascular: { sensation: string; pulse: string; };
+            specialTests: string[];
+            imaging: { xray: string; mri: string; };
+            diagnosis: string;
+            notes?: string;
+        };
+        pediatricData?: {
+            weight: string;
+            height: string;
+            headCircumference: string;
+            temperature: string;
+            heartRate: string;
+            respRate: string;
+            growth: { weightForAge: string; heightForAge: string; };
+            milestones: 'Normal' | 'Delayed' | 'Borderline';
+            milestoneNotes: string;
+            immunizationStatus: string;
+            dueVaccines: string[];
+            symptoms: string[];
+            redFlags: string[];
+            notes?: string;
+        };
+        entData?: {
+            ear: {
+                left:  { externalEar: string; earCanal: string[]; tympanicMembrane: string; };
+                right: { externalEar: string; earCanal: string[]; tympanicMembrane: string; };
+            };
+            hearing: { status: string; tuningForkTest: string[]; };
+            nose:   { mucosa: string; septum: string; discharge: string; };
+            throat: { tonsils: string; pharynx: string; uvula: string; };
+            lymphNodes: { cervical: string; sizeCm: string; tender: string; mobility: string; };
+            voice:  { quality: string; airway: string; };
+            symptoms: string[];
+            duration: string;
+            notes?: string;
+        };
+        ophthaData?: {
+            chiefComplaints?: string;
+            hopi?: string;
+            pastHistory?: string;
+            familyHistory?: string;
+            symptoms: string[];
+            vision: {
+                od: { unaided: string; corrected: string; };
+                os: { unaided: string; corrected: string; };
+            };
+            refraction: {
+                od: {
+                    distant?: { sph: string; cyl: string; axis: string; va: string; };
+                    near?: { sph: string; cyl: string; axis: string; va: string; };
+                };
+                os: {
+                    distant?: { sph: string; cyl: string; axis: string; va: string; };
+                    near?: { sph: string; cyl: string; axis: string; va: string; };
+                };
+            };
+            iop:    { od: string; os: string; };
+            pupils: string;
+            slitLamp: { conjunctiva: string; cornea: string; anteriorChamber: string; lens: string; };
+            fundus:   { retina: string; opticDisc: string; macula: string; };
+            diagnosis: string;
+            notes?: string;
+        };
+        gynaecData?: {
+            lmp: string;
+            cycleLength: string;
+            cycleRegularity: string;
+            flowDuration: string;
+            flowType: string;
+            pregnant: 'Yes' | 'No' | 'Suspected';
+            gestationalAge: string;
+            edd: string;
+            symptoms: string[];
+            vitals: { bp: string; pulse: string; weight: string; temperature: string; };
+            obstetric: { gravida: string; para: string; living: string; abortions: string; };
+            obstetricExam: { uterineSize: string; fetalPosition: string; fetalHeartRate: string; };
+            gynExam: { cervix: string; discharge: string; tenderness: string; };
+            investigations: string[];
+            notes?: string;
+        };
+        neuroData?: {
+            gcs: { eye: string; verbal: string; motor: string; };
+            mentalStatus: string;
+            motorPower: { ru: string; lu: string; rl: string; ll: string; };
+            reflexes: string;
+            cranialNerves: string;
+            cranialNerveDeficits: string[];
+            sensory: string;
+            coordination: string;
+            symptoms: string[];
+            onset: string;
+            notes?: string;
+        };
+        pulmoData?: {
+            vitals: { respRate: string; spo2: string; oxygenSupport: string; };
+            symptoms: string[];
+            mmrcGrade: number | null;
+            exam: { chestExpansion: string; accessoryMuscles: string; };
+            auscultation: { airEntry: string; sounds: string[]; };
+            peakFlow: string;
+            diagnosis: string;
+            severity: string;
+            notes?: string;
+        };
+        gastroData?: {
+            symptoms: string[];
+            painLocation: 'Epigastric' | 'RUQ' | 'RLQ' | 'LLQ' | 'Diffuse' | '';
+            painType: 'Burning' | 'Colicky' | 'Sharp' | '';
+            bowelHabits: 'Normal' | 'Constipation' | 'Diarrhea' | 'Alternating' | '';
+            stoolType: 'Normal' | 'Loose' | 'Hard' | 'Black (Melena)' | 'Blood-stained' | '';
+            bowelSounds: 'Normal' | 'Hyperactive' | 'Sluggish' | 'Absent' | '';
+            distention: 'None' | 'Mild' | 'Severe' | '';
+            tenderness: 'None' | 'Epigastric' | 'RUQ' | 'RLQ' | 'Diffuse' | '';
+            liver: { status: 'Not palpable' | 'Enlarged' | ''; size?: number | string; };
+            spleen: { status: 'Not palpable' | 'Enlarged' | ''; };
+            guarding: 'None' | 'Guarding' | 'Rigidity' | 'Palpable Mass' | '';
+            diagnosis: 'GERD' | 'Gastritis' | 'PUD' | 'IBS' | 'IBD' | 'Hepatitis' | 'Fatty Liver' | 'Cirrhosis' | 'Pancreatitis' | '';
+            notes: string;
+        };
+        nephroData?: {
+            urineOutput: string;
+            creatinine: string;
+            urea: string;
+            egfr: string;
+            edema: 'None' | 'Trace' | '1+' | '2+' | '3+' | '4+';
+            electrolytes: { sodium: string; potassium: string; bicarbonate: string; };
+            urineAnalysis: { protein: string; sugar: string; rbc: string; };
+            fluidBalance: { intake: string; output: string; };
+            dialysis: { status: string; frequency: string; lastSession: string; access: string; };
+            symptoms: string[];
+            ckdStage: string;
+            notes?: string;
+        };
+        psychiatryData?: {
+            complaints: string[];
+            severity: string;
+            duration: string;
+            mse: {
+                behavior: string;
+                speech: string;
+                mood: string;
+                thought: string[];
+                perception: string;
+                insight: string;
+                judgment: string;
+            };
+            suicideRisk: string;
+            scores: { phq9: string; gad7: string; };
+            substanceUse: string[];
+            medicationCompliance: string;
+            sideEffects: string[];
+            counseling: string;
+            notes: string;
+        };
+        endocrinologyData?: {
+            glycemic: { fbs: string; ppbs: string; hba1c: string; };
+            thyroid: { tsh: string; t3: string; t4: string; };
+            weight: string;
+            height: string;
+            bmi: string;
+            symptoms: string[];
+            pcos: { irregularCycles: boolean; hirsutism: boolean; acne: boolean; infertility: boolean; };
+            complications: string[];
+            medicationType: string[];
+            diabetes?: {
+                hypoglycemia?: string;
+                footExam?: { sensation?: string; ulcer?: string; pulse?: string; };
+                treatment?: { type?: string; insulinType?: string; dose?: string; };
+                complications?: string[];
+            };
+            notes: string;
+        };
+        hematologyData?: any;
+        oncologyData?: {
+            body: { weight: string; height: string; bsa: string; };
+            diagnosis: string;
+            site: string;
+            ecog: string;
+            biomarkers: string[];
+            tnm: { t: string; n: string; m: string; stage: string; };
+            treatment: { intent: string; regimen: string; };
+            chemo: any[];
+            labs: { hb: string; anc: string; platelets: string; creatinine: string; lft: string; };
+            toxicity: string[];
+            notes: string;
+        };
+        dentistryData?: {
+            painScale: number;
+            duration: string;
+            teeth: {
+                toothNumber: string;
+                condition: string;
+                mobilityGrade: number;
+                tenderness: boolean;
+                cariesDepth: 'None' | 'Mild' | 'Moderate' | 'Deep' | '';
+                diagnosis: string;
+            }[];
+            oralFindings: {
+                caries: 'None' | 'Mild' | 'Moderate' | 'Deep' | '';
+                gingivitis: 'None' | 'Mild' | 'Severe' | '';
+                abscess: boolean;
+                mobility: 'None' | 'Grade 1' | 'Grade 2' | 'Grade 3' | '';
+                plaqueIndex: 'Low' | 'Moderate' | 'High' | '';
+            };
+            extraOral: {
+                facialSwelling: boolean;
+                lymphNodes: boolean;
+                tmjPain: boolean;
+            };
+            systemicRisks: {
+                onBloodThinners: boolean;
+                diabetic: boolean;
+                diabetesControl: 'Controlled' | 'Uncontrolled' | 'N/A' | '';
+            };
+            procedure: string;
+            notes: string;
+        };
+        urologyData?: {
+            symptoms: string[];
+            ipss: { score: string; };
+            urine: { pusCells: string; rbc: string; protein: string; nitrite: boolean; };
+            renal: { creatinine: string; urea: string; };
+            stone: { size: string; location: string; };
+            prostate: { size: string; consistency: string; nodules: boolean; };
+            pvr: string;
+            catheter: { present: boolean; type: string; duration: string; reason: string; };
+            diagnosis: string;
+            notes: string;
+        };
+        radiologyOrder?: {
+            priority: string;
+            modality: string;
+            bodyPart: string;
+            protocol: string;
+            contrast: {
+                requested: boolean;
+                type: string;
+                creatinine: string;
+                allergy: boolean;
+            };
+            safety: {
+                pregnancy: boolean;
+                implants: boolean;
+            };
+            clinicalIndication: string;
+            notes: string;
+        };
+    }
+
+    const INITIAL_FORM: PrescriptionForm = {
+        patientName: '',
+        age: '',
+        gender: 'Male',
+        duration: '',
+        mrn: '',
+        date: new Date().toLocaleDateString('en-GB'), // DD/MM/YYYY
+        symptoms: '',
+        diagnosis: '',
+        medicines: [],
+        dietAdvice: [],
+        suggestedTests: [],
+        followUp: '',
+        followUpDate: '',
+        avoid: [],
+        doctorName: '',
+        doctorSpecialization: '',
+        subtotal: 0,
+        tax: 0,
+        total: 0,
+        cardiologyData: {
+            bpSystolic: '',
+            bpDiastolic: '',
+            heartRate: '',
+            rhythm: 'Regular',
+            symptoms: [],
+            riskFactors: [],
+            ecgType: 'Normal',
+            ecgLeads: [],
+            ecgNotes: '',
+            s1: 'Normal',
+            s2: 'Normal',
+            murmur: 'None',
+            murmurType: '',
+            riskLevel: 'Low',
+            nyhaClass: 'I',
+            notes: ''
+        },
+        dermatologyData: { ...INITIAL_DERMATOLOGY_DATA },
+        orthopedicData: {
+            joint: '',
+            side: '',
+            symptoms: [],
+            pain: { score: 0, type: '' },
+            rom: 'Normal',
+            exam: { swelling: '', tenderness: '', deformity: '', spasm: '' },
+            motorPower: 5,
+            neurovascular: { sensation: '', pulse: '' },
+            specialTests: [],
+            imaging: { xray: '', mri: '' },
+            diagnosis: '',
+        },
+        pediatricData: {
+            weight: '',
+            height: '',
+            headCircumference: '',
+            temperature: '',
+            heartRate: '',
+            respRate: '',
+            growth: { weightForAge: '', heightForAge: '' },
+            milestones: 'Normal',
+            milestoneNotes: '',
+            immunizationStatus: '',
+            dueVaccines: [],
+            symptoms: [],
+            redFlags: []
+        },
+        entData: {
+            ear: {
+                left:  { externalEar: '', earCanal: [], tympanicMembrane: '' },
+                right: { externalEar: '', earCanal: [], tympanicMembrane: '' }
+            },
+            hearing: { status: '', tuningForkTest: [] },
+            nose:    { mucosa: '', septum: '', discharge: '' },
+            throat:  { tonsils: '', pharynx: '', uvula: '' },
+            lymphNodes: { cervical: '', sizeCm: '', tender: '', mobility: '' },
+            voice:   { quality: '', airway: '' },
+            symptoms: [],
+            duration: ''
+        },
+        ophthaData: {
+            chiefComplaints: '',
+            hopi: '',
+            pastHistory: '',
+            familyHistory: '',
+            symptoms: [],
+            vision: {
+                od: { unaided: '', corrected: '' },
+                os: { unaided: '', corrected: '' }
+            },
+            refraction: {
+                od: {
+                    distant: { sph: '', cyl: '', axis: '', va: '' },
+                    near: { sph: '', cyl: '', axis: '', va: '' }
+                },
+                os: {
+                    distant: { sph: '', cyl: '', axis: '', va: '' },
+                    near: { sph: '', cyl: '', axis: '', va: '' }
+                }
+            },
+            iop:    { od: '', os: '' },
+            pupils: 'PERRLA',
+            slitLamp: { conjunctiva: '', cornea: '', anteriorChamber: '', lens: '' },
+            fundus:   { retina: '', opticDisc: '', macula: '' },
+            diagnosis: ''
+        },
+        gynaecData: {
+            lmp: '',
+            cycleLength: '',
+            cycleRegularity: '',
+            flowDuration: '',
+            flowType: '',
+            pregnant: 'No',
+            gestationalAge: '',
+            edd: '',
+            symptoms: [],
+            vitals: { bp: '', pulse: '', weight: '', temperature: '' },
+            obstetric: { gravida: '', para: '', living: '', abortions: '' },
+            obstetricExam: { uterineSize: '', fetalPosition: '', fetalHeartRate: '' },
+            gynExam: { cervix: '', discharge: '', tenderness: '' },
+            investigations: []
+        },
+        neuroData: {
+            gcs: { eye: '', verbal: '', motor: '' },
+            mentalStatus: '',
+            motorPower: { ru: '', lu: '', rl: '', ll: '' },
+            reflexes: '',
+            cranialNerves: '',
+            cranialNerveDeficits: [],
+            sensory: '',
+            coordination: '',
+            symptoms: [],
+            onset: ''
+        },
+        pulmoData: {
+            vitals: { respRate: '', spo2: '', oxygenSupport: 'Room Air' },
+            symptoms: [],
+            mmrcGrade: null,
+            exam: { chestExpansion: '', accessoryMuscles: '' },
+            auscultation: { airEntry: '', sounds: [] },
+            peakFlow: '',
+            diagnosis: '',
+            severity: ''
+        },
+        gastroData: {
+            symptoms: [],
+            painLocation: '',
+            painType: '',
+            bowelHabits: '',
+            stoolType: 'Normal',
+            bowelSounds: 'Normal',
+            distention: 'None',
+            tenderness: 'None',
+            liver: { status: 'Not palpable', size: '' },
+            spleen: { status: 'Not palpable' },
+            guarding: 'None',
+            diagnosis: '',
+            notes: '',
+        },
+        nephroData: {
+            creatinine: '',
+            urea: '',
+            egfr: '',
+            urineOutput: '',
+            edema: 'None',
+            electrolytes: { sodium: '', potassium: '', bicarbonate: '' },
+            urineAnalysis: { protein: 'Nil', sugar: 'Nil', rbc: 'Nil' },
+            fluidBalance: { intake: '', output: '' },
+            dialysis: { status: 'Not on dialysis', frequency: '', lastSession: '', access: '' },
+            symptoms: [],
+            ckdStage: ''
+        },
+        psychiatryData: {
+            complaints: [],
+            severity: '',
+            duration: '',
+            mse: {
+                behavior: '', speech: '', mood: '',
+                thought: [], perception: '',
+                insight: '1', judgment: '1'
+            },
+            suicideRisk: 'None',
+            scores: { phq9: '0', gad7: '0' },
+            substanceUse: [],
+            medicationCompliance: '',
+            sideEffects: [],
+            counseling: '',
+            notes: ''
+        },
+        endocrinologyData: {
+            glycemic: { fbs: '', ppbs: '', hba1c: '' },
+            thyroid: { tsh: '', t3: '', t4: '' },
+            weight: '',
+            height: '',
+            bmi: '',
+            symptoms: [],
+            pcos: { irregularCycles: false, hirsutism: false, acne: false, infertility: false },
+            complications: [],
+            medicationType: [],
+            diabetes: {
+                hypoglycemia: 'None',
+                footExam: { sensation: 'Normal', ulcer: 'Absent', pulse: 'Normal' },
+                treatment: { type: 'Oral', insulinType: '', dose: '' },
+                complications: []
+            },
+            notes: ''
+        },
+        hematologyData: {
+            cbc: { hb: '', tlc: '', platelets: '', esr: '' },
+            rbcIndices: { mcv: '', mch: '', mchc: '' },
+            coagulation: { pt: '', inr: '', aptt: '' },
+            symptoms: [],
+            transfusion: { product: '', units: '0', indication: '' },
+            diagnosis: '',
+            notes: ''
+        },
+        oncologyData: {
+            body: { weight: '', height: '', bsa: '0.00' },
+            diagnosis: '',
+            site: '',
+            ecog: '0',
+            biomarkers: [],
+            tnm: { t: '', n: '', m: '', stage: '' },
+            treatment: { intent: 'Curative', regimen: '' },
+            chemo: [],
+            labs: { hb: '', anc: '', platelets: '', creatinine: '', lft: '' },
+            toxicity: [],
+            notes: ''
+        },
+        dentistryData: {
+            painScale: 0,
+            duration: '',
+            teeth: [],
+            oralFindings: {
+                caries: 'None',
+                gingivitis: 'None',
+                abscess: false,
+                mobility: 'None',
+                plaqueIndex: 'Low'
+            },
+            extraOral: {
+                facialSwelling: false,
+                lymphNodes: false,
+                tmjPain: false
+            },
+            systemicRisks: {
+                onBloodThinners: false,
+                diabetic: false,
+                diabetesControl: 'N/A'
+            },
+            procedure: '',
+            notes: ''
+        },
+        urologyData: {
+            symptoms: [],
+            ipss: { score: '' },
+            urine: { pusCells: '', rbc: '', protein: 'Nil', nitrite: false },
+            renal: { creatinine: '', urea: '' },
+            stone: { size: '', location: 'None' },
+            prostate: { size: 'Normal', consistency: 'Fibroadenomatous', nodules: false },
+            pvr: '',
+            catheter: { present: false, type: '', duration: '', reason: '' },
+            diagnosis: '',
+            notes: ''
+        },
+        radiologyOrder: {
+            priority: 'Routine',
+            modality: '',
+            bodyPart: '',
+            protocol: '',
+            contrast: {
+                requested: false,
+                type: '',
+                creatinine: '',
+                allergy: false
+            },
+            safety: {
+                pregnancy: false,
+                implants: false
+            },
+            clinicalIndication: '',
+            notes: ''
+        }
     };
 
-    const setCustomInterval = (hours: number) => {
-        onChange({
-            ...freq,
-            type: 'custom',
-            custom: {
-                ...freq.custom,
-                interval: hours
-            }
-        });
-    };
+    const FrequencySelector = ({ value, onChange }: { value: Frequency, onChange: (val: Frequency) => void }) => {
+        const freq = mapFrequency(value);
 
-    const setCustomTiming = (timing: FoodTiming) => {
-        onChange({
-            ...freq,
-            type: 'custom',
-            custom: {
-                ...freq.custom,
-                timing
-            }
-        });
-    };
+        const toggleStandard = (slot: keyof StandardFrequency) => {
+            const current = freq.standard[slot];
+            const nextMap: Record<string, FoodTiming | 'off'> = {
+                off: 'after',
+                after: 'before',
+                before: 'with',
+                with: 'anytime',
+                anytime: 'off'
+            };
+            onChange({
+                ...freq,
+                standard: {
+                    ...freq.standard,
+                    [slot]: nextMap[current] || 'anytime'
+                }
+            });
+        };
 
-    const timingColors: Record<string, string> = {
-        anytime: 'bg-slate-500',
-        before: 'bg-amber-500',
-        after: 'bg-emerald-500',
-        with: 'bg-blue-500'
-    };
+        const setCustomInterval = (hours: number) => {
+            onChange({
+                ...freq,
+                type: 'custom',
+                custom: {
+                    ...freq.custom,
+                    interval: hours
+                }
+            });
+        };
 
-    const timingLabels: Record<string, string> = {
-        anytime: 'Anytime',
-        before: 'Before Food',
-        after: 'After Food',
-        with: 'With Food'
-    };
+        const setCustomTiming = (timing: FoodTiming) => {
+            onChange({
+                ...freq,
+                type: 'custom',
+                custom: {
+                    ...freq.custom,
+                    timing
+                }
+            });
+        };
 
-    return (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 p-1.5 sm:p-1 bg-white border border-slate-200 rounded-lg w-full max-w-full min-w-0 flex-1 h-auto shadow-sm transition-all relative overflow-visible">
-            {/* Type Toggle */}
-            <div className="flex p-0.5 bg-slate-100 rounded-md shrink-0">
-                <button
-                    onClick={() => onChange({ ...INITIAL_FREQUENCY, type: 'standard' })}
-                    className={`px-2 py-1 text-[7px] font-black uppercase tracking-tighter rounded transition-all ${freq.type === 'standard' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-500'}`}
-                >
-                    Std
-                </button>
-                <button
-                    onClick={() => onChange({ ...INITIAL_FREQUENCY, type: 'custom' })}
-                    className={`px-2 py-1 text-[7px] font-black uppercase tracking-tighter rounded transition-all ${freq.type === 'custom' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-500'}`}
-                >
-                    Cst
-                </button>
-            </div>
+        const timingColors: Record<string, string> = {
+            anytime: 'bg-slate-500',
+            before: 'bg-amber-500',
+            after: 'bg-emerald-500',
+            with: 'bg-blue-500'
+        };
 
-            <div className="w-[1px] h-4 bg-slate-200 mx-1 shrink-0" />
+        const timingLabels: Record<string, string> = {
+            anytime: 'Anytime',
+            before: 'Before Food',
+            after: 'After Food',
+            with: 'With Food'
+        };
 
-            {freq.type === 'standard' ? (
-                <div className="flex flex-wrap items-center gap-1 flex-1 px-1 overflow-visible">
-                    {(['morning', 'afternoon', 'evening', 'night'] as const).map((slot) => {
-                        const timing = freq.standard[slot];
-                        const isActive = timing !== 'off';
-                        const slotLabels = {
-                            morning: 'Morning',
-                            afternoon: 'Afternoon',
-                            evening: 'Evening',
-                            night: 'Night'
-                        };
-                        return (
-                            <div key={slot} className="relative group/tooltip">
-                                <button
-                                    onClick={() => toggleStandard(slot)}
-                                    className={`h-7 px-2 rounded-md border text-[7px] font-black uppercase transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${isActive ? 'bg-teal-50 border-teal-200 text-teal-600' : 'bg-slate-50 border-slate-100 text-slate-400'}`}
-                                >
-                                    <span className={isActive ? 'text-teal-600' : 'text-slate-300'}>{slotLabels[slot]}</span>
-                                    {isActive && (
-                                        <span className={`px-1 rounded-[3px] text-white text-[6px] py-0.5 font-bold ${timingColors[timing]}`}>
-                                            {timingLabels[timing]}
-                                        </span>
-                                    )}
-                                </button>
+        return (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 p-1.5 sm:p-1 bg-white border border-slate-200 rounded-lg w-full max-w-full min-w-0 flex-1 h-auto shadow-sm transition-all relative overflow-visible">
+                {/* Type Toggle */}
+                <div className="flex p-0.5 bg-slate-100 rounded-md shrink-0">
+                    <button
+                        onClick={() => onChange({ ...INITIAL_FREQUENCY, type: 'standard' })}
+                        className={`px-2 py-1 text-[7px] font-black uppercase tracking-tighter rounded transition-all ${freq.type === 'standard' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-500'}`}
+                    >
+                        Std
+                    </button>
+                    <button
+                        onClick={() => onChange({ ...INITIAL_FREQUENCY, type: 'custom' })}
+                        className={`px-2 py-1 text-[7px] font-black uppercase tracking-tighter rounded transition-all ${freq.type === 'custom' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-500'}`}
+                    >
+                        Cst
+                    </button>
+                </div>
 
-                                {/* Bubble Tooltip - Top Position */}
-                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-2 py-1 bg-teal-600 text-white text-[8px] font-bold rounded-lg opacity-0 invisible translate-y-1 scale-95 group-hover/tooltip:opacity-100 group-hover/tooltip:visible group-hover/tooltip:translate-y-0 group-hover/tooltip:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg z-[200] pointer-events-none">
-                                    <div className="relative">
-                                        Tap to change food timing
-                                        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-teal-600"></div>
+                <div className="w-[1px] h-4 bg-slate-200 mx-1 shrink-0" />
+
+                {freq.type === 'standard' ? (
+                    <div className="flex flex-wrap items-center gap-1 flex-1 px-1 overflow-visible">
+                        {(['morning', 'afternoon', 'evening', 'night'] as const).map((slot) => {
+                            const timing = freq.standard[slot];
+                            const isActive = timing !== 'off';
+                            const slotLabels = {
+                                morning: 'Morning',
+                                afternoon: 'Afternoon',
+                                evening: 'Evening',
+                                night: 'Night'
+                            };
+                            return (
+                                <div key={slot} className="relative group/tooltip">
+                                    <button
+                                        onClick={() => toggleStandard(slot)}
+                                        className={`h-7 px-2 rounded-md border text-[7px] font-black uppercase transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${isActive ? 'bg-teal-50 border-teal-200 text-teal-600' : 'bg-slate-50 border-slate-100 text-slate-400'}`}
+                                    >
+                                        <span className={isActive ? 'text-teal-600' : 'text-slate-300'}>{slotLabels[slot]}</span>
+                                        {isActive && (
+                                            <span className={`px-1 rounded-[3px] text-white text-[6px] py-0.5 font-bold ${timingColors[timing]}`}>
+                                                {timingLabels[timing]}
+                                            </span>
+                                        )}
+                                    </button>
+
+                                    {/* Bubble Tooltip - Top Position */}
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-2 py-1 bg-teal-600 text-white text-[8px] font-bold rounded-lg opacity-0 invisible translate-y-1 scale-95 group-hover/tooltip:opacity-100 group-hover/tooltip:visible group-hover/tooltip:translate-y-0 group-hover/tooltip:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg z-[200] pointer-events-none">
+                                        <div className="relative">
+                                            Tap to change food timing
+                                            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-teal-600"></div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            ) : (
-                <div className="flex items-center gap-2 flex-1">
-                    <div className="flex items-center gap-1 shrink-0">
-                        <span className="text-[7px] font-black text-slate-400 uppercase">Every</span>
-                        <input
-                            type="number"
-                            min="1"
-                            max="24"
-                            value={freq.custom?.interval || 8}
-                            onChange={(e) => setCustomInterval(Number(e.target.value))}
-                            className="w-8 h-6 bg-slate-50 border border-slate-200 rounded text-[9px] font-black text-center focus:outline-none focus:ring-1 focus:ring-teal-500"
-                        />
-                        <span className="text-[7px] font-black text-slate-400 uppercase">Hrs</span>
+                            );
+                        })}
                     </div>
-                    <select
-                        value={freq.custom.timing}
-                        onChange={(e) => setCustomTiming(e.target.value as any)}
-                        className="h-6 px-1 bg-slate-50 border border-slate-200 rounded text-[7px] font-black uppercase focus:outline-none"
-                    >
-                        <option value="anytime">Anytime</option>
-                        <option value="before">Before Food</option>
-                        <option value="after">After Food</option>
-                        <option value="with">With Food</option>
-                    </select>
-                </div>
-            )}
-        </div>
-    );
-};
+                ) : (
+                    <div className="flex items-center gap-2 flex-1">
+                        <div className="flex items-center gap-1 shrink-0">
+                            <span className="text-[7px] font-black text-slate-400 uppercase">Every</span>
+                            <input
+                                type="number"
+                                min="1"
+                                max="24"
+                                value={freq.custom?.interval || 8}
+                                onChange={(e) => setCustomInterval(Number(e.target.value))}
+                                className="w-8 h-6 bg-slate-50 border border-slate-200 rounded text-[9px] font-black text-center focus:outline-none focus:ring-1 focus:ring-teal-500"
+                            />
+                            <span className="text-[7px] font-black text-slate-400 uppercase">Hrs</span>
+                        </div>
+                        <select
+                            value={freq.custom.timing}
+                            onChange={(e) => setCustomTiming(e.target.value as any)}
+                            className="h-6 px-1 bg-slate-50 border border-slate-200 rounded text-[7px] font-black uppercase focus:outline-none"
+                        >
+                            <option value="anytime">Anytime</option>
+                            <option value="before">Before Food</option>
+                            <option value="after">After Food</option>
+                            <option value="with">With Food</option>
+                        </select>
+                    </div>
+                )}
+            </div>
+        );
+    };
 
 
 
-function CreatePrescriptionPage() {
-    const router = useRouter();
-    const searchParams = useSearchParams();
-    const params = useParams();
-    const hospitalId = params.hospitalId as string;
-    const appointmentId = searchParams.get('appointmentId');
-    const patientId = searchParams.get('patientId');
+    function CreatePrescriptionPage() {
+        const router = useRouter();
+        const searchParams = useSearchParams();
+        const params = useParams();
+        const hospitalId = params.hospitalId as string;
+        const appointmentId = searchParams.get('appointmentId');
+        const patientId = searchParams.get('patientId');
 
-    const [mode, setMode] = useState<'AI' | 'SELF'>('SELF');
+        const [mode, setMode] = useState<'AI' | 'SELF'>('SELF');
 
-    const [formData, setFormData] = useState<PrescriptionForm>(INITIAL_FORM);
-    const [selectedPatientId, setSelectedPatientId] = useState<string | null>(patientId);
-    const [activeSpecialty, setActiveSpecialty] = useState<string>('General');
-    const [availableSpecialties, setAvailableSpecialties] = useState<string[]>([]);
+        const [formData, setFormData] = useState<PrescriptionForm>(INITIAL_FORM);
+        const [selectedPatientId, setSelectedPatientId] = useState<string | null>(patientId);
+        const [activeSpecialty, setActiveSpecialty] = useState<string>('General');
+        const [availableSpecialties, setAvailableSpecialties] = useState<string[]>([]);
 
-    useEffect(() => {
-        if (patientId) setSelectedPatientId(patientId);
-    }, [patientId]);
+        useEffect(() => {
+            if (patientId) setSelectedPatientId(patientId);
+        }, [patientId]);
 
-    const [patientSuggestions, setPatientSuggestions] = useState<any[]>([]);
-    const [isSearchingPatients, setIsSearchingPatients] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
-    const [isSending, setIsSending] = useState(false);
-    const [isSendingLab, setIsSendingLab] = useState(false);
+        const [patientSuggestions, setPatientSuggestions] = useState<any[]>([]);
+        const [isSearchingPatients, setIsSearchingPatients] = useState(false);
+        const [isSaving, setIsSaving] = useState(false);
+        const [isSending, setIsSending] = useState(false);
+        const [isSendingLab, setIsSendingLab] = useState(false);
 
-    // UI states
-    const [sentToPharma, setSentToPharma] = useState(false);
-    const [isSubmitted, setIsSubmitted] = useState(false);
-    const [isPaused, setIsPaused] = useState(false);
-    const [showClearConfirm, setShowClearConfirm] = useState(false);
-    const [showNoPharmaWarn, setShowNoPharmaWarn] = useState(false);
-    const [showPharmaConfirm, setShowPharmaConfirm] = useState(false);
-    // Navigation blocker state
-    const [showNavWarn, setShowNavWarn] = useState(false);
-    const pendingNavRef = useRef<string | null>(null);
+        // UI states
+        const [sentToPharma, setSentToPharma] = useState(false);
+        const [isSubmitted, setIsSubmitted] = useState(false);
+        const [isPaused, setIsPaused] = useState(false);
+        const [showClearConfirm, setShowClearConfirm] = useState(false);
+        const [showNoPharmaWarn, setShowNoPharmaWarn] = useState(false);
+        const [showPharmaConfirm, setShowPharmaConfirm] = useState(false);
+        // Navigation blocker state
+        const [showNavWarn, setShowNavWarn] = useState(false);
+        const pendingNavRef = useRef<string | null>(null);
 
-    // ── Draft Key ───────────────────────────────────────────────────────────
-    const draftKey = appointmentId ? `rx_draft_${appointmentId}` : null;
+        // ── Draft Key ───────────────────────────────────────────────────────────
+        const draftKey = appointmentId ? `rx_draft_${appointmentId}` : null;
 
-    // ── Save draft to localStorage on every formData change ─────────────────
-    useEffect(() => {
-        if (!draftKey || isSubmitted || isPaused) return;
-        try {
-            localStorage.setItem(draftKey, JSON.stringify(formData));
-        } catch (_) {}
-    }, [formData, draftKey, isSubmitted, isPaused]);
+        // ── Save draft to localStorage on every formData change ─────────────────
+        useEffect(() => {
+            if (!draftKey || isSubmitted || isPaused) return;
+            try {
+                localStorage.setItem(draftKey, JSON.stringify(formData));
+            } catch (_) {}
+        }, [formData, draftKey, isSubmitted, isPaused]);
 
-    // ── Restore draft from localStorage when appointment data arrives ────────
-    const hasMergedDraftRef = useRef(false);
-    useEffect(() => {
-        if (!draftKey || hasMergedDraftRef.current) return;
-        try {
-            const raw = localStorage.getItem(draftKey);
-            if (raw) {
-                const saved = JSON.parse(raw) as Partial<typeof formData>;
-                // Only restore doctor-entered fields; keep patient demographics from API
-                setFormData(prev => ({
-                    ...prev,
-                    symptoms:      saved.symptoms      ?? prev.symptoms,
-                    diagnosis:     saved.diagnosis     ?? prev.diagnosis,
+        // ── Restore draft from localStorage when appointment data arrives ────────
+        const hasMergedDraftRef = useRef(false);
+        useEffect(() => {
+            if (!draftKey || hasMergedDraftRef.current) return;
+            try {
+                const raw = localStorage.getItem(draftKey);
+                if (raw) {
+                    const saved = JSON.parse(raw) as Partial<typeof formData>;
+                    // Only restore doctor-entered fields; keep patient demographics from API
+                    setFormData(prev => ({
+                        ...prev,
+                        symptoms:      saved.symptoms      ?? prev.symptoms,
+                        diagnosis:     saved.diagnosis     ?? prev.diagnosis,
+                        advice:        saved.advice        ?? prev.advice,
                     medicines:     saved.medicines     ?? prev.medicines,
                     dietAdvice:    saved.dietAdvice    ?? prev.dietAdvice,
                     suggestedTests:saved.suggestedTests?? prev.suggestedTests,
@@ -2622,27 +2624,42 @@ function CreatePrescriptionPage() {
 
                     ${formData.medicines.length > 0 ? `
                     <div class="section-label">Prescribed Medications</div>
-                    <table>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
                         <thead>
-                            <tr>
-                                <th style="width: 40%">Medicine Name</th>
-                                <th style="width: 20%">Dosage</th>
-                                <th style="width: 20%">Frequency</th>
-                                <th style="width: 10%">Days</th>
-                                <th style="width: 10%">Qty</th>
+                            <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                                <th style="width: 35%; padding: 8px 6px; color: #475569; font-size: 9px; font-weight: 900; text-transform: uppercase; text-align: left;">Medicine Name</th>
+                                <th style="padding: 8px 6px; color: #475569; font-size: 9px; font-weight: 900; text-transform: uppercase; text-align: left;">Dosage</th>
+                                <th style="padding: 8px 6px; color: #475569; font-size: 9px; font-weight: 900; text-transform: uppercase; text-align: left;">Frequency</th>
+                                <th style="padding: 8px 6px; color: #475569; font-size: 9px; font-weight: 900; text-transform: uppercase; text-align: left;">Duration</th>
+                                ${(activeSpecialty.toUpperCase().includes('EYE') || activeSpecialty.toUpperCase().includes('OPHTHA') || formData.medicines.some((m: Medicine) => m.eye || m.dropCount || m.timesPerDay)) ? `
+                                <th style="padding: 8px 6px; color: #475569; font-size: 9px; font-weight: 900; text-transform: uppercase; text-align: left;">Instillation</th>
+                                ` : ''}
+                                <th style="text-align: right; padding: 8px 6px; color: #475569; font-size: 9px; font-weight: 900; text-transform: uppercase;">Qty</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${formData.medicines.map((med: Medicine) => `
-                            <tr>
-                                <td>
-                                    <div class="med-name">${med.name} ${med.eye ? `<span style="font-size: 8px; color: #fff; background: #0ea5e9; padding: 2px 4px; border-radius: 4px; margin-left: 4px;">${med.eye}</span>` : ''}</div>
-                                    <div class="med-meta">${med.form || ''}</div>
+                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                <td style="padding: 8px 6px;">
+                                    <div style="font-weight: 800; color: #0f172a; font-size: 11px;">${med.name}</div>
+                                    <div style="font-size: 9px; color: #64748b; font-weight: 500;">${med.form || ''}</div>
                                 </td>
-                                <td class="med-meta">${med.dosage}</td>
-                                <td class="med-meta"><span class="freq-tag">${formatFrequency(med.freq)}</span></td>
-                                <td class="med-meta">${med.duration}</td>
-                                <td class="med-meta" style="font-weight: 800;">${med.quantity}</td>
+                                <td style="padding: 8px 6px; font-weight: 700; color: #334155; font-size: 11px;">${med.dosage}</td>
+                                <td style="padding: 8px 6px; font-weight: 600; color: #475569; font-size: 11px;">${formatFrequency(med.freq)}</td>
+                                <td style="padding: 8px 6px; font-weight: 700; color: #334155; font-size: 11px;">${med.duration}</td>
+                                ${(activeSpecialty.toUpperCase().includes('EYE') || activeSpecialty.toUpperCase().includes('OPHTHA') || formData.medicines.some((m: Medicine) => m.eye || m.dropCount || m.timesPerDay)) ? `
+                                <td style="padding: 8px 6px; font-weight: 700; color: #334155; font-size: 11px;">
+                                    ${(() => {
+                                        if (!med.eye && !med.dropCount && !med.timesPerDay) return '--';
+                                        const eyeTag = med.eye ? `<span style="font-size: 9px; color: #fff; background: #0ea5e9; padding: 2px 6px; border-radius: 4px; font-weight: 800; margin-right: 6px;">${med.eye === 'BE' ? 'BE (Both)' : med.eye === 'RE' ? 'RE (Right)' : med.eye === 'LE' ? 'LE (Left)' : med.eye}</span>` : '';
+                                        const drops = med.dropCount ? (/drop/i.test(med.dropCount) ? med.dropCount : `${med.dropCount} Drop${parseInt(med.dropCount) > 1 ? 's' : ''}`) : '';
+                                        const times = med.timesPerDay ? (/time|day|daily/i.test(med.timesPerDay) ? med.timesPerDay : `${med.timesPerDay} Times/Day`) : '';
+                                        const details = [drops, times].filter(Boolean).join(' &bull; ');
+                                        return `<div style="display: inline-flex; align-items: center;">${eyeTag}<span style="color: #0f172a; font-weight: 800;">${details}</span></div>`;
+                                    })()}
+                                </td>
+                                ` : ''}
+                                <td style="padding: 8px 6px; font-weight: 900; text-align: right; color: #0f172a; font-size: 11px;">${med.quantity}</td>
                             </tr>
                             `).join('')}
                         </tbody>
@@ -2669,12 +2686,12 @@ function CreatePrescriptionPage() {
                         ` : ''}
                     </div>
 
-                    ${formData.followUp || formData.followUpDate ? `
+                    ${formData.advice || formData.followUp || formData.followUpDate ? `
                     <div class="follow-up">
                         <div>
                             <div style="margin-bottom: 4px;"><strong>Doctor's Advice:</strong></div>
                             <ul style="margin: 0; padding-left: 20px; list-style-type: disc; color: #334155;">
-                                ${(formData.followUp || 'N/A').split(/[\n,]+/).map(s => s.trim()).filter(Boolean).map(s => '<li style="margin-bottom: 3px;">' + s + '</li>').join('')}
+                                ${((formData.advice ? formData.advice + (formData.followUp ? '\n' + formData.followUp : '') : formData.followUp) || 'N/A').split(/[\n,]+/).map(s => s.trim()).filter(Boolean).map(s => '<li style="margin-bottom: 3px;">' + s + '</li>').join('')}
                             </ul>
                         </div>
                         ${formData.followUpDate ? `<div><strong>Next Review:</strong> <span class="follow-up-date">${new Date(formData.followUpDate).toLocaleDateString()}</span></div>` : ''}
@@ -2684,7 +2701,7 @@ function CreatePrescriptionPage() {
                     <div class="sig-block">
                         ${formData.doctorSignature ? `<img src="${formData.doctorSignature}" class="sig-img" />` : '<div style="height: 50px;"></div>'}
                         <br/>
-                        <div class="sig-line">Authorized Medical Officer</div>
+                        <div class="sig-line">Doctor's Signature</div>
                     </div>
 
                     <div class="print-footer">
@@ -3265,6 +3282,19 @@ function CreatePrescriptionPage() {
                             onChange={handleInputChange}
                             rows={3}
                             placeholder="e.g. Viral Fever"
+                            className="w-full px-3 sm:px-4 py-3 bg-secondary-theme border border-border-theme rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
+                        />
+                    </div>
+
+                    {/* ── COMMON FIELD: Advice (shown below diagnosis) ── */}
+                    <div className="mb-6 sm:mb-8">
+                        <label className="block text-[9px] sm:text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5">Advice</label>
+                        <textarea
+                            name="advice"
+                            value={formData.advice}
+                            onChange={handleInputChange}
+                            rows={3}
+                            placeholder="e.g. Drink plenty of water, Rest for 3 days"
                             className="w-full px-3 sm:px-4 py-3 bg-secondary-theme border border-border-theme rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
                         />
                     </div>

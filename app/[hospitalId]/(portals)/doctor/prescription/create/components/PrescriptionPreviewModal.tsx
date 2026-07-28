@@ -1352,10 +1352,14 @@ return (
                                                         )}
                                                         {(activeSpecialty.toUpperCase().includes('OPHTHAL') || activeSpecialty.toUpperCase().includes('EYE') || formData.medicines.some((m: Medicine) => m.eye || m.dropCount || m.timesPerDay)) && (
                                                             <td className="py-[14px] px-[10px] text-[12px] font-[700] text-slate-700">
-                                                                {med.eye && <span className="text-[10px] font-black text-indigo-600 uppercase mr-1">{med.eye}</span>}
-                                                                {med.dropCount && <span className="text-slate-800 mr-1">{med.dropCount}</span>}
-                                                                {med.timesPerDay && <span className="text-slate-500">{med.timesPerDay}</span>}
-                                                                {(!med.eye && !med.dropCount && !med.timesPerDay) && '--'}
+                                                                {(() => {
+                                                                    if (!med.eye && !med.dropCount && !med.timesPerDay) return '--';
+                                                                    const eyeTag = med.eye ? <span className="text-[10px] font-black text-white bg-sky-500 px-1.5 py-0.5 rounded mr-1.5">{med.eye === 'BE' ? 'BE (Both)' : med.eye === 'RE' ? 'RE (Right)' : med.eye === 'LE' ? 'LE (Left)' : med.eye}</span> : null;
+                                                                    const drops = med.dropCount ? (/drop/i.test(med.dropCount) ? med.dropCount : `${med.dropCount} Drop${parseInt(med.dropCount) > 1 ? 's' : ''}`) : '';
+                                                                    const times = med.timesPerDay ? (/time|day|daily/i.test(med.timesPerDay) ? med.timesPerDay : `${med.timesPerDay} Times/Day`) : '';
+                                                                    const details = [drops, times].filter(Boolean).join(' • ');
+                                                                    return <div className="inline-flex items-center">{eyeTag}<span className="text-slate-900 font-bold">{details}</span></div>;
+                                                                })()}
                                                             </td>
                                                         )}
                                                         <td className="py-[14px] px-[10px] text-right text-[13px] font-[900] text-slate-900">{med.quantity}</td>

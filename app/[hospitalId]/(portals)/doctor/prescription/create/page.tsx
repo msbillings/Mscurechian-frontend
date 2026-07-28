@@ -102,6 +102,7 @@ interface PrescriptionForm {
     time: string;
     symptoms: string;
     diagnosis: string;
+    advice: string;
     medicines: Medicine[];
     dietAdvice: string[];
     suggestedTests: string[];
@@ -500,6 +501,7 @@ const INITIAL_FORM: PrescriptionForm = {
     time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
     symptoms: '',
     diagnosis: '',
+    advice: '',
     medicines: [],
     dietAdvice: [],
     suggestedTests: [],
@@ -2454,52 +2456,15 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
 
                             return `
                         <div style="margin-bottom:15px; page-break-inside:avoid; font-family: sans-serif; color: #000;">
-                            ${(o.chiefComplaints || o.hopi) ? `
-                            <div style="font-size:10px; margin-bottom: 10px;">
-                                <b>Complaints:</b> ${[o.chiefComplaints, o.hopi].filter(Boolean).join(' | ')}
+                            ${(o.chiefComplaints || o.hopi || o.pastHistory || o.familyHistory) ? `
+                            <div style="font-size:10px; margin-bottom: 10px; line-height: 1.4;">
+                                ${(o.chiefComplaints || o.hopi) ? `<div><b>Complaints / HOPI:</b> ${[o.chiefComplaints, o.hopi].filter(Boolean).join(' | ')}</div>` : ''}
+                                ${o.pastHistory ? `<div><b>Past History:</b> ${o.pastHistory}</div>` : ''}
+                                ${o.familyHistory ? `<div><b>Family History:</b> ${o.familyHistory}</div>` : ''}
                             </div>
                             ` : ''}
 
-                            <!-- VISUAL ACUITY TABLE -->
-                            <div style="font-size:9px; font-weight:bold; margin-bottom: 2px;">Visual Acuity</div>
-                            <table style="width:100%; border-collapse:collapse; font-size:9px; text-align:center; margin-bottom:12px; border: 1px solid #000;">
-                                <tr style="background:#e2e8f0; border-bottom: 1px solid #000;">
-                                    <th style="border-right: 1px solid #000; padding: 4px; width: 20%;"></th>
-                                    <th style="border-right: 1px solid #000; padding: 4px; font-weight:bold; width: 40%;">Right Eye</th>
-                                    <th style="padding: 4px; font-weight:bold; width: 40%;">Left Eye</th>
-                                </tr>
-                                <tr>
-                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9; text-align:center;">Unaided</td>
-                                    <td style="border-right: 1px solid #000; padding: 4px;">${o.vision?.od?.unaided || '--'}</td>
-                                    <td style="padding: 4px;">${o.vision?.os?.unaided || '--'}</td>
-                                </tr>
-                                <tr style="border-top: 1px solid #000;">
-                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold; background:#f1f5f9; text-align:center;">With Glasses</td>
-                                    <td style="border-right: 1px solid #000; padding: 4px;">${o.vision?.od?.corrected || '--'}</td>
-                                    <td style="padding: 4px;">${o.vision?.os?.corrected || '--'}</td>
-                                </tr>
-                            </table>
-
-                            <!-- REFRACTION TABLE -->
-                            <div style="font-size:9px; font-weight:bold; margin-bottom: 2px;">Auto Refraction - AR</div>
-                            <table style="width:100%; border-collapse:collapse; font-size:9px; text-align:center; margin-bottom:12px; border: 1px solid #000;">
-                                <tr style="background:#e2e8f0; border-bottom: 1px solid #000;">
-                                    <th style="border-right: 1px solid #000; padding: 4px; width: 10%;"></th>
-                                    <th colspan="4" style="border-right: 1px solid #000; padding: 4px; font-weight:bold; width: 45%;">Right Eye</th>
-                                    <th colspan="4" style="padding: 4px; font-weight:bold; width: 45%;">Left Eye</th>
-                                </tr>
-                                <tr style="background:#f1f5f9; border-bottom: 1px solid #000;">
-                                    <td style="border-right: 1px solid #000; padding: 4px;"></td>
-                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold;">SPH</td>
-                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold;">CYL</td>
-                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold;">Axis</td>
-                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold;">V/A</td>
-                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold;">SPH</td>
-                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold;">CYL</td>
-                                    <td style="border-right: 1px solid #000; padding: 4px; font-weight:bold;">Axis</td>
-                                    <td style="padding: 4px; font-weight:bold;">V/A</td>
-                                </tr>
-                                <tr>
+                            <!-- VISUAL ACUITY & REFRACTION TABLE -->
                             <div style="font-size:9px; font-weight:bold; margin-bottom: 2px;">Visual Acuity & Refraction</div>
                             <table style="width:100%; border-collapse:collapse; font-size:9px; text-align:center; margin-bottom:15px; border: 1px solid #000;">
                                 <tr style="background:#e2e8f0; border-bottom: 1px solid #000;">
@@ -3033,10 +2998,14 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                     ` : ''}
                                     ${(activeSpecialty.toUpperCase().includes('EYE') || activeSpecialty.toUpperCase().includes('OPHTHA') || formData.medicines.some((m: Medicine) => m.eye || m.dropCount || m.timesPerDay)) ? `
                                     <td style="padding: 14px 10px; font-weight: 700; color: #334155; font-size: 12px;">
-                                        ${med.eye ? `<span style="font-size: 10px; color: #fff; background: #0ea5e9; padding: 2px 6px; border-radius: 4px; margin-right: 4px;">${med.eye}</span>` : ''}
-                                        ${med.dropCount ? `<span style="color: #1e293b; margin-right: 4px;">${med.dropCount}</span>` : ''}
-                                        ${med.timesPerDay ? `<span style="color: #64748b;">${med.timesPerDay}</span>` : ''}
-                                        ${(!med.eye && !med.dropCount && !med.timesPerDay) ? '--' : ''}
+                                        ${(() => {
+                                            if (!med.eye && !med.dropCount && !med.timesPerDay) return '--';
+                                            const eyeTag = med.eye ? `<span style="font-size: 9px; color: #fff; background: #0ea5e9; padding: 2px 6px; border-radius: 4px; font-weight: 800; margin-right: 6px;">${med.eye === 'BE' ? 'BE (Both)' : med.eye === 'RE' ? 'RE (Right)' : med.eye === 'LE' ? 'LE (Left)' : med.eye}</span>` : '';
+                                            const drops = med.dropCount ? (/drop/i.test(med.dropCount) ? med.dropCount : `${med.dropCount} Drop${parseInt(med.dropCount) > 1 ? 's' : ''}`) : '';
+                                            const times = med.timesPerDay ? (/time|day|daily/i.test(med.timesPerDay) ? med.timesPerDay : `${med.timesPerDay} Times/Day`) : '';
+                                            const details = [drops, times].filter(Boolean).join(' &bull; ');
+                                            return `<div style="display: inline-flex; align-items: center;">${eyeTag}<span style="color: #0f172a; font-weight: 800;">${details}</span></div>`;
+                                        })()}
                                     </td>
                                     ` : ''}
                                     <td style="padding: 14px 10px; font-weight: 900; text-align: right; color: #0f172a; font-size: 13px;">${med.quantity}</td>
@@ -3065,13 +3034,13 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                             ` : ''}
                         </div>
 
-                        ${formData.followUp || formData.followUpDate ? `
+                        ${formData.advice || formData.followUp || formData.followUpDate ? `
                         <div class="follow-up-box">
                             <div>
-                                <span class="follow-up-label">Follow-up Instructions:</span>
+                                <span class="follow-up-label">Doctor's Advice:</span>
                                 <div style="font-weight: 700; color: #92400e; margin-top: 4px; margin-left: -5px;">
                                     <ul style="margin: 0; padding-left: 20px; list-style-type: disc;">
-                                        ${(formData.followUp || 'Follow Standard Protocol').split(/[\n,]+/).map(s => s.trim()).filter(Boolean).map(s => '<li style="margin-bottom: 3px;">' + s + '</li>').join('')}
+                                        ${((formData.advice ? formData.advice + (formData.followUp ? '\n' + formData.followUp : '') : formData.followUp) || 'Follow Standard Protocol').split(/[\n,]+/).map(s => s.trim()).filter(Boolean).map(s => '<li style="margin-bottom: 3px;">' + s + '</li>').join('')}
                                     </ul>
                                 </div>
                             </div>
@@ -3093,7 +3062,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                             ` : '<div style="width: 90px; height: 90px;"></div>'}
                             <div class="signature-area" style="margin-top: 0; text-align: right;">
                                 ${formData.doctorSignature ? `<img src="${formData.doctorSignature}" class="sig-img" />` : '<div style="height: 50px;"></div>'}
-                                <div class="sig-line">Authorized Digital Signature</div>
+                                <div class="sig-line">Doctor's Signature</div>
                             </div>
                         </div>
                         <div class="print-footer" style="margin-top: auto;">
@@ -3360,7 +3329,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                     quantity: m.quantity,
                     price: m.price
                 })),
-                advice: formData.followUp,
+                advice: formData.advice || formData.followUp,
                 followUpDate: formData.followUpDate,
                 dietAdvice: formData.dietAdvice,
                 suggestedTests: formData.suggestedTests,
@@ -3758,6 +3727,19 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                             onChange={handleInputChange}
                             rows={3}
                             placeholder="e.g. Viral Fever"
+                            className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
+                        />
+                    </div>
+
+                    {/* ── COMMON FIELD: Advice (always shown, below diagnosis) ── */}
+                    <div className="mb-8">
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Advice</label>
+                        <textarea
+                            name="advice"
+                            value={formData.advice}
+                            onChange={handleInputChange}
+                            rows={3}
+                            placeholder="e.g. Drink plenty of water, Rest for 3 days"
                             className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
                         />
                     </div>
