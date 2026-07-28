@@ -3212,21 +3212,19 @@ function CreatePrescriptionPage() {
                             </button>
                         </div>
                     ) : (
-                        !(activeSpecialty.toUpperCase().includes('EYE') || activeSpecialty.toUpperCase().includes('OPHTHA')) ? (
-                            <div className="mb-6 sm:mb-8">
-                                <label className="text-[9px] sm:text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 flex justify-between">
-                                    Symptoms / Complaints
-                                </label>
-                                <textarea
-                                    name="symptoms"
-                                    value={formData.symptoms}
-                                    onChange={handleInputChange}
-                                    rows={3}
-                                    placeholder="e.g. Chest pain, palpitations..."
-                                    className="w-full px-3 sm:px-4 py-3 bg-secondary-theme border border-border-theme rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
-                                />
-                            </div>
-                        ) : null
+                        <div className="mb-6 sm:mb-8">
+                            <label className="text-[9px] sm:text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 flex justify-between">
+                                Symptoms / Complaints
+                            </label>
+                            <textarea
+                                name="symptoms"
+                                value={formData.symptoms}
+                                onChange={handleInputChange}
+                                rows={3}
+                                placeholder="e.g. Chest pain, palpitations..."
+                                className="w-full px-3 sm:px-4 py-3 bg-secondary-theme border border-border-theme rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
+                            />
+                        </div>
                     )}
 
                     {/* DYNAMIC CLINICAL MODULES - STRICT MAPPING TO PREVENT CROSS-RENDERING */}
