@@ -393,6 +393,7 @@
         date: new Date().toLocaleDateString('en-GB'), // DD/MM/YYYY
         symptoms: '',
         diagnosis: '',
+        advice: '',
         medicines: [],
         dietAdvice: [],
         suggestedTests: [],
