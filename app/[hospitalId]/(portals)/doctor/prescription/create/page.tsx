@@ -3692,19 +3692,21 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                     )}
 
                     {/* ── COMMON FIELDS: Symptoms (always shown, above specialty modules) ── */}
-                    <div className="mb-8">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex justify-between">
-                            Symptoms / Complaints
-                        </label>
-                        <textarea
-                            name="symptoms"
-                            value={formData.symptoms}
-                            onChange={handleInputChange}
-                            rows={3}
-                            placeholder="e.g. Fever, Cough, Headache..."
-                            className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
-                        />
-                    </div>
+                    {!(activeSpecialty.toUpperCase().includes('EYE') || activeSpecialty.toUpperCase().includes('OPHTHA')) && (
+                        <div className="mb-8">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex justify-between">
+                                Symptoms / Complaints
+                            </label>
+                            <textarea
+                                name="symptoms"
+                                value={formData.symptoms}
+                                onChange={handleInputChange}
+                                rows={3}
+                                placeholder="e.g. Fever, Cough, Headache..."
+                                className="w-full px-4 py-3 bg-slate-50 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
+                            />
+                        </div>
+                    )}
 
                     {/* DYNAMIC CLINICAL MODULES - STREAMLINED RENDERING */}
                     <div className="mb-8">

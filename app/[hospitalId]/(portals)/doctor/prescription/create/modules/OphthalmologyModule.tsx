@@ -21,7 +21,7 @@ const SYMPTOMS = [
 
 const VISION_OPTIONS = ['6/6', '6/9', '6/12', '6/18', '6/24', '6/36', '6/60', 'HM', 'PL+', 'NPL'] as const;
 const PUPIL_OPTIONS  = ['PERRLA', 'Sluggish', 'Fixed'] as const;
-
+const PUPIL_OPTS          = ['PERRLA', 'Sluggish', 'Fixed'] as const;
 const CONJUNCTIVA_OPTS    = ['Normal', 'Congested', 'Pale'] as const;
 const CORNEA_OPTS         = ['Clear', 'Ulcer', 'Opacity'] as const;
 const ANTE_CHAMBER_OPTS   = ['Normal', 'Shallow', 'Deep'] as const;
@@ -229,27 +229,6 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
     return (
         <div className="space-y-4">
 
-            {/* ── SYMPTOMS ───────────────────────────────────────────── */}
-            {sectionCard(
-                <>
-                    {sectionHeader(<ClipboardList size={17} />, 'Symptoms', 'select all that apply')}
-                    <div className="flex flex-wrap gap-2">
-                        {SYMPTOMS.map(sym => {
-                            const isEmergency = EMERGENCY_SYMS.includes(sym);
-                            const isDanger    = DANGER_SYMS.includes(sym);
-                            return (
-                                <button key={sym} type="button"
-                                    onClick={() => toggleSymptom(sym)}
-                                    className={btnPill(syms.includes(sym), isEmergency, isDanger)}
-                                >
-                                    {isEmergency ? '🚨 ' : isDanger ? '⚠️ ' : ''}{sym}
-                                </button>
-                            );
-                        })}
-                    </div>
-                </>,
-                'border-red-50',
-            )}
 
             {/* ── PATIENT HISTORY ─────────────────────────────────────────── */}
             {sectionCard(
@@ -478,34 +457,10 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
                 'border-sky-100',
             )}
 
-            {/* ── D. PUPILS ─────────────────────────────────────────────── */}
-            {sectionCard(
-                <>
-                    {sectionHeader(<Eye size={17} />, 'D. Pupil Response')}
-                    <div className="flex gap-3">
-                        {PUPIL_OPTIONS.map(opt => (
-                            <button key={opt} type="button"
-                                onClick={() => update('pupils', o.pupils === opt ? '' : opt)}
-                                className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all border ${
-                                    o.pupils === opt
-                                        ? opt === 'Fixed' ? 'bg-red-600 text-white border-red-600 shadow-md'
-                                          : opt === 'Sluggish' ? 'bg-amber-500 text-white border-amber-500 shadow-md'
-                                          : 'bg-emerald-600 text-white border-emerald-600 shadow-md'
-                                        : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
-                                }`}
-                            >
-                                {opt === 'PERRLA' ? '✓ PERRLA' : opt === 'Fixed' ? '🔴 Fixed' : '⚠️ Sluggish'}
-                            </button>
-                        ))}
-                    </div>
-                </>,
-                'border-slate-200',
-            )}
-
             {/* ── F. SLIT LAMP ──────────────────────────────────────────── */}
             {sectionCard(
                 <>
-                    {sectionHeader(<FlaskConical size={17} />, 'F. Slit Lamp Examination')}
+                    {sectionHeader(<FlaskConical size={17} />, 'E. Slit Lamp Examination')}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         {renderEyeExamRow({ label: "Conjunctiva", category: "slitLamp", field: "conjunctiva", options: CONJUNCTIVA_OPTS, 
                             getBtnClass: (opt, active) => active ? (opt === 'Normal' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : 'bg-amber-500 text-white border-amber-500 shadow-md') : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100' 
@@ -517,8 +472,13 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
                         {renderEyeExamRow({ label: "Anterior Chamber", category: "slitLamp", field: "anteriorChamber", options: ANTE_CHAMBER_OPTS, 
                             getBtnClass: (opt, active) => active ? (opt === 'Normal' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : 'bg-amber-500 text-white border-amber-500 shadow-md') : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100' 
                         })}
+                        {renderEyeExamRow({ label: "Pupil", category: "slitLamp", field: "pupil", options: PUPIL_OPTS, 
+                            getBtnClass: (opt, active) => active ? (opt === 'Fixed' ? 'bg-red-600 text-white border-red-600 shadow-md' : opt === 'Sluggish' ? 'bg-amber-500 text-white border-amber-500 shadow-md' : 'bg-emerald-500 text-white border-emerald-500 shadow-md') : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100',
+                            emojiFn: opt => opt === 'PERRLA' ? '✓ ' : opt === 'Fixed' ? '🔴 ' : '⚠️ '
+                        })}
                         {renderEyeExamRow({ label: "Lens", category: "slitLamp", field: "lens", options: LENS_OPTS, 
                             getBtnClass: (opt, active) => active ? (opt === 'Clear' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md' : (opt === 'Mature cataract' ? 'bg-red-600 text-white border-red-600 shadow-md' : 'bg-amber-500 text-white border-amber-500 shadow-md')) : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-100' 
+
                         })}
                     </div>
                 </>,

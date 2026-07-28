@@ -2142,10 +2142,10 @@ function CreatePrescriptionPage() {
                                 `;
                             };
                             
-                            const slitLampHTML = o.slitLamp ? ['conjunctiva', 'cornea', 'anteriorChamber', 'lens'].map(f => renderEyeField(f.charAt(0).toUpperCase() + f.slice(1).replace(/([A-Z])/g, ' $1'), (o.slitLamp as any)[f])).join('') : '';
+                            const slitLampHTML = o.slitLamp ? ['conjunctiva', 'cornea', 'anteriorChamber', 'pupil', 'lens'].map(f => renderEyeField(f.charAt(0).toUpperCase() + f.slice(1).replace(/([A-Z])/g, ' $1'), (o.slitLamp as any)[f])).join('') : '';
                             const fundusHTML = o.fundus ? ['retina', 'opticDisc', 'macula'].map(f => renderEyeField(f.charAt(0).toUpperCase() + f.slice(1).replace(/([A-Z])/g, ' $1'), (o.fundus as any)[f])).join('') : '';
                             
-                            if (!slitLampHTML.trim() && !fundusHTML.trim() && !o.pupils && !o.notes) return '';
+                            if (!slitLampHTML.trim() && !fundusHTML.trim() && !o.notes) return '';
                             
                             return `
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:15px;padding-top:10px;border-top:1px dashed #bae6fd;">
@@ -2160,12 +2160,6 @@ function CreatePrescriptionPage() {
                                     <div style="margin-bottom:10px;">
                                         <span style="font-size:8px;color:#0369a1;font-weight:800;text-transform:uppercase;display:block;margin-bottom:5px;">Fundus Examination</span>
                                         ${fundusHTML}
-                                    </div>` : ''}
-                                    
-                                    ${o.pupils ? `
-                                    <div>
-                                        <span style="font-size:8px;color:#0369a1;font-weight:800;text-transform:uppercase;display:block;margin-bottom:5px;">Pupil Response</span>
-                                        <span style="font-size:10px;font-weight:700;color:#1e293b;">${o.pupils}</span>
                                     </div>` : ''}
                                 </div>
                             </div>
@@ -3218,19 +3212,21 @@ function CreatePrescriptionPage() {
                             </button>
                         </div>
                     ) : (
-                        <div className="mb-6 sm:mb-8">
-                            <label className="text-[9px] sm:text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 flex justify-between">
-                                Symptoms / Complaints
-                            </label>
-                            <textarea
-                                name="symptoms"
-                                value={formData.symptoms}
-                                onChange={handleInputChange}
-                                rows={3}
-                                placeholder="e.g. Chest pain, palpitations..."
-                                className="w-full px-3 sm:px-4 py-3 bg-secondary-theme border border-border-theme rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
-                            />
-                        </div>
+                        !(activeSpecialty.toUpperCase().includes('EYE') || activeSpecialty.toUpperCase().includes('OPHTHA')) ? (
+                            <div className="mb-6 sm:mb-8">
+                                <label className="text-[9px] sm:text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 flex justify-between">
+                                    Symptoms / Complaints
+                                </label>
+                                <textarea
+                                    name="symptoms"
+                                    value={formData.symptoms}
+                                    onChange={handleInputChange}
+                                    rows={3}
+                                    placeholder="e.g. Chest pain, palpitations..."
+                                    className="w-full px-3 sm:px-4 py-3 bg-secondary-theme border border-border-theme rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
+                                />
+                            </div>
+                        ) : null
                     )}
 
                     {/* DYNAMIC CLINICAL MODULES - STRICT MAPPING TO PREVENT CROSS-RENDERING */}
