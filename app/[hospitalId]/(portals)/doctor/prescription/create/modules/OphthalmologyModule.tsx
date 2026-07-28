@@ -258,18 +258,6 @@ export const OphthalmologyModule: React.FC<OphthalmologyModuleProps> = ({ formDa
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-[10px] font-black uppercase tracking-widest mb-2 text-slate-400">
-                                Chief Complaints / Symptoms
-                            </label>
-                            <textarea
-                                value={o.chiefComplaints || ''}
-                                onChange={e => update('chiefComplaints', e.target.value)}
-                                rows={2}
-                                placeholder="E.g., Blurry vision in right eye for 3 days"
-                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none outline-none"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest mb-2 text-slate-400">
                                 History of Presenting Illness (HOPI)
                             </label>
                             <textarea
