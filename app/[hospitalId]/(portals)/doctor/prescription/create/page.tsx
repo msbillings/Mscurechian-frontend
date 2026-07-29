@@ -3305,28 +3305,13 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
             setIsSaving(true);
             setShowPharmaConfirm(false);
 
-            // ✅ Validate medicine name
-            const emptyNameIndex = formData.medicines.findIndex((m: Medicine) => !m.name || m.name.trim() === '');
-            if (emptyNameIndex !== -1) {
-                toast.error(`Medicine #${emptyNameIndex + 1} is missing a name. Please select the medicine properly from the dropdown.`);
-                setIsSaving(false);
-                return;
-            }
-
-            // ✅ Validate medicine duration — Mongoose required:true rejects empty strings
-            const emptyDurationIndex = formData.medicines.findIndex((m: Medicine) => !m.duration || m.duration.trim() === '');
-            if (emptyDurationIndex !== -1) {
-                toast.error(`Medicine #${emptyDurationIndex + 1} "${formData.medicines[emptyDurationIndex].name || 'Unnamed'}" is missing a duration (e.g. "5 Days").`);
-                setIsSaving(false);
-                return;
-            }
-
-            // ✅ Validate medicine quantity
-            const emptyQuantityIndex = formData.medicines.findIndex((m: Medicine) => !m.quantity || String(m.quantity).trim() === '');
-            if (emptyQuantityIndex !== -1) {
-                toast.error(`Medicine #${emptyQuantityIndex + 1} "${formData.medicines[emptyQuantityIndex].name || 'Unnamed'}" is missing a quantity.`);
-                setIsSaving(false);
-                return;
+            // ✅ Filter out completely empty medicine rows
+            const validMedicines = formData.medicines.filter((m: Medicine) => m.name && m.name.trim() !== '');
+            
+            if (validMedicines.length === 0 && formData.medicines.length > 0) {
+                 toast.error("Please enter at least one valid medicine or remove empty rows.");
+                 setIsSaving(false);
+                 return;
             }
 
             // ✅ PERSIST SPECIALIZED DATA (Backend Compatible)
@@ -3336,12 +3321,12 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                 admissionId, // Pass admissionId if present
                 diagnosis: formData.diagnosis,
                 symptoms: formData.symptoms.split(',').map((s: string) => s.trim()),
-                medicines: formData.medicines.map((m: Medicine) => {
+                medicines: validMedicines.map((m: Medicine) => {
                     const isEyeDrop = !!m.eye || !!m.dropCount || !!m.timesPerDay;
                     return {
                         drug: (m as any).productId,
-                        name: m.name,
-                        dosage: isEyeDrop ? `${m.dropCount || ''} Drops (${m.eye || 'Eye'})` : m.dosage,
+                        name: m.name || 'Unnamed Medicine',
+                        dosage: isEyeDrop ? `${m.dropCount || ''} Drops (${m.eye || 'Eye'})` : (m.dosage?.trim() || 'As directed'),
                         frequency: isEyeDrop ? `${m.timesPerDay || ''} Times/Day` : (m.freq || [1, 0, 1, 0]),
                         duration: m.duration?.trim() || 'As directed',
                         quantity: m.quantity,
