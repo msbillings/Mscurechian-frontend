@@ -3239,11 +3239,65 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
         }
     };
 
+    const validateMedicinesClientSide = (): boolean => {
+        let validMedCount = 0;
+        for (let i = 0; i < formData.medicines.length; i++) {
+            const m = formData.medicines[i];
+            const isPartiallyFilled = m.name?.trim() || m.dosage?.trim() || m.duration?.trim() || m.quantity?.toString().trim() || m.eye || m.dropCount || m.timesPerDay;
+            
+            if (isPartiallyFilled) {
+                if (!m.name || m.name.trim() === '') {
+                    toast.error(`Medicine row #${i + 1} has details entered (like quantity or duration) but you missed the Medicine Name!`);
+                    return false;
+                }
+                
+                const isEyeDrop = !!m.eye || !!m.dropCount || !!m.timesPerDay;
+                
+                if (isEyeDrop) {
+                    if (!m.dropCount || m.dropCount.trim() === '') {
+                        toast.error(`You missed the drop count for Medicine #${i + 1} ("${m.name}").`);
+                        return false;
+                    }
+                    if (!m.timesPerDay || m.timesPerDay.trim() === '') {
+                        toast.error(`You missed the frequency for Medicine #${i + 1} ("${m.name}").`);
+                        return false;
+                    }
+                    if (!m.eye) {
+                        toast.error(`You missed the eye selection (BE/RE/LE) for Medicine #${i + 1} ("${m.name}").`);
+                        return false;
+                    }
+                } else {
+                    if (!m.dosage || m.dosage.trim() === '') {
+                        toast.error(`You missed the dosage for Medicine #${i + 1} ("${m.name}").`);
+                        return false;
+                    }
+                }
+
+                if (!m.duration || m.duration.trim() === '') {
+                    toast.error(`You missed the duration/days for Medicine #${i + 1} ("${m.name}").`);
+                    return false;
+                }
+                if (!m.quantity || m.quantity.toString().trim() === '') {
+                    toast.error(`You missed the quantity for Medicine #${i + 1} ("${m.name}").`);
+                    return false;
+                }
+                validMedCount++;
+            }
+        }
+        
+        if (validMedCount === 0) {
+            toast.error("Please add at least one complete medicine before saving.");
+            return false;
+        }
+        return true;
+    };
+
     const handleSendToPharma = async () => {
         if (!appointmentId && !patientId) return toast.error("Appointment ID or Patient ID is required");
         if (!formData.patientName) return toast.error("Patient Name is required");
         if (!formData.diagnosis) return toast.error("Diagnosis is required");
-        if (formData.medicines.length === 0) return toast.error("At least one medicine is required");
+        
+        if (!validateMedicinesClientSide()) return;
 
         const hasErrors = formData.medicines.some(m => m.error);
         if (hasErrors) return toast.error("Please resolve stock errors before sending to pharmacy");
@@ -3264,17 +3318,11 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
         if (!appointmentId && !patientId) return toast.error("Appointment ID or Patient ID is required");
         if (!formData.patientName) return toast.error("Patient Name is required");
         if (!formData.diagnosis) return toast.error("Diagnosis is required");
-        if (formData.medicines.length === 0) return toast.error("At least one medicine is required");
+        
+        if (!validateMedicinesClientSide()) return;
 
         const hasErrors = formData.medicines.some(m => m.error);
         if (hasErrors) return toast.error("Please resolve stock errors before submitting");
-
-        // Validate medicine durations before opening preview
-        const emptyDurationIndex = formData.medicines.findIndex((m: Medicine) => !m.duration || m.duration.trim() === '');
-        if (emptyDurationIndex !== -1) {
-            toast.error(`Medicine #${emptyDurationIndex + 1} "${formData.medicines[emptyDurationIndex].name || 'Unnamed'}" is missing a duration.`);
-            return;
-        }
 
         // Open preview modal instead of submitting directly
         setPreviewSendToPharma(false);
@@ -4532,7 +4580,7 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                                                     const rawName = rep.name || rep.testName || 'Lab Investigation Order';
                                                                     const parts = rawName.split(',').map((s: any) => s.trim()).filter(Boolean);
                                                                     return Array.from(new Set(parts)).join(', ');
-                                                                })()}
+                                                                 })()}
                                                             </span>
                                                             <div className="flex items-center gap-2 mt-1">
                                                                 <span className={`px-2 py-0.5 text-[8px] font-black uppercase tracking-widest rounded-full ${rep.status?.toLowerCase() === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>

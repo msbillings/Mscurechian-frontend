@@ -1488,12 +1488,66 @@
         toast.success("Form cleared");
     };
 
+    const validateMedicinesClientSide = (): boolean => {
+        let validMedCount = 0;
+        for (let i = 0; i < formData.medicines.length; i++) {
+            const m = formData.medicines[i];
+            const isPartiallyFilled = m.name?.trim() || m.dosage?.trim() || m.duration?.trim() || m.quantity?.toString().trim() || m.eye || m.dropCount || m.timesPerDay;
+            
+            if (isPartiallyFilled) {
+                if (!m.name || m.name.trim() === '') {
+                    toast.error(`Medicine row #${i + 1} has details entered (like quantity or duration) but you missed the Medicine Name!`);
+                    return false;
+                }
+                
+                const isEyeDrop = !!m.eye || !!m.dropCount || !!m.timesPerDay;
+                
+                if (isEyeDrop) {
+                    if (!m.dropCount || m.dropCount.trim() === '') {
+                        toast.error(`You missed the drop count for Medicine #${i + 1} ("${m.name}").`);
+                        return false;
+                    }
+                    if (!m.timesPerDay || m.timesPerDay.trim() === '') {
+                        toast.error(`You missed the frequency for Medicine #${i + 1} ("${m.name}").`);
+                        return false;
+                    }
+                    if (!m.eye) {
+                        toast.error(`You missed the eye selection (BE/RE/LE) for Medicine #${i + 1} ("${m.name}").`);
+                        return false;
+                    }
+                } else {
+                    if (!m.dosage || m.dosage.trim() === '') {
+                        toast.error(`You missed the dosage for Medicine #${i + 1} ("${m.name}").`);
+                        return false;
+                    }
+                }
+
+                if (!m.duration || m.duration.trim() === '') {
+                    toast.error(`You missed the duration/days for Medicine #${i + 1} ("${m.name}").`);
+                    return false;
+                }
+                if (!m.quantity || m.quantity.toString().trim() === '') {
+                    toast.error(`You missed the quantity for Medicine #${i + 1} ("${m.name}").`);
+                    return false;
+                }
+                validMedCount++;
+            }
+        }
+        
+        const isOphtha = activeSpecialty.toUpperCase().includes('OPHTHA') || activeSpecialty.toUpperCase().includes('EYE');
+        if (!isOphtha && validMedCount === 0) {
+            toast.error("Please add at least one complete medicine before saving.");
+            return false;
+        }
+        return true;
+    };
+
     const handleSendToPharma = async () => {
         if (!appointmentId && !selectedPatientId) return toast.error("Appointment ID or Patient ID is required");
         if (!formData.patientName) return toast.error("Patient Name is required");
         if (!formData.diagnosis) return toast.error("Diagnosis is required");
-        const isOphtha = activeSpecialty.toUpperCase().includes('OPHTHA') || activeSpecialty.toUpperCase().includes('EYE');
-        if (!isOphtha && formData.medicines.length === 0) return toast.error("At least one medicine is required");
+        
+        if (!validateMedicinesClientSide()) return;
 
         const hasErrors = formData.medicines.some(m => m.error);
         if (hasErrors) return toast.error("Please resolve stock errors before sending to pharmacy");
@@ -1514,8 +1568,8 @@
         if (!appointmentId && !selectedPatientId) return toast.error("Appointment ID or Patient ID is required for prescription");
         if (!formData.patientName) return toast.error("Patient Name is required");
         if (!formData.diagnosis) return toast.error("Diagnosis is required");
-        const isOphtha = activeSpecialty.toUpperCase().includes('OPHTHA') || activeSpecialty.toUpperCase().includes('EYE');
-        if (!isOphtha && formData.medicines.length === 0) return toast.error("At least one medicine is required");
+        
+        if (!validateMedicinesClientSide()) return;
 
         const hasErrors = formData.medicines.some(m => m.error);
         if (hasErrors) return toast.error("Please resolve stock errors before submitting");
@@ -1564,7 +1618,7 @@
                     name: m.name,
                     dosage: m.eye ? `${m.dosage} (${m.eye})` : m.dosage,
                     frequency: m.freq,
-                    duration: m.duration,
+                    duration: m.duration?.trim() || 'As directed',
                     quantity: m.quantity,
                     price: m.price
                 })),
