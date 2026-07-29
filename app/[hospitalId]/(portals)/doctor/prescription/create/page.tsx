@@ -3313,6 +3313,14 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                 return;
             }
 
+            // ✅ Validate medicine quantity
+            const emptyQuantityIndex = formData.medicines.findIndex((m: Medicine) => !m.quantity || String(m.quantity).trim() === '');
+            if (emptyQuantityIndex !== -1) {
+                toast.error(`Medicine #${emptyQuantityIndex + 1} "${formData.medicines[emptyQuantityIndex].name || 'Unnamed'}" is missing a quantity.`);
+                setIsSaving(false);
+                return;
+            }
+
             // ✅ PERSIST SPECIALIZED DATA (Backend Compatible)
             const submissionData = {
                 appointmentId,
@@ -3869,12 +3877,32 @@ function CreatePrescriptionPage({ params }: { params: Promise<{ hospitalId: stri
                                     <div className="grid grid-cols-2 lg:contents gap-4 lg:gap-3 col-span-2 lg:col-span-9 items-start lg:items-center">
                                         <div className="col-span-1 lg:col-span-1 order-2 lg:order-1">
                                             <div className="lg:hidden text-[9px] font-bold text-slate-400 uppercase px-1 mb-1">Form</div>
-                                            {med.form ? (
-                                                <span className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wide bg-violet-50 text-violet-700 border border-violet-100 w-full justify-center truncate">
+                                            {med.productId && med.form ? (
+                                                <span className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wide bg-violet-50 text-violet-700 border border-violet-100 w-full justify-center truncate" title={med.form}>
                                                     {med.form}
                                                 </span>
                                             ) : (
-                                                <div className="text-[9px] font-bold text-slate-300 uppercase px-1 py-2 bg-slate-50 rounded-lg text-center border border-dashed border-slate-200">N/A</div>
+                                                <select
+                                                    value={med.form || ''}
+                                                    onChange={(e) => updateMedicine(idx, 'form', e.target.value)}
+                                                    className="w-full px-1 py-2 bg-white border border-slate-200 rounded-lg text-[10px] font-bold uppercase tracking-wide text-slate-700 focus:outline-none focus:border-teal-500 text-center"
+                                                >
+                                                    <option value="">N/A</option>
+                                                    <option value="Tablet">Tablet</option>
+                                                    <option value="Syrup">Syrup</option>
+                                                    <option value="Drops">Drops</option>
+                                                    <option value="Capsule">Capsule</option>
+                                                    <option value="Injection">Injection</option>
+                                                    <option value="Ointment">Ointment</option>
+                                                    <option value="Cream">Cream</option>
+                                                    <option value="Gel">Gel</option>
+                                                    <option value="Powder">Powder</option>
+                                                    <option value="Spray">Spray</option>
+                                                    <option value="Inhaler">Inhaler</option>
+                                                    <option value="Sachet">Sachet</option>
+                                                    <option value="Suppository">Suppository</option>
+                                                    <option value="Lotion">Lotion</option>
+                                                </select>
                                             )}
                                         </div>
 
