@@ -13,7 +13,7 @@ import toast from "react-hot-toast";
 import { TagInput } from "@/components/common/TagInput";
 import { COMMON_SPECIALTIES, COMMON_QUALIFICATIONS, COMMON_LANGUAGES } from "@/lib/constants/medicalData";
 import { InfrastructureCheck } from "../../../../hospital-admin/components/InfrastructureCheck";
-import { formatDoctorName } from "@/lib/utils/name-utils";
+import { formatDoctorName, cleanDoctorName } from "@/lib/utils/name-utils";
 
 // ─── Color-only palette: blue, green, yellow, white ───────────────────────────
 const cls = {
@@ -223,7 +223,7 @@ export default function HRCreateDoctorPage() {
         if (!touchAll()) { toast.error("Please fix errors before submitting"); return; }
         setLoading(true);
         try {
-            const sanitizedName = formatDoctorName(f.name);
+            const sanitizedName = cleanDoctorName(f.name);
             await hospitalAdminService.createDoctor({
                 honorific: f.honorific,
                 name: sanitizedName, email: f.email.trim(), mobile: f.mobile,

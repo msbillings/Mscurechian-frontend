@@ -27,7 +27,7 @@ import { PageHeader, Card, FormInput, Button } from "@/components/admin";
 import type { CreateDoctorRequest } from "@/lib/integrations/types";
 import { TagInput } from "@/components/common/TagInput";
 import { COMMON_SPECIALTIES, COMMON_QUALIFICATIONS, COMMON_LANGUAGES } from "@/lib/constants/medicalData";
-import { formatDoctorName } from "@/lib/utils/name-utils";
+import { formatDoctorName, cleanDoctorName } from "@/lib/utils/name-utils";
 
 // Constants
 const GENDER_OPTIONS = [
@@ -174,7 +174,7 @@ function EditDoctor() {
       // Map backend data to form data
       setFormData({
         honorific: doctor.honorific || "Dr",
-        name: doctor.name || "",
+        name: cleanDoctorName(doctor.name || ""),
         email: doctor.email || "",
         mobile: doctor.mobile || "",
         password: "", // Keep password empty for security, only update if changed
@@ -350,7 +350,7 @@ function EditDoctor() {
     setLoading(true);
 
     try {
-      const sanitizedName = formatDoctorName(formData.name);
+      const sanitizedName = cleanDoctorName(formData.name);
       const doctorData: any = {
         honorific: formData.honorific,
         name: sanitizedName,

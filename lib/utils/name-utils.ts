@@ -26,10 +26,12 @@ export const sanitizePatientName = (name: string | null | undefined, fallback: s
 };
 
 /**
- * Formats doctor names to ensure they start with exactly one "Dr. " prefix.
+ * Cleans doctor names by removing "Dr." prefixes.
+ * Use this before saving to the database so we don't store redundant prefixes
+ * when an honorific field is already present.
  */
-export const formatDoctorName = (name: string | null | undefined): string => {
-  if (!name) return "Doctor";
+export const cleanDoctorName = (name: string | null | undefined): string => {
+  if (!name) return "";
   
   let cleaned = name.trim();
   // Clean up any double dots/multiple spaces anywhere in the name first
@@ -39,6 +41,15 @@ export const formatDoctorName = (name: string | null | undefined): string => {
     cleaned = cleaned.replace(/^(dr|dr\.|dr\s+|dr\.\s+)/i, "").trim();
   }
   
+  return cleaned;
+};
+
+/**
+ * Formats doctor names to ensure they start with exactly one "Dr. " prefix.
+ * Used for display purposes.
+ */
+export const formatDoctorName = (name: string | null | undefined): string => {
+  const cleaned = cleanDoctorName(name);
   return cleaned ? `Dr. ${cleaned}` : "Doctor";
 };
 

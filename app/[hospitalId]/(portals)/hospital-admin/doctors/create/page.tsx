@@ -15,7 +15,7 @@ import type { CreateDoctorRequest } from "@/lib/integrations/types";
 import { TagInput } from "@/components/common/TagInput";
 import { COMMON_SPECIALTIES, COMMON_QUALIFICATIONS, COMMON_LANGUAGES } from "@/lib/constants/medicalData";
 import { InfrastructureCheck } from "../../components/InfrastructureCheck";
-import { formatDoctorName } from "@/lib/utils/name-utils";
+import { formatDoctorName, cleanDoctorName } from "@/lib/utils/name-utils";
 
 type Errors = Partial<Record<string, string>>;
 const docValidators: Record<string, (v: string) => string> = {
@@ -275,7 +275,7 @@ function CreateDoctor() {
     setLoading(true);
 
     try {
-      const sanitizedName = formatDoctorName(formData.name);
+      const sanitizedName = cleanDoctorName(formData.name);
       const doctorData: any = {
         honorific: formData.honorific,
         name: sanitizedName,

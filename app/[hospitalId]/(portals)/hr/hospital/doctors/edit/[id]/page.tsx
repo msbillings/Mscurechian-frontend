@@ -23,7 +23,7 @@ import toast from "react-hot-toast";
 import { PageHeader, Card, FormInput, Button } from "@/components/admin";
 import { TagInput } from "@/components/common/TagInput";
 import { COMMON_SPECIALTIES, COMMON_QUALIFICATIONS, COMMON_LANGUAGES } from "@/lib/constants/medicalData";
-import { formatDoctorName } from "@/lib/utils/name-utils";
+import { formatDoctorName, cleanDoctorName } from "@/lib/utils/name-utils";
 
 const GENDER_OPTIONS = [
   { value: "male", label: "Male" },
@@ -153,7 +153,7 @@ function HREditDoctor() {
 
       setFormData({
         honorific: doctor.honorific || "Mr",
-        name: doctor.name || "",
+        name: cleanDoctorName(doctor.name || ""),
         email: doctor.email || "",
         mobile: doctor.mobile || "",
         password: "",
@@ -290,7 +290,7 @@ function HREditDoctor() {
     setLoading(true);
 
     try {
-      const sanitizedName = formatDoctorName(formData.name);
+      const sanitizedName = cleanDoctorName(formData.name);
       const doctorData: any = {
         honorific: formData.honorific,
         name: sanitizedName,

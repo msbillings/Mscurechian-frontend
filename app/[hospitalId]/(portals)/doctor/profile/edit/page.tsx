@@ -20,7 +20,7 @@ import { clearApiCache } from '@/lib/integrations/api';
 import { useTenantLink } from '@/hooks/useTenantLink';
 import { TagInput } from '@/components/common/TagInput';
 import { COMMON_SPECIALTIES, COMMON_QUALIFICATIONS, COMMON_LANGUAGES } from '@/lib/constants/medicalData';
-import { formatDoctorName } from '@/lib/utils/name-utils';
+import { formatDoctorName, cleanDoctorName } from '@/lib/utils/name-utils';
 
 export default function EditDoctorProfilePage() {
     const router = useRouter();
@@ -125,7 +125,7 @@ export default function EditDoctorProfilePage() {
                     };
 
                     setFormData({
-                        name: d.user?.name || '',
+                        name: cleanDoctorName(d.user?.name || ''),
                         email: d.user?.email || '',
                         mobile: d.user?.mobile || '',
                         profilePic: d.profilePic || '',
@@ -403,7 +403,7 @@ export default function EditDoctorProfilePage() {
 
         setIsSaving(true);
         try {
-            const sanitizedName = formatDoctorName(formData.name);
+            const sanitizedName = cleanDoctorName(formData.name);
             const formDataToSubmit = new FormData();
             formDataToSubmit.append('hospital', hospitalId || '');
 
