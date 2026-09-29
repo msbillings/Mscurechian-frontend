@@ -10,10 +10,12 @@ if (typeof window !== "undefined") {
   if (apiUrl) {
     try {
       const url = new URL(apiUrl);
-      if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
+      if (url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname.includes("vercel.app")) {
         let modified = false;
         if (url.hostname !== currentHost) {
           url.hostname = currentHost;
+          // Ensure it uses https if the current host is https
+          url.protocol = window.location.protocol;
           modified = true;
         }
         // If it's hitting the Next.js proxy, the port must match the frontend
